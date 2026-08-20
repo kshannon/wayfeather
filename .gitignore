@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+
+# deps (Vitest, scripts)
+node_modules/
+
+# real trip data — never committed; the repo carries test data only (see README)
+private/
+archive/

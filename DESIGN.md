@@ -105,7 +105,9 @@ Schema changes bump `schema` and the app refuses versions it doesn't know, with 
 
 **Write path:** every mutation is read-modify-write of the whole trip file: take the cached `sha`, apply the change to the in-memory doc, `PUT` with `{ message, content(base64), sha }`. On a `409`/`422` (someone else wrote first), re-`GET`, re-apply the same mutation to the fresh doc, retry once, then surface an error. Mutations are small and per-place, so this "rebase" is a merge in name only — it just reapplies one place edit. Commit messages are generated (`add: Los Tacos No.1 (thu)`, `edit: hours — Frick`), which makes `git log` a legible trip changelog.
 
-**Offline writes:** v1 disables the save button offline (visible, disabled, "you're offline"). v1.1 adds a simple queue in IndexedDB that flushes on next open — iOS has no Background Sync API, so flushing on foreground is the honest design.
+**Write debouncing (decided 2026-08-20, owner's suggestion).** Mutations never push instantly: changes collect in a pending buffer and push after a **~5-second quiet window** (capped at ~20s total deferral), coalesced into **one commit** — `visit: Economy Candy + 2 more (thu)` — so a flurry of taps makes one history entry, not five. **Undo inside the window cancels cleanly: accidental taps never reach git history at all.** The buffer flushes immediately on pull-to-refresh and on app backgrounding, and a small indicator distinguishes "saved on this phone" from "synced · a1b2c3d" so either person knows when the other can see a change.
+
+**Offline writes:** the same pending buffer *is* the offline queue — when the network is away it simply holds, and flushes on next foreground (iOS has no Background Sync API, so flushing on foreground is the honest design).
 
 ## 5. UI
 

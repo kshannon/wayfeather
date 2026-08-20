@@ -1,0 +1,103 @@
+/* ============================================================================
+   Wayfeather — design tokens                                    DESIGN.md §5
+   Soft Cards v3 identity (warm off-white ground, rounded soft-shadow cards,
+   one cerulean/matcha accent) retuned to the iOS type scale and iOS chrome
+   metrics. Light mode only — there is no dark palette by design.
+
+   CONTRAST (unchanged from the v3 candidate; every pair verified >= 4.5:1):
+                        cerulean #0B6C8C     matcha #4B6630
+     on --surface            5.94                 6.48
+     on --ground             5.44                 5.94
+     on --surface-2          5.17                 5.64
+     on --tint               5.15                 5.63
+     on --soft               4.53                 4.98
+     #FFF on --accent        5.94                 6.48
+   "accent as text on white >= 4.5" and "white on accent fill >= 4.5" are the
+   same inequality, so one tuned hex satisfies both directions.
+   ========================================================================= */
+
+:root{
+  /* ── neutrals ─────────────────────────────────────────────────────────── */
+  --ground:#F6F5F2;
+  --surface:#FFFFFF;
+  --surface-2:#F1EFEA;
+  --hair:#E7E4DD;
+  --hair-2:#D6D2C9;
+  --rail:#8F8A7F;
+  --ink:#17171A;        /* 17:1  on --surface */
+  --ink-2:#56565C;      /* 7.7:1 on --surface */
+  --ink-3:#64646B;      /* 6.0:1 on --surface */
+  --done:#5E5E66;
+  --on-done:#FFFFFF;
+  --focus:#1D4ED8;
+
+  /* iOS "material": the bar tint is a translucent ground, not a flat fill */
+  --mat-bg:rgba(246,245,242,.82);
+  --mat-bg-solid:var(--ground);
+  --scrim:rgba(23,23,26,.34);
+
+  /* ── semantic pairs (bg + ink, each >= 4.5:1) ─────────────────────────── */
+  --ok-bg:#E4F2E8;      --ok-ink:#166A38;     /* 5.76 */
+  --bad-bg:#FBE9E7;     --bad-ink:#A3261A;    /* 6.29 */
+  --warn-bg:#FBEEDD;    --warn-ink:#8A4F06;   /* 5.74 */
+  --gold-bg:#F2C14E;    --gold-ink:#3A2A02;   /* 8.28 */
+  --neutral-bg:#EDEBE6;
+
+  /* ── iOS type scale ───────────────────────────────────────────────────── */
+  /* 34 large title · 28 title1 · 22 title2 · 20 title3 · 17 body/headline
+     15 subhead · 13 footnote · 12 caption1 · 11 caption2 (hard floor)      */
+  --t-large:34px;
+  --t-title1:28px;
+  --t-title2:22px;
+  --t-title3:20px;
+  --t-body:17px;
+  --t-subhead:15px;
+  --t-footnote:13px;
+  --t-caption:12px;
+  --t-caption2:11px;
+
+  /* iOS large titles are -0.4pt tracked; body sits at 0 */
+  --track-large:-.024em;
+  --track-title:-.02em;
+  --track-body:-.01em;
+
+  /* ── space scale ──────────────────────────────────────────────────────── */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px;
+  --s5:20px; --s6:24px; --s7:32px; --s8:44px;
+
+  /* ── radii — no pills on controls ─────────────────────────────────────── */
+  --r-sm:8px; --r-btn:10px; --r-md:12px; --r-lg:16px; --r-xl:20px;
+  --r-card:18px; --r-sheet:12px; --r-pill:999px;
+
+  /* ── elevation ────────────────────────────────────────────────────────── */
+  --e1:0 1px 2px rgba(23,23,26,.05), 0 1px 1px rgba(23,23,26,.04);
+  --e2:0 1px 2px rgba(23,23,26,.05), 0 4px 12px rgba(23,23,26,.055),
+       0 14px 30px rgba(23,23,26,.045);
+  --e-float:0 2px 4px rgba(23,23,26,.10), 0 8px 22px rgba(23,23,26,.16);
+  --e-sheet:0 -2px 10px rgba(23,23,26,.10), 0 -18px 50px rgba(23,23,26,.18);
+  --card-ring:0 0 0 1px rgba(23,23,26,.035);
+  /* the iOS hairline: one device pixel, not one CSS pixel */
+  --hairline:0.5px;
+
+  /* ── chrome metrics (iOS points) ──────────────────────────────────────── */
+  --nav-h:44px;                                   /* navigation bar        */
+  --tab-h:49px;                                   /* tab bar               */
+  --safe-t:env(safe-area-inset-top);
+  --safe-b:env(safe-area-inset-bottom);
+  --nav-total:calc(var(--nav-h) + var(--safe-t));
+  --tab-total:calc(var(--tab-h) + var(--safe-b));
+
+  /* ── motion ───────────────────────────────────────────────────────────── */
+  --ease-spring:cubic-bezier(.32,.72,0,1);        /* iOS sheet curve       */
+  --ease-out:cubic-bezier(.22,1,.36,1);
+}
+
+/* The two curated accents. Neither is derived from trip data — DESIGN §5 drops
+   per-day color entirely — and both are tuned so the SAME hex works as body
+   text on every surface it touches and as a fill under white text. */
+:root[data-accent="cerulean"]{
+  --accent:#0B6C8C; --tint:#E4F1F6; --soft:#CCE5EF; --on-accent:#FFFFFF;
+}
+:root[data-accent="matcha"]{
+  --accent:#4B6630; --tint:#ECF1E4; --soft:#DAE6CB; --on-accent:#FFFFFF;
+}

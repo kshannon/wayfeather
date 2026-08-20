@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en" data-accent="cerulean">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F6F5F2">
+<meta name="description" content="Wayfeather — a light little guide for finding your way.">
+
+<!-- iOS standalone. status-bar-style "default" (not black-translucent) because
+     the app is light-mode only: black-translucent forces WHITE status-bar text,
+     which would be unreadable on the warm off-white ground. With "default" the
+     safe-area top inset is 0 in standalone and every calc() below collapses
+     cleanly. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Wayfeather">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/app.css">
+
+<title>Wayfeather</title>
+</head>
+<body>
+
+<!-- pull-to-refresh indicator: fixed, behind the shell, revealed by the pull -->
+<div class="ptr" id="ptr" aria-hidden="true">
+  <span class="ptr-ring">
+    <svg class="ptr-arrow" viewBox="0 0 24 24" width="19" height="19" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 5v14"/><path d="M6 13l6 6 6-6"/>
+    </svg>
+    <svg class="ptr-spin" viewBox="0 0 24 24" width="19" height="19" fill="none"
+         stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+      <circle cx="12" cy="12" r="8.5" stroke-opacity=".22"/>
+      <path d="M12 3.5a8.5 8.5 0 0 1 8.5 8.5"/>
+    </svg>
+  </span>
+  <span class="ptr-label" id="ptrLabel">Pull to refresh</span>
+</div>
+
+<div class="shell" id="shell">
+
+  <!-- ════ ITINERARY ═══════════════════════════════════════════════════════ -->
+  <section class="view" id="view-itinerary" role="tabpanel" aria-labelledby="navtab-itinerary">
+    <header class="lt-head wrap">
+      <p class="lt-eyebrow" id="heroEyebrow"></p>
+      <h1 class="lt" id="heroTitle" data-large-title></h1>
+      <p class="lt-sub" id="heroSub"></p>
+      <div id="heroBase"></div>
+    </header>
+
+    <div class="daybar">
+      <div class="wrap daybar-inner">
+        <div class="daystrip" role="tablist" aria-label="Trip days" id="dayTabs"></div>
+      </div>
+    </div>
+
+    <main class="wrap">
+      <p class="stamp" id="stamp"></p>
+      <div id="staleBanner"></div>
+      <div id="panels"></div>
+    </main>
+
+    <footer class="foot wrap">
+      <p id="tripNotes"></p>
+    </footer>
+  </section>
+
+  <!-- ════ MAP ═════════════════════════════════════════════════════════════ -->
+  <section class="view view-map" id="view-map" role="tabpanel" aria-labelledby="navtab-map">
+    <div class="lt-head wrap">
+      <div class="maphead-row">
+        <div>
+          <h1 class="lt" id="mapTitle" data-large-title></h1>
+          <p class="sub" id="mapSub"></p>
+        </div>
+        <div id="mapEscape" style="margin-left:auto"></div>
+      </div>
+    </div>
+    <div class="mapdays wrap">
+      <div class="daystrip" role="group" aria-label="Pick a day to route" id="mapDays"></div>
+    </div>
+    <div class="mapbody wrap">
+      <ol class="nodes" id="routeNodes"></ol>
+      <div id="routeOut"></div>
+    </div>
+    <div class="dock">
+      <div class="dock-in">
+        <div class="dock-nav">
+          <button class="navbtn" type="button" data-cyc="-1" aria-label="Previous stop">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14.5 5.5L8 12l6.5 6.5"/>
+            </svg>
+          </button>
+          <span class="dock-count" id="dockCount"></span>
+          <button class="navbtn" type="button" data-cyc="1" aria-label="Next stop">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9.5 5.5L16 12l-6.5 6.5"/>
+            </svg>
+          </button>
+        </div>
+        <div class="dock-body" id="dockBody" aria-live="polite"></div>
+      </div>
+    </div>
+    <div class="map-pad" aria-hidden="true"></div>
+  </section>
+
+  <!-- ════ TRIPS ═══════════════════════════════════════════════════════════ -->
+  <section class="view" id="view-trips" role="tabpanel" aria-labelledby="navtab-trips">
+    <div class="page">
+      <div class="lt-head wrap">
+        <h1 class="lt" data-large-title>Trips</h1>
+        <p class="lt-sub" id="tripsLede"></p>
+      </div>
+      <div id="tripsList"></div>
+    </div>
+  </section>
+
+  <!-- ════ SETTINGS ════════════════════════════════════════════════════════ -->
+  <section class="view" id="view-settings" role="tabpanel" aria-labelledby="navtab-settings">
+    <div class="page">
+      <div class="lt-head wrap">
+        <h1 class="lt" data-large-title>Settings</h1>
+        <p class="lt-sub">Kept on this device until the GitHub sync lands.</p>
+      </div>
+
+      <div class="sect wrap">
+        <h2 class="sect-h" id="accentHead">Accent</h2>
+        <div class="swatches" role="group" aria-labelledby="accentHead" id="accentPick"></div>
+      </div>
+
+      <div class="sect wrap">
+        <h2 class="sect-h">This device</h2>
+        <div class="inset">
+          <button class="rowcard" type="button" id="btnReset">
+            <span class="rowcard-main">
+              <span class="rowcard-name">Reset local changes</span>
+              <span class="rowcard-sub" id="resetSub"></span>
+            </span>
+            <span class="chev" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9.5 5.5L16 12l-6.5 6.5"/>
+              </svg>
+            </span>
+          </button>
+          <button class="rowcard" type="button" id="btnClearCache">
+            <span class="rowcard-main">
+              <span class="rowcard-name">Clear offline data cache</span>
+              <span class="rowcard-sub" id="cacheSub"></span>
+            </span>
+            <span class="chev" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9.5 5.5L16 12l-6.5 6.5"/>
+              </svg>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div class="sect wrap">
+        <h2 class="sect-h">Sync</h2>
+        <div class="inset">
+          <div class="rowcard is-m2">
+            <span class="rowcard-main">
+              <span class="rowcard-name">GitHub repo</span>
+              <span class="rowcard-sub">Owner and repository that holds the trip files</span>
+            </span>
+            <span class="tag-m2">M2</span>
+          </div>
+          <div class="rowcard is-m2">
+            <span class="rowcard-main">
+              <span class="rowcard-name">Personal access token</span>
+              <span class="rowcard-sub">Fine-grained PAT, Contents read and write</span>
+            </span>
+            <span class="tag-m2">M2</span>
+          </div>
+        </div>
+        <p class="sect-note">Trip files are read straight from the site for now. The
+          Contents API path turns on when these are filled in.</p>
+      </div>
+
+      <div class="sect wrap">
+        <h2 class="sect-h">About</h2>
+        <div class="about">
+          <p><strong>Wayfeather</strong> — a light little guide for finding your way.</p>
+          <p id="aboutLine"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- one nav bar for the whole app; its compact title is swapped per view -->
+<div class="navbar" id="navbar">
+  <div class="navbar-mat" aria-hidden="true"></div>
+  <div class="navbar-row">
+    <span class="navbar-title" id="navbarTitle" aria-hidden="true"></span>
+    <div class="navbar-actions" id="navbarActions">
+      <button class="iconbtn" id="btnRefresh" type="button" aria-label="Refresh trip data">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.5 12a8.5 8.5 0 1 1-2.8-6.3"/><path d="M20.6 4.2v4.6h-4.6"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<nav class="tabbar" id="tabbar">
+  <div class="tabbar-row" role="tablist" aria-label="Sections">
+    <button class="navtab" type="button" role="tab" id="navtab-itinerary"
+            aria-controls="view-itinerary" aria-selected="true" data-view="itinerary">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <circle cx="5" cy="6.5" r="1.35" fill="currentColor" stroke="none"/>
+        <circle cx="5" cy="12" r="1.35" fill="currentColor" stroke="none"/>
+        <circle cx="5" cy="17.5" r="1.35" fill="currentColor" stroke="none"/>
+        <path d="M9.6 6.5h10.4"/><path d="M9.6 12h10.4"/><path d="M9.6 17.5h7.2"/>
+      </svg>
+      <b>Itinerary</b>
+    </button>
+    <button class="navtab" type="button" role="tab" id="navtab-map"
+            aria-controls="view-map" aria-selected="false" tabindex="-1" data-view="map">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9.1 3.9 3.4 6v13.4l5.7-2.1 5.8 2.1 5.7-2.1V3.9l-5.7 2.1L9.1 3.9Z"/>
+        <path d="M9.1 3.9v13.4"/><path d="M14.9 6v13.4"/>
+      </svg>
+      <b>Map</b>
+    </button>
+    <button class="navtab" type="button" role="tab" id="navtab-trips"
+            aria-controls="view-trips" aria-selected="false" tabindex="-1" data-view="trips">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3.2" y="7.4" width="17.6" height="12.6" rx="2.6"/>
+        <path d="M8.6 7.4V5.6a1.8 1.8 0 0 1 1.8-1.8h3.2a1.8 1.8 0 0 1 1.8 1.8v1.8"/>
+        <path d="M3.2 12.4h17.6"/>
+      </svg>
+      <b>Trips</b>
+    </button>
+    <button class="navtab" type="button" role="tab" id="navtab-settings"
+            aria-controls="view-settings" aria-selected="false" tabindex="-1" data-view="settings">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <path d="M3.6 8h4.2"/><path d="M13.4 8h7"/><circle cx="10.6" cy="8" r="2.5"/>
+        <path d="M3.6 16h7"/><path d="M16.2 16h4.2"/><circle cx="13.4" cy="16" r="2.5"/>
+      </svg>
+      <b>Settings</b>
+    </button>
+  </div>
+</nav>
+
+<canvas class="confetti" id="confetti" hidden aria-hidden="true"></canvas>
+
+<div class="scrim" id="scrim" hidden></div>
+
+<!-- edit / add stopover -->
+<section class="sheet" id="formSheet" role="dialog" aria-modal="true"
+         aria-labelledby="formTitle" hidden>
+  <div class="grabber" id="formGrab" role="button" tabindex="-1"
+       aria-label="Drag down to close"></div>
+  <div class="sheet-top">
+    <div>
+      <h2 class="sheet-title" id="formTitle"></h2>
+      <p class="sheet-sub" id="formSub"></p>
+    </div>
+    <button class="sheet-x" id="formClose" type="button" aria-label="Close without saving">
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="M6 6l12 12"/><path d="M18 6L6 18"/>
+      </svg>
+    </button>
+  </div>
+  <form class="sheet-scroll" id="formBody" novalidate>
+    <label class="fld"><span>Name</span>
+      <input id="f-name" type="text" autocomplete="off" autocapitalize="words" required>
+    </label>
+    <div class="fld-row">
+      <label class="fld"><span>Time</span>
+        <input id="f-time" type="text" autocomplete="off" placeholder="3:45 PM">
+      </label>
+      <label class="fld"><span>Day</span>
+        <select id="f-day"></select>
+      </label>
+    </div>
+    <label class="fld"><span>Cluster</span>
+      <input id="f-cluster" type="text" autocomplete="off" list="clusterList"
+             placeholder="Walking group">
+    </label>
+    <datalist id="clusterList"></datalist>
+    <label class="fld"><span>Hours</span>
+      <input id="f-hours" type="text" autocomplete="off" placeholder="Daily 11–5">
+    </label>
+    <label class="fld"><span>Cost</span>
+      <input id="f-cost" type="text" autocomplete="off" placeholder="Free">
+    </label>
+    <label class="fld"><span>Notes</span>
+      <textarea id="f-notes" rows="3"></textarea>
+    </label>
+    <label class="fld"><span>Priority</span>
+      <select id="f-priority"></select>
+    </label>
+    <div class="form-acts">
+      <button type="submit" class="btn btn-primary" id="f-save">Save</button>
+      <button type="button" class="btn btn-quiet" id="f-cancel">Cancel</button>
+    </div>
+    <div class="form-danger" id="f-danger">
+      <button type="button" class="btn btn-danger" id="f-skip">Skip this stopover</button>
+      <p class="hint">Soft delete — it stays in the day, dimmed, and can be brought back.</p>
+    </div>
+  </form>
+</section>
+
+<!-- find me something -->
+<section class="sheet" id="findSheet" role="dialog" aria-modal="true"
+         aria-labelledby="findTitle" hidden>
+  <div class="grabber" id="findGrab" role="button" tabindex="-1"
+       aria-label="Drag down to close"></div>
+  <div class="sheet-top">
+    <div>
+      <h2 class="sheet-title" id="findTitle">Find me something</h2>
+      <p class="sheet-sub" id="findSub"></p>
+    </div>
+    <button class="sheet-x" id="findClose" type="button" aria-label="Close">
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="M6 6l12 12"/><path d="M18 6L6 18"/>
+      </svg>
+    </button>
+  </div>
+  <div class="sheet-scroll" id="findBody"></div>
+</section>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

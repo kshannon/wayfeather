@@ -1,0 +1,827 @@
+/* ============================================================================
+   Wayfeather — app stylesheet                                   DESIGN.md §5
+   Soft Cards v3 components, given iOS bones: large-title header that condenses
+   into a compact centered nav bar, translucent 49pt tab bar, inset-grouped
+   lists, bottom sheets with a grabber, 44pt minimum targets.
+   ========================================================================= */
+
+/* ─── 1. BASE ─────────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none !important}
+html{-webkit-text-size-adjust:100%;scrollbar-gutter:stable}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,system-ui,"Segoe UI",Roboto,
+              "Helvetica Neue",Arial,sans-serif;
+  font-size:var(--t-body);
+  line-height:1.45;
+  letter-spacing:var(--track-body);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+body.is-locked{overflow:hidden}
+h1,h2,h3,h4,p{margin:0}
+a{color:inherit}
+button{font:inherit;color:inherit;background:none;border:0;margin:0;padding:0}
+/* no tap-highlight flash anywhere, and controls never select as text */
+button,a,label,.navtab,.dblock,.chip,.ilink,.pin,.tag-m2,.grabber{
+  -webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none;user-select:none;
+  touch-action:manipulation;
+}
+input,select,textarea{font:inherit;color:inherit;-webkit-user-select:text;user-select:text}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:var(--r-sm)}
+svg{display:block}
+.wrap{
+  max-width:640px;margin:0 auto;
+  padding-left:max(16px, env(safe-area-inset-left));
+  padding-right:max(16px, env(safe-area-inset-right));
+}
+.u-tab-num{font-variant-numeric:tabular-nums}
+.u-sr{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0;
+}
+
+/* ─── 2. SHELL + PULL-TO-REFRESH ──────────────────────────────────────────── */
+/* .shell paints the ground so the fixed indicator behind it is only visible in
+   the gap opened by the pull. Nothing position:fixed may live inside it — a
+   transformed ancestor would become its containing block. */
+.shell{position:relative;z-index:1;background:var(--ground);min-height:100vh}
+.shell.is-pulling{transform:translate3d(0,var(--pull,0px),0)}
+@media (prefers-reduced-motion: no-preference){
+  .shell.is-settling{transition:transform .34s var(--ease-out)}
+}
+.ptr{
+  position:fixed;z-index:0;left:0;right:0;top:var(--safe-t);
+  height:104px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:7px;pointer-events:none;
+  opacity:var(--ptr-o,0);
+}
+.ptr-ring{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--surface);box-shadow:var(--card-ring),var(--e1);
+  display:flex;align-items:center;justify-content:center;color:var(--ink-2);
+  transform:scale(var(--ptr-s,.65));
+}
+.ptr-arrow{transform:rotate(var(--ptr-r,0deg));transform-origin:50% 50%}
+.ptr-spin{display:none}
+.ptr.is-busy .ptr-arrow{display:none}
+.ptr.is-busy .ptr-spin{display:block}
+.ptr.is-busy .ptr-ring{transform:scale(1)}
+@media (prefers-reduced-motion: no-preference){
+  .ptr-ring{transition:transform .16s ease}
+  .ptr-arrow{transition:transform .18s ease}
+  .ptr.is-busy .ptr-spin{animation:wf-spin .85s linear infinite;transform-origin:50% 50%}
+}
+@keyframes wf-spin{to{transform:rotate(360deg)}}
+.ptr-label{
+  font-size:var(--t-caption2);font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--ink-3);
+}
+
+/* ─── 3. VIEWS ────────────────────────────────────────────────────────────── */
+.view{display:none}
+.view.is-on{display:block}
+.view-map.is-on{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+
+/* ─── 4. NAV BAR (large title condenses into it) ──────────────────────────── */
+/* One bar for the whole app; its title text is swapped per view. At the top of
+   a view it is invisible chrome floating over the ground — only the right-hand
+   control shows. Once the view's large title scrolls under it, the material,
+   the hairline and the compact title fade in. */
+.navbar{
+  position:fixed;z-index:50;top:0;left:0;right:0;
+  height:var(--nav-total);
+  padding-top:var(--safe-t);
+  pointer-events:none;
+}
+.navbar-mat{
+  position:absolute;inset:0;
+  background:var(--mat-bg);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  backdrop-filter:saturate(180%) blur(20px);
+  box-shadow:inset 0 calc(var(--hairline) * -1) 0 rgba(23,23,26,.14);
+  opacity:0;
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .navbar-mat{background:var(--mat-bg-solid)}
+}
+.navbar-row{
+  position:relative;height:var(--nav-h);
+  max-width:640px;margin:0 auto;
+  padding-left:max(16px, env(safe-area-inset-left));
+  padding-right:max(16px, env(safe-area-inset-right));
+  display:flex;align-items:center;justify-content:flex-end;
+}
+.navbar-title{
+  position:absolute;left:56px;right:56px;top:0;height:var(--nav-h);
+  display:flex;align-items:center;justify-content:center;
+  font-size:var(--t-body);font-weight:600;letter-spacing:var(--track-body);
+  color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  opacity:0;transform:translateY(7px);
+}
+.navbar-actions{position:relative;display:flex;align-items:center;gap:var(--s2);
+  pointer-events:auto}
+.navbar.is-condensed .navbar-mat{opacity:1}
+.navbar.is-condensed .navbar-title{opacity:1;transform:none}
+@media (prefers-reduced-motion: no-preference){
+  .navbar-mat{transition:opacity .22s ease}
+  .navbar-title{transition:opacity .22s ease, transform .22s ease}
+}
+/* The refresh control reads on the bare ground as well as on the material. */
+.iconbtn{
+  flex:0 0 auto;width:var(--s8);height:var(--s8);border-radius:var(--r-md);
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface);color:var(--ink-2);
+  box-shadow:var(--card-ring),var(--e1);cursor:pointer;
+}
+.iconbtn:active{background:var(--surface-2)}
+
+/* ─── 5. LARGE TITLE HEADER ───────────────────────────────────────────────── */
+.lt-head{padding-top:calc(var(--nav-total) + var(--s2));padding-bottom:var(--s4)}
+.lt-eyebrow{
+  font-size:var(--t-footnote);font-weight:600;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--ink-3);
+  min-height:22px;display:flex;align-items:center;
+}
+.lt{
+  font-size:clamp(var(--t-title1),8.6vw,var(--t-large));
+  font-weight:700;letter-spacing:var(--track-large);line-height:1.08;
+}
+.lt-sub{margin-top:var(--s2);font-size:var(--t-subhead);color:var(--ink-2);line-height:1.4}
+/* the base line is a real Apple Maps deep link — 44px tall, its own row */
+.lt-base{
+  display:inline-flex;align-items:center;gap:6px;
+  min-height:var(--s8);padding-right:10px;
+  font-size:var(--t-footnote);color:var(--ink-2);text-decoration:none;
+}
+.lt-base .lbl{text-decoration:underline;text-decoration-color:var(--hair-2);
+  text-underline-offset:3px}
+.lt-base svg{color:var(--accent)}
+.lt-base:active .lbl{text-decoration-color:var(--accent)}
+
+/* ─── 6. DAY STRIP — adjoined equal blocks ────────────────────────────────── */
+/* The 1px separators are the container's own background showing through a 1px
+   flex gap, so the rules read identically between, around and outside the
+   blocks — including next to a filled (selected) block. */
+.daybar{
+  position:sticky;top:var(--nav-total);z-index:30;
+  background:var(--mat-bg);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  backdrop-filter:saturate(180%) blur(20px);
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .daybar{background:var(--mat-bg-solid)}
+}
+.daybar-inner{padding-top:10px;padding-bottom:10px}
+.daystrip{
+  display:flex;gap:1px;
+  background:var(--hair-2);
+  border:1px solid var(--hair-2);
+  border-radius:14px;
+  overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  box-shadow:var(--e1);
+}
+.daystrip::-webkit-scrollbar{display:none}
+.dblock{
+  position:relative;
+  flex:1 1 0;min-width:72px;min-height:52px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;padding:6px 4px;
+  background:var(--surface);color:var(--ink);cursor:pointer;
+}
+/* the strip clips its overflow, so focus rings have to live inside the block */
+.dblock:focus-visible{outline:2px solid var(--focus);outline-offset:-3px;border-radius:0}
+.dblock-label{font-size:var(--t-caption2);font-weight:700;letter-spacing:.06em;
+  color:var(--ink-2)}
+.dblock-num{font-size:var(--t-body);font-weight:600;letter-spacing:var(--track-body);
+  line-height:1.1}
+.dblock-done{
+  position:absolute;top:5px;right:6px;
+  font-size:var(--t-caption2);font-weight:700;line-height:1;color:var(--done);
+}
+.dblock:active{background:var(--surface-2)}
+.dblock.is-sel{background:var(--accent)}
+.dblock.is-sel .dblock-label,.dblock.is-sel .dblock-num{color:var(--on-accent)}
+.dblock.is-sel .dblock-done{color:var(--on-accent)}
+/* complete day: neutral grey, still tappable, still >= 4.5:1 in both states */
+.dblock.is-done:not(.is-sel){background:var(--surface-2)}
+.dblock.is-done:not(.is-sel) .dblock-num{color:var(--ink-2);font-weight:500}
+.dblock.is-done.is-sel{background:var(--done)}
+.dblock.is-done.is-sel .dblock-label,
+.dblock.is-done.is-sel .dblock-num,
+.dblock.is-done.is-sel .dblock-done{color:var(--on-done)}
+@media (prefers-reduced-motion: no-preference){
+  .dblock{transition:background-color .18s ease}
+  .dblock-label,.dblock-num,.dblock-done{transition:color .18s ease}
+}
+
+/* ─── 7. REFRESH STAMP + STALE BANNER ─────────────────────────────────────── */
+.stamp{
+  display:flex;justify-content:flex-end;align-items:center;gap:6px;
+  padding:10px 2px 0;
+  font-size:var(--t-caption2);font-weight:500;color:var(--ink-3);
+}
+.stamp b{font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.stale{
+  display:flex;align-items:center;gap:var(--s2);
+  margin-top:var(--s3);padding:10px var(--s3);
+  border-radius:var(--r-btn);
+  background:var(--warn-bg);color:var(--warn-ink);
+  font-size:var(--t-footnote);font-weight:600;line-height:1.35;
+}
+.stale svg{flex:0 0 auto}
+
+/* ─── 8. DAY PANEL ────────────────────────────────────────────────────────── */
+.day{display:none;padding-bottom:var(--s7)}
+.day.is-on{display:block}
+.dayhead{
+  background:var(--tint);
+  border-radius:var(--r-xl);
+  padding:var(--s4);
+  margin:var(--s3) 0 var(--s6);
+}
+.dayhead-main{display:flex;gap:var(--s3);align-items:flex-start}
+.dayhead-mark{
+  flex:0 0 auto;width:34px;height:34px;border-radius:var(--r-md);
+  background:var(--accent);color:var(--on-accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:var(--t-body);font-weight:700;line-height:1;
+}
+.dayhead h2{font-size:var(--t-title2);font-weight:700;letter-spacing:var(--track-title);
+  line-height:1.2}
+.dayhead p{margin-top:var(--s1);font-size:var(--t-subhead);color:var(--ink-2);line-height:1.4}
+.dayhead-foot{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:var(--s3);margin-top:var(--s3);
+}
+.dayhead-count{
+  font-size:var(--t-caption2);font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--accent);
+}
+
+/* ─── 9. BUTTON LANGUAGE (rounded rects, app-wide — no pills) ─────────────── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  min-height:46px;padding:0 var(--s4);
+  border-radius:var(--r-btn);cursor:pointer;
+  font-size:var(--t-footnote);font-weight:700;letter-spacing:.01em;white-space:nowrap;
+}
+.btn-primary{background:var(--accent);color:var(--on-accent)}
+.btn-primary:active{filter:brightness(.9)}
+.btn-quiet{background:var(--surface-2);color:var(--ink-2);
+  box-shadow:inset 0 0 0 1px var(--hair-2)}
+.btn-quiet:active{background:var(--neutral-bg)}
+.btn-card{background:var(--surface);color:var(--accent);
+  box-shadow:var(--card-ring),var(--e1)}
+.btn-card:active{background:var(--accent);color:var(--on-accent)}
+.btn-soft{background:var(--soft);color:var(--accent);min-height:var(--s8);
+  padding:0 var(--s3);font-size:var(--t-caption)}
+.btn-soft:active{background:var(--accent);color:var(--on-accent)}
+.btn-danger{background:var(--bad-bg);color:var(--bad-ink);
+  box-shadow:inset 0 0 0 1px rgba(163,38,26,.18)}
+.btn-danger:active{filter:brightness(.96)}
+.btn[disabled]{opacity:1;cursor:default}
+@media (prefers-reduced-motion: no-preference){
+  .btn{transition:background-color .14s ease,color .14s ease}
+}
+
+/* ─── 10. CLUSTER ─────────────────────────────────────────────────────────── */
+.cluster{margin-bottom:var(--s6)}
+.cluster-head{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
+  margin:0 var(--s1) var(--s3);
+}
+.cluster-name{
+  display:flex;align-items:center;gap:var(--s2);min-width:0;
+  font-size:var(--t-footnote);font-weight:600;letter-spacing:.01em;color:var(--ink-2);
+}
+.cluster-dot{width:8px;height:8px;flex:0 0 auto;border-radius:var(--r-pill);
+  background:var(--accent)}
+.stops{display:flex;flex-direction:column;gap:var(--s3)}
+
+/* ─── 11. STOPOVER CARD ───────────────────────────────────────────────────── */
+.card{
+  position:relative;
+  background:var(--surface);
+  border-radius:var(--r-card);
+  padding:var(--s4);
+  box-shadow:var(--card-ring),var(--e2);
+  cursor:pointer;
+}
+@media (min-width:640px){ .card{padding:var(--s5)} }
+.card-top{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:var(--s2);min-height:26px;margin-bottom:var(--s2);
+}
+.card-time{display:flex;align-items:center;gap:7px;min-width:0}
+/* the time is the loudest thing in the row — you read it standing on a corner */
+.time{
+  font-size:var(--t-body);font-weight:600;letter-spacing:var(--track-body);
+  color:var(--ink-2);white-space:nowrap;line-height:1.2;
+}
+.card.p-fixed .time{color:var(--accent)}
+.resv{flex:0 0 auto;display:flex;color:var(--accent)}
+.card-tools{display:flex;align-items:center;gap:var(--s1);flex:0 0 auto}
+.editbtn{
+  flex:0 0 auto;width:var(--s8);height:var(--s8);
+  margin:-11px -10px -11px 0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-btn);color:var(--ink-3);cursor:pointer;
+}
+.editbtn:active{background:var(--surface-2);color:var(--ink)}
+.card h3{font-size:var(--t-body);font-weight:600;letter-spacing:var(--track-body);
+  line-height:1.3}
+.meta{margin-top:var(--s1);font-size:var(--t-subhead);color:var(--ink-3);line-height:1.4;
+  overflow-wrap:anywhere}
+/* separators inherit the meta color: a dimmer middot would be a visible glyph
+   below 4.5:1, and the spacing already does the de-emphasis */
+.meta .dot{padding:0 5px}
+.hours{
+  display:inline-flex;align-items:center;gap:5px;margin-top:var(--s3);
+  padding:5px 10px;border-radius:var(--r-sm);
+  background:var(--ok-bg);color:var(--ok-ink);
+  font-size:var(--t-footnote);font-weight:600;
+}
+.hours.is-bad{background:var(--bad-bg);color:var(--bad-ink)}
+.warnline{
+  display:flex;gap:7px;margin-top:var(--s3);
+  padding:9px 11px;border-radius:var(--r-md);
+  background:var(--warn-bg);color:var(--warn-ink);
+  font-size:var(--t-footnote);font-weight:600;line-height:1.35;
+}
+.warnline b{font-weight:800}
+.notes{margin-top:var(--s3);font-size:var(--t-subhead);color:var(--ink-2);line-height:1.5}
+
+/* ─── 12. CHIPS (★ Must + quiet Maybe only) ───────────────────────────────── */
+.chip{
+  flex:0 0 auto;display:inline-flex;align-items:center;
+  padding:4px 9px;border-radius:7px;
+  font-size:var(--t-caption2);font-weight:700;letter-spacing:.03em;white-space:nowrap;
+}
+.chip-must {background:var(--gold-bg);color:var(--gold-ink)}
+.chip-maybe{background:transparent;color:var(--ink-2);
+  box-shadow:inset 0 0 0 1px var(--hair-2);font-weight:600}
+.card.p-must{box-shadow:0 0 0 1.5px var(--gold-bg),var(--e2)}
+/* priority:"skip" — a dimmed row state, no chip */
+.card.p-skip{
+  background:var(--surface-2);
+  box-shadow:none;
+  border:1px dashed var(--hair-2);
+  padding:calc(var(--s4) - 1px);
+}
+.card.p-skip h3{color:var(--ink-2);font-weight:500}
+.card.p-skip .hours{background:var(--neutral-bg);color:var(--ink-2)}
+
+/* ─── 13. ACTIONS + HANDLED STATES ────────────────────────────────────────── */
+.acts{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s4)}
+.act{
+  min-height:46px;border-radius:var(--r-btn);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:0 var(--s3);
+  font-size:var(--t-footnote);font-weight:700;letter-spacing:.01em;
+}
+.act-do{flex:2 1 55%;background:var(--accent);color:var(--on-accent)}
+.act-no{flex:1 1 32%;background:var(--surface-2);color:var(--ink-2);
+        box-shadow:inset 0 0 0 1px var(--hair-2)}
+.act-do:active{filter:brightness(.9)}
+.act-no:active{background:var(--neutral-bg)}
+/* Done and Skipped are one row: a state label plus an explicit Undo control,
+   so undo is a labelled button rather than "tap the status again". */
+.state-row{
+  display:flex;align-items:center;gap:var(--s3);margin-top:var(--s4);
+  padding:7px 8px 7px 12px;border-radius:var(--r-btn);
+  background:var(--tint);
+}
+.state-row.is-skip{background:var(--neutral-bg)}
+.state-lead{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto}
+.state-check{
+  width:22px;height:22px;flex:0 0 auto;border-radius:var(--r-pill);
+  background:var(--accent);color:var(--on-accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:var(--t-caption);font-weight:700;line-height:1;
+}
+.state-row.is-skip .state-check{background:var(--done);color:var(--on-done)}
+.state-text{font-size:var(--t-footnote);font-weight:700;color:var(--accent);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.state-row.is-skip .state-text{color:var(--ink-2)}
+.state-text .when{font-weight:600;font-variant-numeric:tabular-nums}
+.undo{
+  flex:0 0 auto;min-height:var(--s8);padding:0 14px;border-radius:var(--r-sm);
+  display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  background:var(--surface);color:var(--accent);
+  box-shadow:var(--card-ring),var(--e1);
+  font-size:var(--t-footnote);font-weight:700;
+}
+.state-row.is-skip .undo{color:var(--ink-2)}
+.undo:active{background:var(--surface-2)}
+
+/* handled card states */
+.card.is-visited{background:var(--surface-2);box-shadow:var(--card-ring)}
+.card.is-visited h3{color:var(--ink-2)}
+/* skipped recesses to flat grey — no lift at all */
+.card.is-skipped{background:var(--neutral-bg);box-shadow:none;
+  border:1px solid var(--hair);padding:calc(var(--s4) - 1px)}
+.card.is-skipped h3{color:var(--ink-2);font-weight:500}
+.card.is-skipped .time{color:var(--ink-3);font-weight:500}
+.card.is-skipped .resv{color:var(--ink-3)}
+.card.is-skipped .meta,.card.is-skipped .notes{color:var(--ink-3)}
+.card.is-skipped .hours{background:var(--surface-2);color:var(--ink-2)}
+.card.is-skipped .chip-must{background:var(--surface-2);color:var(--ink-2)}
+.card.is-skipped .ilink{background:var(--surface-2)}
+.card.is-skipped .state-row{background:var(--surface-2)}
+
+/* ─── 14. LINK TILES ──────────────────────────────────────────────────────── */
+/* one stroke width (1.7), every glyph drawn to the same ~16px optical box */
+.iconlinks{display:flex;gap:var(--s1);margin-top:var(--s4)}
+.ilink{
+  flex:1 1 0;min-width:0;max-width:104px;min-height:52px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  padding:7px 2px;border-radius:var(--r-md);
+  background:var(--surface-2);color:var(--ink);text-decoration:none;
+  box-shadow:inset 0 0 0 1px var(--hair);
+}
+.ilink b{font-size:var(--t-caption2);font-weight:700;letter-spacing:.01em;line-height:1;
+         color:var(--ink-2)}
+.ilink:active{background:var(--accent);color:var(--on-accent);box-shadow:none}
+.ilink:active b{color:var(--on-accent)}
+@media (prefers-reduced-motion: no-preference){
+  .ilink,.act,.undo{transition:background-color .14s ease,color .14s ease}
+}
+
+/* ─── 15. NOTE ROW (priority: note — quiet text, no chrome) ───────────────── */
+.noterow{
+  padding:var(--s3) var(--s4);
+  border-radius:var(--r-lg);
+  border:1px dashed var(--hair-2);
+  background:transparent;cursor:pointer;
+}
+.noterow-top{display:flex;align-items:baseline;gap:var(--s2);flex-wrap:wrap}
+.noterow-time{font-size:var(--t-footnote);font-weight:600;color:var(--ink-3)}
+.noterow-name{font-size:var(--t-subhead);font-weight:600;color:var(--ink-2)}
+.noterow-text{margin-top:var(--s1);font-size:var(--t-footnote);color:var(--ink-3);
+  line-height:1.5}
+
+/* ─── 16. LIST TAIL ───────────────────────────────────────────────────────── */
+.tail{display:flex;flex-direction:column;gap:var(--s2);margin-top:var(--s5)}
+.tail .btn{width:100%;min-height:50px;justify-content:flex-start;
+  font-size:var(--t-subhead)}
+.tail .btn .g{font-size:var(--t-body);line-height:1;width:18px;text-align:center}
+
+/* ─── 17. EMPTY + FOOTER ──────────────────────────────────────────────────── */
+.empty{
+  padding:var(--s6);border-radius:var(--r-lg);border:1px dashed var(--hair-2);
+  font-size:var(--t-footnote);color:var(--ink-3);text-align:center;
+}
+.bigempty{
+  margin-top:var(--s5);padding:var(--s6) var(--s5);
+  border-radius:var(--r-lg);background:var(--surface);
+  box-shadow:var(--card-ring),var(--e1);text-align:center;
+}
+.bigempty h2{font-size:var(--t-title3);font-weight:700;letter-spacing:var(--track-title)}
+.bigempty p{margin-top:var(--s2);font-size:var(--t-subhead);color:var(--ink-2);
+  line-height:1.5}
+.bigempty .btn{margin-top:var(--s4)}
+.foot{
+  padding-top:var(--s6);
+  padding-bottom:calc(var(--s7) + var(--tab-total));
+  border-top:1px solid var(--hair);margin-top:var(--s5);
+}
+.foot p{font-size:var(--t-footnote);color:var(--ink-3);line-height:1.55;text-align:center}
+
+/* ─── 18. BOTTOM TAB BAR (translucent material, 49pt + safe area) ─────────── */
+.tabbar{
+  position:fixed;z-index:60;left:0;right:0;bottom:0;
+  background:var(--mat-bg);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  backdrop-filter:saturate(180%) blur(20px);
+  box-shadow:inset 0 var(--hairline) 0 rgba(23,23,26,.14);
+  padding-bottom:var(--safe-b);
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .tabbar{background:var(--mat-bg-solid)}
+}
+.tabbar-row{
+  display:flex;max-width:640px;margin:0 auto;
+  padding-left:max(6px, env(safe-area-inset-left));
+  padding-right:max(6px, env(safe-area-inset-right));
+}
+.navtab{
+  flex:1 1 0;min-width:0;min-height:var(--tab-h);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  padding:5px 2px;border-radius:var(--r-btn);
+  color:var(--ink-3);cursor:pointer;
+}
+.navtab b{font-size:var(--t-caption2);font-weight:600;letter-spacing:.01em;line-height:1.1}
+.navtab[aria-selected="true"]{color:var(--accent)}
+.navtab[aria-selected="true"] b{font-weight:700}
+.navtab:active{background:var(--surface-2)}
+@media (prefers-reduced-motion: no-preference){
+  .navtab{transition:color .16s ease}
+}
+
+/* ─── 19. CONFETTI ────────────────────────────────────────────────────────── */
+/* One shared canvas over everything, pointer-events:none. It is only ever
+   unhidden by burst(), and burst() returns immediately under reduced motion —
+   the visited state is written before it is ever called. */
+.confetti{position:fixed;inset:0;z-index:95;pointer-events:none}
+
+/* ─── 20. TOAST ───────────────────────────────────────────────────────────── */
+.toast{
+  position:fixed;z-index:96;left:50%;
+  bottom:calc(var(--tab-total) + 14px);
+  transform:translateX(-50%);
+  display:flex;align-items:center;gap:var(--s3);
+  max-width:min(92vw,440px);
+  background:var(--ink);color:var(--surface);
+  padding:10px 12px 10px 16px;border-radius:var(--r-md);
+  font-size:var(--t-footnote);font-weight:600;
+  box-shadow:var(--e-float);
+}
+.toast-msg{min-width:0;flex:1 1 auto}
+.toast-undo{
+  flex:0 0 auto;min-height:var(--s8);padding:0 14px;border-radius:var(--r-sm);
+  background:rgba(255,255,255,.16);color:var(--surface);
+  font-size:var(--t-footnote);font-weight:700;cursor:pointer;
+}
+.toast-undo:active{background:rgba(255,255,255,.28)}
+@media (prefers-reduced-motion: no-preference){
+  .toast{transition:opacity .18s ease, transform .18s ease}
+  .toast.is-out{opacity:0;transform:translateX(-50%) translateY(8px)}
+}
+
+/* ─── 21. MAP TAB ─────────────────────────────────────────────────────────── */
+.maphead-row{display:flex;align-items:flex-start;gap:var(--s3)}
+.maphead .sub{margin-top:var(--s1);font-size:var(--t-footnote);color:var(--ink-2)}
+.mapdays{padding-bottom:var(--s2)}
+.mapbody{flex:1 1 auto;padding-bottom:var(--s4)}
+.nodes{list-style:none;margin:0;padding:var(--s4) 0 0}
+.node{position:relative;margin:0 0 14px}
+.node-btn{
+  display:flex;gap:var(--s3);align-items:stretch;width:100%;text-align:left;
+  cursor:pointer;border-radius:var(--r-md);padding:2px 4px;
+}
+.node-rail{flex:0 0 34px;position:relative;align-self:stretch}
+.node-rail::before{
+  content:"";position:absolute;left:50%;top:8px;bottom:-24px;
+  width:2px;margin-left:-1px;background:var(--rail);
+}
+.node:last-child .node-rail::before{display:none}
+.node:not(:last-child) .node-rail::after{
+  content:"";position:absolute;left:50%;bottom:-20px;margin-left:-5px;
+  width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;
+  border-top:7px solid var(--rail);
+}
+.node-dot{
+  position:absolute;left:50%;top:8px;margin-left:-15px;
+  width:30px;height:30px;border-radius:var(--r-pill);
+  display:flex;align-items:center;justify-content:center;
+  font-size:var(--t-caption);font-weight:700;line-height:1;
+  background:var(--surface);color:var(--ink-2);
+  box-shadow:inset 0 0 0 2px var(--rail);
+}
+.node.is-cur .node-dot{box-shadow:0 0 0 4px var(--soft), inset 0 0 0 2px var(--accent)}
+.node.is-visited .node-dot{background:var(--accent);color:var(--on-accent);box-shadow:none}
+.node.is-cur.is-visited .node-dot{box-shadow:0 0 0 4px var(--soft)}
+.node.is-skipped .node-dot{
+  background:var(--neutral-bg);color:var(--ink-2);box-shadow:inset 0 0 0 2px var(--hair-2);
+}
+.node.is-cur.is-skipped .node-dot{box-shadow:0 0 0 4px var(--surface-2), inset 0 0 0 2px var(--done)}
+.node-body{
+  flex:1 1 auto;min-width:0;padding:6px 0 8px;
+  display:flex;flex-direction:column;gap:2px;
+}
+.node.is-cur .node-body{
+  background:var(--surface);border-radius:var(--r-md);
+  box-shadow:var(--card-ring),var(--e1);padding:8px 12px 10px;margin-left:-4px;
+}
+.node-time{font-size:var(--t-caption2);font-weight:600;color:var(--ink-3)}
+.node-name{
+  font-size:var(--t-subhead);font-weight:600;color:var(--ink);line-height:1.25;
+  overflow-wrap:anywhere;
+}
+.node.is-skipped .node-name{color:var(--ink-2);font-weight:500}
+.node-state{font-size:var(--t-caption2);font-weight:700;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink-3)}
+.node.is-visited .node-state{color:var(--accent)}
+.mapsout{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  min-height:var(--s8);margin:var(--s4) 0 0;
+  border-radius:var(--r-btn);background:var(--surface);color:var(--ink-2);
+  box-shadow:var(--card-ring),var(--e1);
+  font-size:var(--t-footnote);font-weight:600;text-decoration:none;
+}
+/* The dock sticks above the tab bar for as long as the node line is longer than
+   the viewport, then comes to rest at the end of the list. */
+.dock{
+  position:sticky;z-index:20;
+  bottom:var(--tab-total);
+  margin-top:var(--s4);
+  background:var(--surface);
+  border-radius:var(--r-xl) var(--r-xl) 0 0;
+  box-shadow:0 -1px 0 var(--hair), 0 -10px 30px rgba(23,23,26,.08);
+}
+.dock-in{
+  max-width:640px;margin:0 auto;
+  padding-left:max(16px, env(safe-area-inset-left));
+  padding-right:max(16px, env(safe-area-inset-right));
+}
+.dock-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:var(--s2);padding:var(--s2) 0 0;
+}
+.navbtn{
+  flex:0 0 auto;width:46px;height:46px;border-radius:var(--r-btn);
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface-2);color:var(--ink-2);cursor:pointer;
+}
+.navbtn:active{background:var(--accent);color:var(--on-accent)}
+.dock-count{
+  font-size:var(--t-caption2);font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-3);text-align:center;
+}
+.dock-body{max-height:52vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding-top:var(--s2)}
+.dock-pad{padding-bottom:var(--s4)}
+.dock-top{display:flex;align-items:center;justify-content:space-between;gap:var(--s3)}
+.dock-name{font-size:var(--t-body);font-weight:600;letter-spacing:var(--track-body);
+  line-height:1.25;margin-top:2px}
+.dock-note{
+  margin-top:var(--s2);font-size:var(--t-footnote);color:var(--ink-2);line-height:1.45;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.map-pad{height:var(--tab-total)}
+
+/* ─── 22. PAGES + INSET-GROUPED LISTS (Trips / Settings) ──────────────────── */
+.page{padding-bottom:calc(var(--s7) + var(--tab-total))}
+.sect{margin-top:var(--s6)}
+.sect-h{
+  font-size:var(--t-footnote);font-weight:600;letter-spacing:.02em;
+  color:var(--ink-3);margin:0 var(--s4) var(--s2);
+}
+/* iOS inset-grouped table: one rounded container, hairline separators between
+   rows, no gaps — dressed in Soft Cards tokens (white surface, soft shadow). */
+.inset{
+  background:var(--surface);
+  border-radius:var(--r-lg);
+  box-shadow:var(--card-ring),var(--e1);
+  overflow:hidden;
+}
+.inset > * + *{box-shadow:inset 0 var(--hairline) 0 var(--hair)}
+.rowcard{
+  display:flex;align-items:center;gap:var(--s3);width:100%;text-align:left;
+  background:transparent;
+  padding:var(--s3) var(--s4);min-height:56px;cursor:pointer;
+}
+.rowcard:active{background:var(--surface-2)}
+.rowcard-main{flex:1 1 auto;min-width:0}
+.rowcard-name{display:block;font-size:var(--t-body);font-weight:500;
+  letter-spacing:var(--track-body);line-height:1.3}
+.rowcard-sub{display:block;margin-top:2px;font-size:var(--t-footnote);color:var(--ink-3);
+  line-height:1.35}
+.rowcard.is-active .rowcard-name{color:var(--accent);font-weight:600}
+.pin{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;
+  padding:4px 9px;border-radius:7px;
+  background:var(--accent);color:var(--on-accent);
+  font-size:var(--t-caption2);font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+}
+.chev{flex:0 0 auto;color:var(--ink-3);display:flex}
+/* disabled M2 placeholder rows: not buttons, so nothing to focus and nothing to
+   press. They still hold >= 4.5:1 text; "disabled" is carried by the M2 tag. */
+.rowcard.is-m2{background:var(--surface-2);cursor:default}
+.rowcard.is-m2 .rowcard-name{color:var(--ink-2)}
+.tag-m2{
+  flex:0 0 auto;padding:3px 8px;border-radius:6px;
+  background:var(--neutral-bg);color:var(--ink-2);
+  box-shadow:inset 0 0 0 1px var(--hair-2);
+  font-size:var(--t-caption2);font-weight:700;letter-spacing:.06em;
+}
+.swatches{display:flex;gap:var(--s2)}
+.swatch{
+  flex:1 1 0;display:flex;align-items:center;gap:var(--s3);
+  padding:var(--s3) var(--s4);min-height:60px;border-radius:var(--r-lg);
+  background:var(--surface);box-shadow:var(--card-ring),var(--e1);cursor:pointer;
+}
+.swatch-chip{
+  width:28px;height:28px;flex:0 0 auto;border-radius:var(--r-sm);
+  box-shadow:inset 0 0 0 1px rgba(23,23,26,.12);
+}
+.swatch-name{font-size:var(--t-subhead);font-weight:600}
+.swatch[aria-pressed="true"]{box-shadow:0 0 0 1.5px var(--accent),var(--e1)}
+.swatch[aria-pressed="true"] .swatch-name{color:var(--accent)}
+.about{
+  padding:var(--s4);border-radius:var(--r-lg);
+  background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--hair);
+}
+.about p{font-size:var(--t-footnote);color:var(--ink-2);line-height:1.6}
+.about b{font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.sect-note{margin:var(--s2) var(--s4) 0;font-size:var(--t-footnote);color:var(--ink-3);
+  line-height:1.45}
+
+/* ─── 23. SHEETS (edit / add / find) ──────────────────────────────────────── */
+/* iOS bottom sheet: dimmed scrim, 12px top radii, centred grabber, spring ease.
+   Only transform and opacity animate. */
+.scrim{
+  position:fixed;inset:0;z-index:78;
+  background:var(--scrim);
+  opacity:0;
+}
+.scrim.is-in{opacity:1}
+@media (prefers-reduced-motion: no-preference){
+  .scrim{transition:opacity .26s var(--ease-spring)}
+}
+.sheet{
+  position:fixed;z-index:80;left:0;right:0;bottom:0;
+  top:max(var(--s5), calc(var(--safe-t) + 10px));
+  background:var(--ground);
+  border-radius:var(--r-sheet) var(--r-sheet) 0 0;
+  box-shadow:var(--e-sheet);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  transform:translateY(100%);
+}
+.sheet.is-in{transform:translateY(var(--drag,0px))}
+@media (prefers-reduced-motion: no-preference){
+  .sheet{transition:transform .34s var(--ease-spring)}
+  .sheet.is-dragging{transition:none}
+}
+@media (prefers-reduced-motion: reduce){
+  .sheet{transform:none;visibility:hidden}
+  .sheet.is-in{visibility:visible}
+}
+.grabber{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  height:22px;background:var(--tint);cursor:grab;touch-action:none;
+}
+.grabber::before{
+  content:"";width:36px;height:5px;border-radius:var(--r-pill);
+  background:var(--hair-2);
+}
+.sheet-top{
+  flex:0 0 auto;display:flex;align-items:flex-start;gap:var(--s3);
+  background:var(--tint);
+  padding:var(--s2) max(16px, env(safe-area-inset-right)) var(--s4)
+          max(16px, env(safe-area-inset-left));
+}
+.sheet-title{font-size:var(--t-title3);font-weight:700;letter-spacing:var(--track-title);
+  line-height:1.2}
+.sheet-sub{margin-top:2px;font-size:var(--t-footnote);color:var(--ink-2)}
+.sheet-x{
+  flex:0 0 auto;margin-left:auto;width:var(--s8);height:var(--s8);
+  border-radius:var(--r-md);
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface);color:var(--ink-2);
+  box-shadow:var(--card-ring),var(--e1);cursor:pointer;
+}
+.sheet-x:active{background:var(--surface-2)}
+.sheet-scroll{
+  flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  padding:var(--s5) max(16px, env(safe-area-inset-right))
+          calc(var(--s6) + var(--safe-b))
+          max(16px, env(safe-area-inset-left));
+}
+.fld{display:flex;flex-direction:column;gap:6px;margin-bottom:var(--s4)}
+.fld > span{
+  font-size:var(--t-footnote);font-weight:600;letter-spacing:.01em;
+  color:var(--ink-3);
+}
+.fld input,.fld select,.fld textarea{
+  width:100%;min-height:48px;padding:11px 13px;
+  border-radius:var(--r-btn);border:1px solid var(--hair-2);
+  background:var(--surface);color:var(--ink);
+  font-size:var(--t-body);line-height:1.35;
+  -webkit-appearance:none;appearance:none;
+}
+.fld textarea{min-height:84px;resize:vertical}
+.fld select{
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2356565C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9.5l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 11px center;background-size:18px;
+  padding-right:38px;
+}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--accent)}
+.fld-row{display:flex;gap:var(--s3)}
+.fld-row .fld{flex:1 1 0;min-width:0}
+.form-acts{display:flex;gap:var(--s2);margin-top:var(--s5)}
+.form-acts .btn{flex:1 1 0;font-size:var(--t-subhead)}
+.form-acts .btn-primary{flex:2 1 0}
+.form-danger{margin-top:var(--s4);padding-top:var(--s4);border-top:1px solid var(--hair)}
+.form-danger .btn{width:100%;font-size:var(--t-subhead)}
+.form-danger .hint{margin-top:var(--s2);font-size:var(--t-footnote);color:var(--ink-3);
+  line-height:1.5;text-align:center}
+.findrow{
+  display:flex;align-items:center;gap:var(--s3);
+  background:var(--surface);border-radius:var(--r-lg);
+  box-shadow:var(--card-ring),var(--e1);
+  padding:var(--s3) var(--s3) var(--s3) var(--s4);margin-bottom:var(--s2);
+}
+.findrow-main{flex:1 1 auto;min-width:0}
+.findrow-name{display:block;font-size:var(--t-subhead);font-weight:600;line-height:1.3}
+.findrow-sub{display:block;margin-top:2px;font-size:var(--t-footnote);color:var(--ink-3);
+  line-height:1.45}
+.findrow .btn{flex:0 0 auto;min-height:var(--s8);padding:0 var(--s4)}

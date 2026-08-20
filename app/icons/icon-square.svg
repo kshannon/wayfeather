@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"
+     role="img" aria-label="Wayfeather">
+  <title>Wayfeather</title>
+  <!-- Full-bleed square source for the PNGs. iOS masks apple-touch-icon.png to
+       its own squircle and Android masks the maskable manifest icon, so the
+       corners must be painted, not rounded, and the mark must sit inside the
+       safe zone (the centre 80% circle): the W's farthest point is ~186px from
+       centre against a 205px safe radius. -->
+  <rect x="0" y="0" width="512" height="512" fill="#0B6C8C"/>
+  <path d="M128 170 L196 342 L256 238 L316 342 L384 170"
+        fill="none" stroke="#F6F5F2" stroke-width="46"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

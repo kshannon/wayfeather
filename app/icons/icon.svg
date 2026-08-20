@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"
+     role="img" aria-label="Wayfeather">
+  <title>Wayfeather</title>
+  <!-- The app mark: Soft Cards accent (cerulean) field, warm off-white "W".
+       Rounded-square form for the browser tab and the manifest SVG entry; the
+       rasterized PNGs come from icon-square.svg so iOS and Android can apply
+       their own masks to a full-bleed square. Geometry is identical. -->
+  <rect x="0" y="0" width="512" height="512" rx="114" ry="114" fill="#0B6C8C"/>
+  <path d="M128 170 L196 342 L256 238 L316 342 L384 170"
+        fill="none" stroke="#F6F5F2" stroke-width="46"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

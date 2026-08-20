@@ -1,0 +1,15 @@
+{
+  "name": "wayfeather",
+  "private": true,
+  "type": "module",
+  "description": "Dev-only tooling for Wayfeather. The app itself is build-free vanilla ES modules served statically from /app — nothing here ships to the browser.",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "vitest": "^4.1.11"
+  }
+}

@@ -16,4 +16,6 @@ Read DESIGN.md before writing code; it is the spec. Current milestone: M1 (DESIG
   the losing candidates without asking.
 - archive/ is frozen; don't read or modify it.
 - Tests: Vitest, pure functions only (hours parser, slugs, URL builders, solver). No UI test harness.
+- Gotcha: JS String.replace treats `$$` in the replacement as an escape — cost values like "$$"
+  silently corrupt. Use a function replacer (or concatenation) when splicing trip JSON into anything.
 - Commit style: `feat:`/`fix:`/`data:` prefixes; data commits from the app itself use `add:`/`edit:` + place + day.

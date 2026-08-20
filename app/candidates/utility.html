@@ -1,0 +1,977 @@
+<!--
+DESIGN NOTES — Candidate C: Utility
+================================================================================
+A crisp modern product tool (Linear / Things 3 lineage) for a two-person trip
+guide you read one-handed, standing on a street corner. Dense but calm.
+
+TOKENS — COLOR
+  Neutrals are the whole palette. Light: --bg #FAFAFB (page) / --surface #FFFFFF
+  (rows) / --surface-2 #F2F3F5 (recessed + hover) / --border #E3E5E9 (hairline)
+  / --border-strong #CDD1D8. Text ramp --text #14161A, --text-2 #555B65,
+  --text-3 #646A74 — the ramp is floored so its LAST step still clears 4.5:1
+  on the RECESSED surface (#646A74 on --surface-2 = 4.9:1), not merely on
+  white, because skip/visited rows sit on that step. Dark mode is a deliberate
+  second design, not an inversion: --bg #0C0D10, --surface #141619 (rows sit
+  ABOVE the page, the reverse of light mode), borders lifted to #262A31, text
+  ramp #ECEEF2 / #A6ADB8 / #8A919C. One semantic pair only: --warn (hours/warn
+  lines). No greens, blues, or brand hues anywhere in the static palette.
+
+  DATA-DRIVEN DAY COLOR. The only chromatic ink in the UI is trip.days[].color.
+  Raw hex is never painted under text — trip colors are chosen for wayfinding,
+  not contrast (#00A1DE gives white text ~3:1). Instead, on every day switch JS
+  derives three safe tokens from the hex, for BOTH schemes, and sets them as
+  custom properties (--acc-*-l / --acc-*-d; CSS picks the pair by media query,
+  so a live scheme change needs no re-render):
+      --acc-soft  12% tint over the surface (light) / 24% over it (dark)
+      --acc-ink   the hex walked toward ink/white until >= 4.5:1 on --acc-soft
+      --acc-line  the hex walked until >= 3:1 on --bg (borders, dots, bars)
+  Accent appears in exactly five places — day bullet chip, tab dots + the 2px
+  active tab indicator, the 3px left rule on `fixed` (booked, immovable) rows,
+  the `if-close` chip dot, and the visited check. Nothing else is colored.
+  Second accent: ink itself (--text), filled, reserved for the `must` chip.
+
+TOKENS — TYPE
+  System stacks only (-apple-system / Segoe UI / Roboto), no webfonts, no
+  network. Scale: 10 (chips) · 11 (micro-labels, cluster heads, actions) ·
+  12 (meta, time) · 13 (notes) · 15 (place name, day title) · 20 (trip name).
+  Weights 400/500/600/650. Times and counts run font-variant-numeric:
+  tabular-nums so the left time column aligns as a real column.
+
+TOKENS — SPACE / SHAPE
+  Strict 4/8 grid: 4 8 12 16 20 24 32, exposed as --s1..--s8. Radii 4 (chips)
+  6 (buttons) 8 (row groups) 12 (tab bar at width). Gutter --pad steps
+  12 -> 16 -> 20 as the viewport grows; column caps at 640px and centers.
+
+BORDER / ELEVATION RULES
+  Zero drop shadows. Depth is 1px hairlines plus background steps only:
+  a cluster is one bordered, radius-8, overflow-hidden group; rows inside are
+  divided by 1px rules, never boxed individually; the sticky bar and tab bar
+  are solid --bg separated by a single hairline. Selection/visited/skip states
+  are background steps to --surface-2, never shadows or opacity (opacity would
+  break the 4.5:1 floor — `skip` dims by moving DOWN the text ramp instead).
+
+RATIONALE
+  The field question is "what's next, is it open, how do I get there" — so the
+  answer is a table, not a stack of cards: a fixed tabular time column on the
+  left, one scannable line of "type · address · cost", and an hours chip that
+  turns red on its own (plus a glyph, never color alone). Day switching lives
+  in a bottom tab bar because this app is used one-handed on a sidewalk and the
+  top of a 6.7" phone is not reachable; the top bar shrinks to a 52px echo of
+  the current day that pins while you scroll. Every link is a 44px segment in a
+  divided action bar welded to the row's bottom edge, which buys real tap
+  targets without inflating the row itself. Restraint is the point: the day's
+  own color is the only hue on screen, so it always means "which day am I in".
+================================================================================
+-->
+<!doctype html>
+<html lang="en" class="accent-scope">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#FAFAFB" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0C0D10" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Wayfeather — Candidate C: Utility</title>
+<style>
+:root{
+  /* ---- neutrals (light) ---- */
+  --bg:#FAFAFB;
+  --surface:#FFFFFF;
+  --surface-2:#F2F3F5;
+  --surface-3:#E9EBEF;
+  --border:#E3E5E9;
+  --border-strong:#CDD1D8;
+  --text:#14161A;
+  --text-2:#555B65;
+  --text-3:#646A74;
+  --inv:#FFFFFF;
+  --focus:#14161A;
+  /* ---- semantic (light) ---- */
+  --warn:#A82018;
+  --warn-soft:#FDEDEB;
+  --warn-line:#F1C7C2;
+  /* ---- day accent: raw + derived (JS sets the -l/-d pairs) ---- */
+  --accent:#565A5C;
+  --acc-soft-l:#F2F3F5; --acc-ink-l:#14161A; --acc-line-l:#CDD1D8;
+  --acc-soft-d:#1A1D22; --acc-ink-d:#ECEEF2; --acc-line-d:#3A404A;
+  /* ---- type ---- */
+  --f:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Ubuntu,Cantarell,system-ui,sans-serif;
+  /* ---- 4/8 spacing grid ---- */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s8:32px;
+  --r-xs:4px; --r-sm:6px; --r:8px; --r-lg:12px;
+  --pad:12px;
+  --col:640px;
+}
+@media (min-width:400px){ :root{ --pad:16px } }
+@media (min-width:640px){ :root{ --pad:20px } }
+
+/* accent scope: any element that carries its own --acc-*-l/-d pair resolves
+   the active pair here, so the tab bar can show four day colors at once. */
+.accent-scope{ --acc-soft:var(--acc-soft-l); --acc-ink:var(--acc-ink-l); --acc-line:var(--acc-line-l) }
+
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0C0D10;
+    --surface:#141619;
+    --surface-2:#1A1D22;
+    --surface-3:#22262C;
+    --border:#262A31;
+    --border-strong:#3A404A;
+    --text:#ECEEF2;
+    --text-2:#A6ADB8;
+    --text-3:#8A919C;
+    --inv:#0C0D10;
+    --focus:#ECEEF2;
+    --warn:#FF9C92;
+    --warn-soft:#2A1512;
+    --warn-line:#4A231E;
+  }
+  .accent-scope{ --acc-soft:var(--acc-soft-d); --acc-ink:var(--acc-ink-d); --acc-line:var(--acc-line-d) }
+}
+
+*,*::before,*::after{ box-sizing:border-box }
+[hidden]{ display:none !important }
+html{ -webkit-text-size-adjust:100% }
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:var(--f); font-size:15px; line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:none;
+}
+h1,h2,h3,h4,p{ margin:0 }
+a{ color:inherit }
+button{ font:inherit; color:inherit; background:none; border:0; margin:0 }
+
+:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; border-radius:var(--r-xs) }
+.sr{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+     clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0 }
+
+.col{ max-width:var(--col); margin:0 auto; padding-inline:var(--pad) }
+
+/* ------------------------------------------------------------------ chrome */
+.veil{ position:fixed; top:0; left:0; right:0; height:env(safe-area-inset-top); background:var(--bg); z-index:60 }
+
+.masthead{ padding-top:calc(var(--s5) + env(safe-area-inset-top)); padding-bottom:var(--s3) }
+.masthead h1{ font-size:20px; font-weight:650; letter-spacing:-.018em; line-height:1.2 }
+.masthead p{ margin-top:var(--s1); font-size:12px; color:var(--text-3); font-variant-numeric:tabular-nums }
+
+.daybar{ position:sticky; top:env(safe-area-inset-top); z-index:50; background:var(--bg); border-bottom:1px solid var(--border) }
+.daybar-in{ display:flex; align-items:center; gap:var(--s2); height:52px }
+.daychip{
+  flex:none; width:24px; height:24px; border-radius:var(--r-sm);
+  background:var(--acc-soft); color:var(--acc-ink); box-shadow:inset 0 0 0 1px var(--acc-line);
+  display:grid; place-items:center; font-size:12px; font-weight:700; line-height:1;
+}
+.daybar h2{ flex:1 1 auto; min-width:0; font-size:15px; font-weight:600; letter-spacing:-.012em;
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.count{ flex:none; font-size:11px; font-weight:500; color:var(--text-3); font-variant-numeric:tabular-nums;
+        letter-spacing:.01em; white-space:nowrap }
+.iconbtn{
+  flex:none; width:44px; height:44px; margin-right:-10px; border-radius:var(--r-sm);
+  display:grid; place-items:center; font-size:17px; color:var(--text-2); cursor:pointer;
+}
+.iconbtn:active{ background:var(--surface-2); color:var(--text) }
+@media (hover:hover){ .iconbtn:hover{ background:var(--surface-2); color:var(--text) } }
+
+/* ------------------------------------------------------------------- panel */
+main{ padding-bottom:var(--s6) }
+.dayhead{ padding:var(--s4) var(--s1) var(--s2); font-size:13px; color:var(--text-2) }
+.empty{ padding:var(--s5) var(--s1); font-size:13px; color:var(--text-3) }
+
+.cluster{ margin-top:var(--s2) }
+.cluster-h{ display:flex; align-items:center; justify-content:space-between; gap:var(--s2);
+            min-height:44px; padding-inline:var(--s1) }
+.cluster-h h3{ font-size:11px; font-weight:700; letter-spacing:.075em; text-transform:uppercase;
+               color:var(--text-3); min-width:0 }
+.walk{
+  flex:none; display:inline-flex; align-items:center; gap:var(--s1); height:44px; padding-inline:var(--s3);
+  border:1px solid var(--border-strong); border-radius:var(--r-sm); background:var(--surface);
+  font-size:12px; font-weight:600; letter-spacing:-.005em; text-decoration:none; white-space:nowrap;
+}
+.walk span{ color:var(--text-3); font-size:11px }
+.walk:active{ background:var(--surface-2) }
+@media (hover:hover){ .walk:hover{ background:var(--surface-2); border-color:var(--text-3) } }
+
+/* -------------------------------------------------------------- row groups */
+.rows{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r); overflow:hidden }
+.row{ border-left:3px solid transparent }
+.row + .row{ border-top:1px solid var(--border) }
+.row-main{ display:flex; gap:var(--s3); padding:var(--s3) }
+
+.tcol{ flex:none; width:56px; display:flex; flex-direction:column; align-items:flex-start; gap:var(--s1) }
+.t{ font-size:12px; font-weight:600; color:var(--text-2); font-variant-numeric:tabular-nums;
+    letter-spacing:.005em; overflow-wrap:anywhere; padding-top:1px }
+.is-fixed .t{ color:var(--text) }
+.is-fixed{ border-left-color:var(--acc-line) }
+
+.body{ flex:1 1 auto; min-width:0 }
+.head{ display:flex; align-items:flex-start; justify-content:space-between; gap:var(--s2) }
+.head h4{ font-size:15px; font-weight:600; letter-spacing:-.014em; line-height:1.3 }
+.meta{ margin-top:var(--s1); font-size:12px; color:var(--text-3); line-height:1.4 }
+.hrs{
+  display:inline-block; margin-top:var(--s2); padding:2px 6px; border-radius:var(--r-xs);
+  background:var(--surface-2); border:1px solid var(--border); color:var(--text-2);
+  font-size:11px; font-weight:500; font-variant-numeric:tabular-nums; line-height:1.5;
+}
+.hrs.bad{ background:var(--warn-soft); border-color:var(--warn-line); color:var(--warn); font-weight:600 }
+.hrs.bad::before{ content:"\26A0  "; }
+.warnline{ margin-top:var(--s2); font-size:12px; font-weight:600; color:var(--warn); line-height:1.4 }
+.note{ margin-top:var(--s2); font-size:13px; color:var(--text-2); line-height:1.45 }
+
+/* --------------------------------------------------------------- 10 chips */
+.chip{
+  flex:none; padding:3px 6px; border-radius:var(--r-xs); font-size:10px; font-weight:700;
+  letter-spacing:.05em; text-transform:uppercase; line-height:1.3; white-space:nowrap;
+  border:1px solid transparent; display:inline-flex; align-items:center; gap:var(--s1);
+}
+.c-must{ background:var(--text); color:var(--inv) }                                  /* filled ink   */
+.c-fixed{ border-color:var(--text); color:var(--text) }                              /* ink outline  */
+.c-yes{ background:var(--surface-2); border-color:var(--border); color:var(--text-2) }/* soft fill    */
+.c-check{ background:var(--warn-soft); border-color:var(--warn-line); color:var(--warn) }
+.c-if-close{ border-color:var(--border-strong); color:var(--text-2) }                 /* + accent dot */
+.c-if-close::before{ content:""; width:5px; height:5px; border-radius:1px; background:var(--acc-line) }
+.c-maybe{ border-color:var(--border-strong); color:var(--text-2) }                    /* hairline out */
+.c-maybe-not{ background:var(--surface-2); color:var(--text-3) }                      /* fill, no rule*/
+.c-optional{ color:var(--text-3); padding-inline:0 }                                  /* bare label   */
+.c-skip{ border-style:dashed; border-color:var(--border-strong); color:var(--text-3) }/* dashed out   */
+
+/* -------------------------------------------------------------- row states */
+/* `skip` dims by walking down the text ramp + recessing the surface, not by
+   opacity — opacity would drop the row under the 4.5:1 contrast floor. */
+.is-skip{ background:var(--surface-2) }
+.is-skip .head h4{ color:var(--text-2); font-weight:500 }
+.is-skip .acts{ background:var(--surface-2) }
+
+/* `note` = quiet text row: no chip, no action bar, name recedes to a label. */
+.is-note .head h4{ font-size:14px; font-weight:500; color:var(--text-2) }
+.is-note .note{ color:var(--text-3) }
+
+/* Visited preview — see the VISITED PREVIEW comment in the render code. */
+.is-visited{ background:var(--surface-2) }
+.is-visited .acts{ background:var(--surface-2) }
+.is-visited .head h4{ color:var(--text-2) }
+.mark{
+  width:20px; height:20px; border-radius:50%; display:grid; place-items:center;
+  background:var(--acc-soft); color:var(--acc-ink); box-shadow:inset 0 0 0 1px var(--acc-line);
+  font-size:11px; font-weight:700; line-height:1;
+}
+
+/* ---------------------------------------------------------- action segments */
+.acts{ display:flex; border-top:1px solid var(--border); background:var(--surface) }
+.act{
+  flex:1 1 0; min-width:0; height:44px; display:flex; align-items:center; justify-content:center;
+  border-left:1px solid var(--border); font-size:11px; font-weight:600; letter-spacing:.01em;
+  color:var(--text-2); text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.act:first-child{ border-left:0 }
+.act:focus-visible{ outline-offset:-3px }
+.act:active{ background:var(--surface-3); color:var(--text) }
+@media (hover:hover){ .act:hover{ background:var(--surface-2); color:var(--text) } }
+
+/* -------------------------------------------------------------- foot + tabs */
+footer{ padding-bottom:calc(96px + env(safe-area-inset-bottom)) }
+.foot-note{ padding:var(--s5) var(--s1) 0; font-size:13px; color:var(--text-2); border-top:1px solid var(--border) }
+.foot-meta{ padding:var(--s2) var(--s1) 0; font-size:11px; color:var(--text-3); font-variant-numeric:tabular-nums }
+
+.tabbar{
+  position:fixed; bottom:0; left:0; right:0; z-index:55;
+  background:var(--bg); border-top:1px solid var(--border);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.tabbar-in{
+  display:flex; gap:var(--s1); align-items:stretch; padding:var(--s1) var(--pad);
+  max-width:var(--col); margin:0 auto; overflow-x:auto; scrollbar-width:none;
+}
+.tabbar-in::-webkit-scrollbar{ display:none }
+.tab{
+  position:relative; flex:1 0 auto; min-width:56px; height:56px; border-radius:var(--r);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:var(--s1);
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.tab-dot{
+  width:22px; height:22px; border-radius:var(--r-sm); display:grid; place-items:center;
+  background:var(--acc-soft); color:var(--acc-ink); font-size:11px; font-weight:700; line-height:1;
+}
+.tab-lab{ font-size:10px; font-weight:600; letter-spacing:.06em; color:var(--text-3) }
+.tab[aria-selected="true"]{ background:var(--surface-2) }
+.tab[aria-selected="true"] .tab-dot{ box-shadow:inset 0 0 0 1px var(--acc-line) }
+.tab[aria-selected="true"] .tab-lab{ color:var(--text); font-weight:700 }
+.tab[aria-selected="true"]::before{
+  content:""; position:absolute; top:0; left:12px; right:12px; height:2px;
+  border-radius:0 0 2px 2px; background:var(--acc-line);
+}
+.tab.is-today .tab-dot{ box-shadow:0 0 0 3px var(--acc-soft) }
+.tab:active{ background:var(--surface-2) }
+@media (hover:hover){ .tab:hover .tab-lab{ color:var(--text-2) } }
+
+@media (min-width:640px){
+  .tabbar{ left:50%; right:auto; transform:translateX(-50%); width:min(var(--col), 100%);
+           border:1px solid var(--border); border-bottom:0; border-radius:var(--r-lg) var(--r-lg) 0 0 }
+}
+
+@media (prefers-reduced-motion:no-preference){
+  .tab,.act,.walk,.iconbtn,.row{ transition:background-color .12s ease, color .12s ease, border-color .12s ease }
+  .iconbtn.is-busy{ animation:spin .5s ease }
+  @keyframes spin{ from{ transform:rotate(0) } to{ transform:rotate(360deg) } }
+}
+</style>
+</head>
+<body>
+
+<div class="veil"></div>
+
+<div class="masthead col">
+  <h1 id="tripName"></h1>
+  <p id="tripMeta"></p>
+</div>
+
+<header class="daybar">
+  <div class="daybar-in col">
+    <span class="daychip" id="dayChip" aria-hidden="true"></span>
+    <h2 id="dayTitle"></h2>
+    <span class="count" id="dayCount"></span>
+    <button class="iconbtn" id="refresh" type="button" aria-label="Refresh — re-render from the embedded trip data">&#8635;</button>
+  </div>
+</header>
+
+<main class="col" id="panels"></main>
+
+<footer class="col">
+  <p class="foot-note" id="footNote"></p>
+  <p class="foot-meta" id="footMeta"></p>
+</footer>
+
+<nav class="tabbar" aria-label="Days">
+  <div class="tabbar-in" id="tabs" role="tablist" aria-label="Trip days" aria-orientation="horizontal"></div>
+</nav>
+
+<script>
+window.TRIP =
+{
+ "schema": 1,
+ "id": "chicago-test",
+ "name": "Chicago Test Trip",
+ "tz": "America/Chicago",
+ "start": "2027-06-04",
+ "end": "2027-06-06",
+ "base": {
+  "name": "Palmer House (test base)",
+  "address": "17 E Monroe St, Chicago, IL 60603"
+ },
+ "notes": "Fictional test trip — real public places, invented schedule. Safe to commit.",
+ "days": [
+  {
+   "key": "fri",
+   "date": "2027-06-04",
+   "bullet": "F",
+   "label": "FRI",
+   "color": "#00A1DE",
+   "title": "Friday · Jun 4",
+   "subtitle": "Arrive → Loop: Art Institute → deep dish"
+  },
+  {
+   "key": "sat",
+   "date": "2027-06-05",
+   "bullet": "S",
+   "label": "SAT",
+   "color": "#C60C30",
+   "title": "Saturday · Jun 5",
+   "subtitle": "Wicker Park: books → records → tacos"
+  },
+  {
+   "key": "sun",
+   "date": "2027-06-06",
+   "bullet": "S",
+   "label": "SUN",
+   "color": "#009B3A",
+   "title": "Sunday · Jun 6",
+   "subtitle": "Conservatory morning → Green Mill nightcap"
+  },
+  {
+   "key": "bonus",
+   "date": null,
+   "bullet": "+",
+   "label": "XTRA",
+   "color": "#565A5C",
+   "title": "Extras",
+   "subtitle": "Unscheduled — slot into any open block"
+  }
+ ],
+ "places": [
+  {
+   "id": "palmer-house-check-in",
+   "day": "fri",
+   "cluster": "Arrival — Loop",
+   "time": "3:00 PM",
+   "name": "Palmer House — check-in",
+   "type": "Stay",
+   "address": "17 E Monroe St, Chicago, IL 60603",
+   "lat": null,
+   "lng": null,
+   "hours": "Check-in 3:00 PM",
+   "cost": "",
+   "priority": "fixed",
+   "notes": "Test base. Drop bags and walk one block to the museum.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "art-institute-of-chicago",
+   "day": "fri",
+   "cluster": "Arrival — Loop",
+   "time": "3:45 PM",
+   "name": "Art Institute of Chicago",
+   "type": "Art",
+   "address": "111 S Michigan Ave, Chicago, IL 60603",
+   "lat": null,
+   "lng": null,
+   "hours": "Thu–Mon 11–5; CLOSED Tue/Wed",
+   "cost": "$32",
+   "priority": "must",
+   "notes": "The lions. Last entry an hour before close — test must row.",
+   "website": "https://www.artic.edu/",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "chicago-cultural-center",
+   "day": "fri",
+   "cluster": "Arrival — Loop",
+   "time": "5:15 PM",
+   "name": "Chicago Cultural Center",
+   "type": "Sight",
+   "address": "78 E Washington St, Chicago, IL 60602",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 10–5",
+   "cost": "Free",
+   "priority": "yes",
+   "notes": "Tiffany dome — free, quick, on the walk.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "lou-malnatis-state-st",
+   "day": "fri",
+   "cluster": "Evening — Loop",
+   "time": "7:00 PM",
+   "name": "Lou Malnati's (State St)",
+   "type": "Food",
+   "address": "805 S State St, Chicago, IL 60605",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 11–11",
+   "cost": "$$",
+   "priority": "fixed",
+   "notes": "Test reservation row — booked, immovable.",
+   "website": "https://www.loumalnatis.com/",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "myopic-books",
+   "day": "sat",
+   "cluster": "Wicker Park loop",
+   "time": "11:00 AM",
+   "name": "Myopic Books",
+   "type": "Books",
+   "address": "1564 N Milwaukee Ave, Chicago, IL 60622",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 11–10",
+   "cost": "",
+   "priority": "yes",
+   "notes": "Three floors of used books.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "reckless-records",
+   "day": "sat",
+   "cluster": "Wicker Park loop",
+   "time": "12:00 PM",
+   "name": "Reckless Records",
+   "type": "Music",
+   "address": "1379 N Milwaukee Ave, Chicago, IL 60622",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 10–8",
+   "cost": "",
+   "priority": "yes",
+   "notes": "Flagship location — listening stations.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "quimbys-bookstore",
+   "day": "sat",
+   "cluster": "Wicker Park loop",
+   "time": "12:45 PM",
+   "name": "Quimby's Bookstore",
+   "type": "Books",
+   "address": "1854 W North Ave, Chicago, IL 60622",
+   "lat": null,
+   "lng": null,
+   "hours": "Mon–Sat 12–7; Sun 12–6",
+   "cost": "",
+   "priority": "if-close",
+   "notes": "Zines and small press — test if-close row.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "big-star-tacos",
+   "day": "sat",
+   "cluster": "Lunch — Wicker Park",
+   "time": "1:30 PM",
+   "name": "Big Star",
+   "type": "Food",
+   "address": "1531 N Damen Ave, Chicago, IL 60622",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 11–12",
+   "cost": "$",
+   "priority": "maybe",
+   "notes": "Patio tacos — test maybe row; long waits on weekends.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "sat-evening-open",
+   "day": "sat",
+   "cluster": "Evening",
+   "time": "open",
+   "name": "Evening open",
+   "type": "",
+   "address": "",
+   "lat": null,
+   "lng": null,
+   "hours": "",
+   "cost": "",
+   "priority": "note",
+   "notes": "Nothing booked — test note row, renders as text with no links.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "garfield-park-conservatory",
+   "day": "sun",
+   "cluster": "Morning — Garfield Park",
+   "time": "10:00 AM",
+   "name": "Garfield Park Conservatory",
+   "type": "Park",
+   "address": "300 N Central Park Ave, Chicago, IL 60624",
+   "lat": null,
+   "lng": null,
+   "hours": "Wed–Sun 10–5; CLOSED Mon/Tue",
+   "cost": "Free (reserve)",
+   "priority": "check",
+   "notes": "Test call-ahead row — timed entry on busy weekends.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "Reserve a slot — walk-ins limited",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "green-mill",
+   "day": "sun",
+   "cluster": "Evening — Uptown",
+   "time": "8:00 PM",
+   "name": "Green Mill Cocktail Lounge",
+   "type": "Music",
+   "address": "4802 N Broadway, Chicago, IL 60640",
+   "lat": null,
+   "lng": null,
+   "hours": "Nightly from 8",
+   "cost": "cover varies",
+   "priority": "optional",
+   "notes": "Jazz since 1907 — test optional row.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "navy-pier",
+   "day": "bonus",
+   "cluster": "Only if desperate",
+   "time": "",
+   "name": "Navy Pier",
+   "type": "Sight",
+   "address": "600 E Grand Ave, Chicago, IL 60611",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 10–9",
+   "cost": "",
+   "priority": "maybe-not",
+   "notes": "Tourist gauntlet — test maybe-not row.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "intl-museum-surgical-science",
+   "day": "bonus",
+   "cluster": "Probably skip",
+   "time": "",
+   "name": "International Museum of Surgical Science",
+   "type": "Museum",
+   "address": "1524 N Lake Shore Dr, Chicago, IL 60610",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 10–5",
+   "cost": "$20",
+   "priority": "skip",
+   "notes": "Test skip row — renders dimmed.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  }
+ ]
+};
+</script>
+<script>
+(function(){
+"use strict";
+var TRIP = window.TRIP;
+
+/* ---------------------------------------------------------------- helpers */
+var enc = encodeURIComponent;
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+/* -------------------------------------------- data-driven accent derivation
+   Trip day colors are wayfinding hues, not text colors. Derive a tint, a
+   guaranteed-4.5:1 ink, and a guaranteed-3:1 line from each hex, for both
+   color schemes, and hand them to CSS as custom properties.               */
+function hx(h){
+  h = String(h || "").replace("#","").trim();
+  if(h.length === 3){ h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2]; }
+  if(!/^[0-9a-f]{6}$/i.test(h)){ h = "565A5C"; }
+  var n = parseInt(h,16);
+  return [(n>>16)&255, (n>>8)&255, n&255];
+}
+function tohx(c){
+  return "#" + c.map(function(v){
+    return Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,"0");
+  }).join("");
+}
+function mix(a,b,t){ return a.map(function(v,i){ return v + (b[i]-v)*t; }); }
+function lum(c){
+  var s = c.map(function(v){ v/=255; return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); });
+  return 0.2126*s[0] + 0.7152*s[1] + 0.0722*s[2];
+}
+function ratio(a,b){
+  var x = lum(a), y = lum(b);
+  return (Math.max(x,y) + 0.05) / (Math.min(x,y) + 0.05);
+}
+function walkTo(base, dir, bg, min){
+  var t = 0, c = base;
+  while(ratio(c, bg) < min && t < 0.95){ t += 0.05; c = mix(base, dir, t); }
+  return c;
+}
+function accentVars(hex){
+  var a = hx(hex), out = {};
+  [ { k:"l", surface:hx("#FFFFFF"), page:hx("#FAFAFB"), dir:hx("#0A0C10"), tint:0.12 },
+    { k:"d", surface:hx("#141619"), page:hx("#0C0D10"), dir:hx("#FFFFFF"), tint:0.24 }
+  ].forEach(function(m){
+    var soft = mix(m.surface, a, m.tint);
+    out["--acc-soft-" + m.k] = tohx(soft);
+    out["--acc-ink-"  + m.k] = tohx(walkTo(a, m.dir, soft,   4.5));
+    out["--acc-line-" + m.k] = tohx(walkTo(a, m.dir, m.page, 3));
+  });
+  return out;
+}
+function styleAttr(hex){
+  var v = accentVars(hex), out = "--accent:" + esc(hex || "#565A5C") + ";";
+  for(var k in v){ out += k + ":" + v[k] + ";"; }
+  return out;
+}
+
+/* ------------------------------------------------------------ dates + text */
+var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function ymd(s){
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || ""));
+  return m ? { y:+m[1], m:+m[2], d:+m[3] } : null;
+}
+function fmtRange(s,e){
+  var a = ymd(s), b = ymd(e);
+  if(!a) return "";
+  if(!b) return MON[a.m-1] + " " + a.d + ", " + a.y;
+  if(a.y === b.y && a.m === b.m) return MON[a.m-1] + " " + a.d + "–" + b.d + ", " + a.y;
+  if(a.y === b.y) return MON[a.m-1] + " " + a.d + " – " + MON[b.m-1] + " " + b.d + ", " + a.y;
+  return MON[a.m-1] + " " + a.d + ", " + a.y + " – " + MON[b.m-1] + " " + b.d + ", " + b.y;
+}
+var TODAY = (function(){
+  var d = new Date(), p = function(n){ return String(n).padStart(2,"0"); };
+  return d.getFullYear() + "-" + p(d.getMonth()+1) + "-" + p(d.getDate());
+})();
+
+/* Search locale, derived from the trip's own base address (v0 hardcoded NYC). */
+var LOC = (function(){
+  var addr = (TRIP.base && TRIP.base.address) || "";
+  var parts = addr.split(",").map(function(s){ return s.trim(); }).filter(Boolean);
+  if(parts.length >= 2){
+    var state = parts[parts.length-1].replace(/\s*\d{5}(-\d{4})?$/,"").trim();
+    var city  = parts[parts.length-2];
+    if(city && state) return city + ", " + state;
+    if(city) return city;
+  }
+  return TRIP.name || "";
+})();
+
+/* ------------------------------------------------- v0 parity: links + hours */
+function gq(p){ return enc((p.name || "") + (p.address ? ", " + p.address : " " + LOC)); }
+
+function actions(p){
+  if(!p.name || p.priority === "note") return "";
+  var L = [];
+  if(p.website) L.push(["Site", p.website, "Official site"]);
+  L.push(["Yelp", p.yelp || "https://www.yelp.com/search?find_desc=" + enc(p.name) + "&find_loc=" + enc(p.address || LOC), "Yelp"]);
+  L.push(["G Maps", p.gmaps || "https://www.google.com/maps/search/?api=1&query=" + gq(p), "Google Maps"]);
+  if(p.address) L.push(["Apple", "https://maps.apple.com/?q=" + enc(p.name) + "&address=" + enc(p.address), "Apple Maps"]);
+  L.push(["Search", "https://www.google.com/search?q=" + enc(p.name + " " + LOC), "Google search"]);
+  return '<div class="acts">' + L.map(function(x){
+    return '<a class="act" href="' + esc(x[1]) + '" target="_blank" rel="noopener"' +
+           ' aria-label="' + esc(x[2] + " — " + p.name) + '">' + esc(x[0]) + "</a>";
+  }).join("") + "</div>";
+}
+
+/* Cluster walking route — v0's walkLink, unchanged. */
+function walkLink(stops){
+  var a = stops.filter(function(s){ return s.address; }).map(function(s){ return enc(s.address); });
+  if(a.length < 2) return "";
+  var wp = a.slice(1,-1).join("|");
+  return "https://www.google.com/maps/dir/?api=1&origin=" + a[0] +
+         "&destination=" + a[a.length-1] + (wp ? "&waypoints=" + wp : "") + "&travelmode=walking";
+}
+
+var CHIP = {
+  must:"Must", fixed:"Booked", yes:"Yes", check:"Call ahead", skip:"Skip / closed",
+  optional:"Optional", maybe:"Maybe", "maybe-not":"Maybe not", "if-close":"If close by"
+};
+/* v0's warning regex, verbatim. */
+function badHours(h){
+  return /closed mon|closed tue|closed sun|closed wed|unverified|closed weekends|closed$/i.test(h || "")
+      || /^CLOSED/i.test(h || "");
+}
+
+/* VISITED PREVIEW ------------------------------------------------------------
+   Exactly one row is rendered in the "visited" state to preview the upcoming
+   tap-to-mark-visited feature (filled check in the time column + subdued row).
+   Visual only: nothing is stored, nothing is tappable, no data field exists
+   yet. When the real feature lands this becomes per-place state written back
+   through the Contents API, and this constant goes away.                    */
+var VISITED_PREVIEW = "reckless-records";
+
+/* -------------------------------------------------------------- row render */
+function rowHTML(p){
+  var isNote  = p.priority === "note";
+  var visited = p.id && p.id === VISITED_PREVIEW;
+  var cls = ["row"];
+  if(isNote) cls.push("is-note");
+  if(p.priority === "skip") cls.push("is-skip");
+  if(p.priority === "fixed") cls.push("is-fixed");
+  if(visited) cls.push("is-visited");
+
+  var chip = (!isNote && CHIP[p.priority])
+    ? '<span class="chip c-' + esc(p.priority) + '">' + esc(CHIP[p.priority]) + "</span>" : "";
+
+  var metaBits = [p.type, p.address].filter(Boolean).join(" · ");
+  if(p.cost) metaBits += (metaBits ? " · " : "") + p.cost;
+
+  var hours = p.hours
+    ? '<p class="hrs' + (badHours(p.hours) ? " bad" : "") + '">' + esc(p.hours) + "</p>" : "";
+
+  return (visited ? "<!-- VISITED PREVIEW: static preview of tap-to-mark-visited (M4) -->" : "") +
+  '<article class="' + cls.join(" ") + '">' +
+    '<div class="row-main">' +
+      '<div class="tcol">' +
+        '<span class="t">' + esc(p.time || "—") + "</span>" +
+        (visited ? '<span class="mark" aria-hidden="true">✓</span><span class="sr">Visited</span>' : "") +
+      "</div>" +
+      '<div class="body">' +
+        '<div class="head"><h4>' + esc(p.name) + "</h4>" + chip + "</div>" +
+        (metaBits ? '<p class="meta">' + esc(metaBits) + "</p>" : "") +
+        hours +
+        (p.warn  ? '<p class="warnline">⚠ ' + esc(p.warn) + "</p>" : "") +
+        (p.notes ? '<p class="note">' + esc(p.notes) + "</p>" : "") +
+      "</div>" +
+    "</div>" +
+    actions(p) +
+  "</article>";
+}
+
+function clusterHTML(name, list){
+  var w = walkLink(list);
+  return '<section class="cluster">' +
+    '<div class="cluster-h"><h3>' + esc(name || "Unsorted") + "</h3>" +
+    (w ? '<a class="walk" href="' + esc(w) + '" target="_blank" rel="noopener"' +
+         ' aria-label="' + esc("Walking directions for " + (name || "this cluster")) + '">' +
+         'Walk it<span aria-hidden="true">↗</span></a>' : "") +
+    "</div>" +
+    '<div class="rows">' + list.map(rowHTML).join("") + "</div>" +
+  "</section>";
+}
+
+function placesFor(key){
+  return (TRIP.places || []).filter(function(p){ return p.day === key; });
+}
+function stopCount(key){
+  var n = placesFor(key).filter(function(p){ return p.priority !== "note"; }).length;
+  return n + (n === 1 ? " stop" : " stops");
+}
+
+function panelHTML(d){
+  var stops = placesFor(d.key), seen = [], order = [];
+  stops.forEach(function(s){
+    var c = s.cluster || "";
+    if(seen.indexOf(c) === -1){ seen.push(c); order.push(c); }
+  });
+  var body = stops.length
+    ? order.map(function(c){
+        return clusterHTML(c, stops.filter(function(s){ return (s.cluster || "") === c; }));
+      }).join("")
+    : '<p class="empty">Nothing planned for this day yet.</p>';
+  return '<section class="panel" id="panel-' + esc(d.key) + '" role="tabpanel"' +
+         ' aria-labelledby="tab-' + esc(d.key) + '" hidden>' +
+         (d.subtitle ? '<p class="dayhead">' + esc(d.subtitle) + "</p>" : "") +
+         body + "</section>";
+}
+
+function tabHTML(d){
+  var isToday = !!(d.date && d.date === TODAY);
+  return '<button type="button" class="tab accent-scope' + (isToday ? " is-today" : "") + '"' +
+    ' style="' + styleAttr(d.color) + '"' +
+    ' role="tab" id="tab-' + esc(d.key) + '" aria-controls="panel-' + esc(d.key) + '"' +
+    ' aria-selected="false" tabindex="-1" data-key="' + esc(d.key) + '">' +
+    '<span class="tab-dot" aria-hidden="true">' + esc(d.bullet || "") + "</span>" +
+    '<span class="tab-lab">' + esc(d.label || d.key) + "</span>" +
+    (isToday ? '<span class="sr">(today)</span>' : "") +
+  "</button>";
+}
+
+/* ------------------------------------------------------------------- state */
+var days   = (TRIP.days || []);
+var panels = document.getElementById("panels");
+var tabs   = document.getElementById("tabs");
+var chipEl = document.getElementById("dayChip");
+var titleEl= document.getElementById("dayTitle");
+var countEl= document.getElementById("dayCount");
+var current= null;
+
+function select(key, opts){
+  var d = days.filter(function(x){ return x.key === key; })[0] || days[0];
+  if(!d) return;
+  current = d.key;
+
+  /* Day color feeds the whole page through derived, contrast-safe tokens. */
+  var v = accentVars(d.color);
+  document.documentElement.style.setProperty("--accent", d.color || "#565A5C");
+  for(var k in v){ document.documentElement.style.setProperty(k, v[k]); }
+
+  Array.prototype.forEach.call(panels.children, function(sec){
+    sec.hidden = sec.id !== "panel-" + d.key;
+  });
+  Array.prototype.forEach.call(tabs.children, function(btn){
+    var on = btn.dataset.key === d.key;
+    btn.setAttribute("aria-selected", on ? "true" : "false");
+    btn.tabIndex = on ? 0 : -1;
+    if(on && opts && opts.focus) btn.focus();
+  });
+
+  chipEl.textContent  = d.bullet || "";
+  titleEl.textContent = d.title || d.label || d.key;
+  countEl.textContent = stopCount(d.key);
+  if(opts && opts.scroll) window.scrollTo(0,0);
+}
+
+function render(){
+  document.getElementById("tripName").textContent = TRIP.name || "Trip";
+  document.getElementById("tripMeta").textContent =
+    [fmtRange(TRIP.start, TRIP.end), TRIP.base && TRIP.base.name].filter(Boolean).join(" · ");
+  document.getElementById("footNote").textContent = TRIP.notes || "";
+  document.getElementById("footMeta").textContent =
+    [TRIP.id, "schema " + TRIP.schema, "rendered " +
+      new Date().toLocaleTimeString([], { hour:"numeric", minute:"2-digit" }) + " from the embedded copy"
+    ].filter(Boolean).join(" · ");
+
+  panels.innerHTML = days.map(panelHTML).join("");
+  tabs.innerHTML   = days.map(tabHTML).join("");
+}
+
+/* Auto-open today's day when the trip is running, else the first day. */
+function initialKey(){
+  var inTrip = TRIP.start && TRIP.end && TODAY >= TRIP.start && TODAY <= TRIP.end;
+  if(inTrip){
+    var hit = days.filter(function(d){ return d.date === TODAY; })[0];
+    if(hit) return hit.key;
+  }
+  return days.length ? days[0].key : null;
+}
+
+/* ------------------------------------------------------------------ events */
+tabs.addEventListener("click", function(e){
+  var b = e.target.closest(".tab");
+  if(b) select(b.dataset.key, { scroll:true });
+});
+tabs.addEventListener("keydown", function(e){
+  var keys = days.map(function(d){ return d.key; });
+  var i = keys.indexOf(current), next = null;
+  if(e.key === "ArrowRight") next = keys[(i + 1) % keys.length];
+  else if(e.key === "ArrowLeft") next = keys[(i - 1 + keys.length) % keys.length];
+  else if(e.key === "Home") next = keys[0];
+  else if(e.key === "End") next = keys[keys.length - 1];
+  if(next){ e.preventDefault(); select(next, { focus:true, scroll:true }); }
+});
+
+document.getElementById("refresh").addEventListener("click", function(e){
+  var btn = e.currentTarget;
+  btn.classList.add("is-busy");
+  setTimeout(function(){ btn.classList.remove("is-busy"); }, 500);
+  render();
+  select(current, { scroll:false });
+});
+
+render();
+select(initialKey(), { scroll:false });
+})();
+</script>
+</body>
+</html>

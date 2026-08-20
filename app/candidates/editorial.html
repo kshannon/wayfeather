@@ -1,0 +1,1260 @@
+<!--
+================================================================================
+DESIGN NOTES — Candidate B: Editorial
+================================================================================
+Typography-first modern print. Ink on paper, hairline rules, generous whitespace.
+No shadows, no rounded chrome, no boxes except one: the day's initial, set as a
+printer's sort. Hierarchy is carried by type size, weight and space — not by
+containers.
+
+--------------------------------------------------------------------------------
+1. COLOR TOKENS
+--------------------------------------------------------------------------------
+A near-monochrome ramp that flips wholesale in dark mode. Nothing is themed;
+these are paper stocks and ink densities.
+
+  --paper       page ground              #FBFAF7  ->  #121210
+  --paper-sunk  quiet inset ground       #F2F0EA  ->  #1B1B18
+  --ink         display type, marks      #14130F  ->  #EDEAE3   17.8:1 / 15.6:1
+  --ink-2       body prose, secondary    #4A4741  ->  #B8B3A9    8.9:1 /  9.0:1
+  --ink-3       metadata, folios, labels #6B675E  ->  #928D83    5.4:1 /  5.7:1
+  --rule        hairlines                #DDD9D0  ->  #302F2B
+  --rule-soft   entry separators         #EBE7DF  ->  #242320
+  --warn        flagged hours / warnings #9A2B1E  ->  #E8A08E    7.4:1 /  8.8:1
+
+Every text token clears 4.5:1 against both grounds (measured, not eyeballed).
+"Dimmed" states (priority: skip) step DOWN the same ink ramp rather than using
+opacity, so a dimmed row is still a legible row.
+
+  DATA-DRIVEN DAY COLOR. Each day's `color` from trip.days is bound to a single
+  custom property, --accent, set inline on that day's panel and tab. It appears
+  in exactly three places, and never as text:
+
+    1. the 2px rule beneath the selected day tab
+    2. the fill of the day mark — a 30px square carrying the day's `bullet`
+    3. the 1px cluster spine and its 9px stop markers
+
+  This is deliberate. Arbitrary author-supplied hex cannot be trusted to carry
+  text: of this trip's four days, #00A1DE hits only 2.81:1 on light paper and
+  #565A5C only 2.69:1 on dark. So accent is decorative-only, and every meaning
+  it hints at is also carried by geometry or words. The one place ink sits ON
+  the accent — the day mark — runs textOn(), which scores both ink and paper
+  against the accent and picks the winner, honouring the day's `darkText` as a
+  preference only when that choice already clears 4.5:1. New trips can therefore
+  ship any palette without a contrast audit.
+
+--------------------------------------------------------------------------------
+2. TYPE SCALE
+--------------------------------------------------------------------------------
+Two system stacks, split by job — serif for anything that speaks, sans for
+anything that labels.
+
+  --serif  ui-serif, "New York", "Iowan Old Style", Palatino, Georgia, serif
+             trip name, day titles, place names, notes prose
+  --sans   ui-sans-serif, -apple-system, "Segoe UI", "Helvetica Neue", Arial
+             kickers, folios, times, meta, hours, priority marks, links
+
+Scale (1rem = 16px), mobile first; three steps grow at >=640px:
+
+  --t-xs   11px   letterspaced .09em uppercase — labels, priority marks, links
+  --t-sm   13px   metadata, hours, times, subtitles
+  --t-md   15px   notes prose (serif)
+  --t-lg   17px   place name (serif 600)          -> 19px
+  --t-xl   22px   day title (serif 600)           -> 27px
+  --t-2xl  28px   trip name (serif 600)           -> 38px
+
+Small caps are synthesised (uppercase + .09em tracking + 600) rather than
+font-variant-caps, which is unreliable across the fallback stacks. Times are
+tabular-nums so the rail stays a column.
+
+--------------------------------------------------------------------------------
+3. SPACING SCALE
+--------------------------------------------------------------------------------
+4px base, eight steps: --s1 4 / --s2 8 / --s3 12 / --s4 16 / --s5 20 / --s6 28 /
+--s7 40 / --s8 56. Page gutter is max(20px, safe-area inset). Column caps at
+40rem and centres at >=640px. Vertical rhythm is loose on purpose: the whitespace
+between a day title and its first stop is the design.
+
+--------------------------------------------------------------------------------
+4. RULES & SPINE
+--------------------------------------------------------------------------------
+Four rule weights, and no fifth:
+
+  1px --ink        masthead rule (the only full-ink rule on the page)
+  1px --rule       structural: under day heads, above the footer, under the nav
+  1px --rule-soft  entry separators, links divider
+  2px --accent     selected tab underline; walk-link underline
+
+The spine replaces card chrome entirely. Each cluster is a two-column grid —
+a 3.25rem time rail, then the entry body — with a 1px accent line running down
+the 1.1rem gutter between them. Stops hang off it as 9px marks whose SHAPE
+carries state, so nothing depends on colour:
+
+  ring          a stop
+  solid disc    visited
+  ring in --rule  skip (dropped from the plan)
+  short dash    note row (not a stop at all)
+
+Entry separators start at the body column, so the hairline never crosses the
+spine — the spine reads as continuous travel, the rules as discrete entries.
+
+--------------------------------------------------------------------------------
+5. RATIONALE
+--------------------------------------------------------------------------------
+A field guide is read one-handed on a street corner, and the thing you need
+first is almost always the time and the name — so those get the two strongest
+typographic positions on the page and everything else recedes into sans-serif
+metadata beneath them. Boxes were the wrong tool here: a card around every stop
+draws eleven rectangles competing for attention, where a single hairline spine
+draws one continuous line that says "this is the order you walk it" without
+adding a single pixel of chrome. Restraint also buys robustness — because the
+only colour on the page is one thin data-driven accent, a trip file can ship any
+palette it likes and the page cannot be made ugly or illegible by it. The result
+should feel less like an app screen and more like a well-set programme you were
+handed at the door.
+
+--------------------------------------------------------------------------------
+6. SCOPE
+--------------------------------------------------------------------------------
+Renders one embedded trip. The MENU / refresh chrome from DESIGN §5, the trip
+loader and the Contents API layer are M1 shell work and deliberately absent —
+this file is a styling candidate, not a milestone.
+================================================================================
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#FBFAF7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121210" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Wayfeather</title>
+<style>
+/* ─── tokens ──────────────────────────────────────────────────────────────── */
+:root{
+  color-scheme: light dark;
+
+  --paper:#FBFAF7;
+  --paper-sunk:#F2F0EA;
+  --ink:#14130F;
+  --ink-2:#4A4741;
+  --ink-3:#6B675E;
+  --rule:#DDD9D0;
+  --rule-soft:#EBE7DF;
+  --warn:#9A2B1E;
+  --accent:#565A5C;              /* overridden per day, inline, from trip data */
+  --on-accent:var(--ink);        /* computed per day by textOn()               */
+
+  --serif: ui-serif, "New York", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  --t-xs:.6875rem; --t-sm:.8125rem; --t-md:.9375rem;
+  --t-lg:1.0625rem; --t-xl:1.375rem; --t-2xl:1.75rem;
+
+  --s1:.25rem; --s2:.5rem; --s3:.75rem; --s4:1rem;
+  --s5:1.25rem; --s6:1.75rem; --s7:2.5rem; --s8:3.5rem;
+
+  --rail:3.25rem;
+  --gutter:1.1rem;
+  --spine-x:calc(var(--rail) + var(--gutter) / 2);
+  --measure:40rem;
+  --pad-x:max(1.25rem, env(safe-area-inset-left), env(safe-area-inset-right));
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#121210;
+    --paper-sunk:#1B1B18;
+    --ink:#EDEAE3;
+    --ink-2:#B8B3A9;
+    --ink-3:#928D83;
+    --rule:#302F2B;
+    --rule-soft:#242320;
+    --warn:#E8A08E;
+  }
+}
+@media (min-width:640px){
+  :root{
+    --t-lg:1.1875rem; --t-xl:1.6875rem; --t-2xl:2.375rem;
+    --rail:4rem; --gutter:1.5rem;
+  }
+}
+
+/* ─── reset ───────────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--serif);
+  font-size:var(--t-md);
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,p,ol,ul,figure{margin:0;padding:0}
+ol,ul{list-style:none}
+[hidden]{display:none !important}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:1px}
+
+.page{max-width:var(--measure);margin-inline:auto;padding-inline:var(--pad-x)}
+
+/* shared label style — synthesised small caps */
+.lbl{
+  font-family:var(--sans);
+  font-size:var(--t-xs);
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.09em;
+  line-height:1.3;
+}
+
+/* ─── masthead ────────────────────────────────────────────────────────────── */
+.masthead{
+  padding-top:calc(var(--s5) + env(safe-area-inset-top));
+  padding-bottom:var(--s6);
+}
+.masthead-rule{height:1px;background:var(--ink);margin-bottom:var(--s2)}
+.kicker{color:var(--ink-3);margin-bottom:var(--s6)}
+.wordmark{
+  font-family:var(--serif);
+  font-size:var(--t-2xl);
+  font-weight:600;
+  line-height:1.1;
+  letter-spacing:-.014em;
+  text-wrap:pretty;
+}
+.dateline{
+  font-family:var(--sans);
+  font-size:var(--t-sm);
+  color:var(--ink-3);
+  margin-top:var(--s3);
+  line-height:1.5;
+}
+
+/* ─── day nav ─────────────────────────────────────────────────────────────── */
+.navbar{
+  position:sticky;
+  top:0;
+  z-index:10;
+  background:var(--paper);
+  border-bottom:1px solid var(--rule);
+}
+.navbar.is-stuck{padding-top:env(safe-area-inset-top)}
+.daynav{
+  max-width:var(--measure);
+  margin-inline:auto;
+  padding-inline:var(--pad-x);
+  display:flex;
+  gap:var(--s5);
+  overflow-x:auto;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+.daynav::-webkit-scrollbar{display:none}
+.daytab{
+  flex:0 0 auto;
+  appearance:none;
+  -webkit-appearance:none;
+  background:none;
+  border:0;
+  border-bottom:2px solid transparent;
+  margin:0;
+  padding:var(--s3) var(--s1) calc(var(--s3) - 2px);
+  min-height:2.875rem;              /* >= 44px tap target */
+  min-width:2.75rem;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:.1rem;
+  cursor:pointer;
+  color:var(--ink-3);
+  font:inherit;
+}
+.daytab-bullet{
+  font-family:var(--serif);
+  font-size:1.0625rem;
+  font-weight:600;
+  line-height:1;
+}
+.daytab-label{
+  font-family:var(--sans);
+  font-size:.625rem;
+  font-weight:600;
+  letter-spacing:.11em;
+  line-height:1;
+}
+.daytab[aria-selected="true"]{
+  color:var(--ink);
+  border-bottom-color:var(--accent);
+}
+.daytab:focus-visible{outline-offset:-2px}
+@media (prefers-reduced-motion: no-preference){
+  .daytab{transition:color .14s ease, border-color .14s ease}
+}
+
+/* ─── day head ────────────────────────────────────────────────────────────── */
+.day-head{padding:var(--s7) 0 var(--s5)}
+.day-mark{
+  width:1.875rem;
+  height:1.875rem;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:var(--accent);
+  color:var(--on-accent);
+  font-family:var(--serif);
+  font-size:1.0625rem;
+  font-weight:600;
+  line-height:1;
+  margin-bottom:var(--s4);
+}
+.folio{color:var(--ink-3);margin-bottom:var(--s2)}
+.day-title{
+  font-family:var(--serif);
+  font-size:var(--t-xl);
+  font-weight:600;
+  line-height:1.15;
+  letter-spacing:-.012em;
+  text-wrap:pretty;
+}
+.day-sub{
+  font-family:var(--sans);
+  font-size:var(--t-sm);
+  color:var(--ink-2);
+  margin-top:var(--s3);
+  max-width:34rem;
+}
+.day-head-rule{height:1px;background:var(--rule);margin-top:var(--s5)}
+
+/* ─── cluster ─────────────────────────────────────────────────────────────── */
+.cluster{padding-top:var(--s6)}
+.cluster-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--s4);
+  min-height:2.75rem;
+}
+.cluster-name{color:var(--ink-3);letter-spacing:.11em}
+.walk{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  min-height:2.75rem;              /* >= 44px tap target */
+  color:var(--ink);
+  text-decoration:none;
+  border-bottom:2px solid var(--accent);
+  white-space:nowrap;
+}
+
+/* ─── the spine ───────────────────────────────────────────────────────────── */
+.stops{position:relative;padding-top:var(--s2)}
+.stops::before{
+  content:"";
+  position:absolute;
+  left:var(--spine-x);
+  top:0;
+  bottom:1.1rem;
+  width:1px;
+  background:var(--accent);
+}
+.entry{
+  position:relative;
+  display:grid;
+  grid-template-columns:var(--rail) minmax(0,1fr);
+  column-gap:var(--gutter);
+  padding-block:var(--s4);
+}
+/* the stop mark — shape carries state, never colour alone */
+.entry::before{
+  content:"";
+  position:absolute;
+  left:calc(var(--spine-x) - 4px);
+  top:calc(var(--s4) + .34rem);
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  border:2px solid var(--accent);
+  background:var(--paper);
+}
+.entry.is-visited::before{background:var(--accent)}
+.entry.is-skip::before{border-color:var(--rule);background:var(--paper)}
+.entry.is-note::before{
+  left:calc(var(--spine-x) - 5px);
+  top:calc(var(--s4) + .58rem);
+  width:11px;
+  height:0;
+  border:0;
+  border-top:1px solid var(--ink-3);
+  border-radius:0;
+  background:none;
+}
+/* separator starts at the body column so it never crosses the spine */
+.entry + .entry > .entry-body,
+.entry + .entry > .entry-time{padding-top:var(--s4)}
+.entry + .entry > .entry-body{border-top:1px solid var(--rule-soft)}
+
+/* time rail */
+.entry-time{
+  font-family:var(--sans);
+  font-variant-numeric:tabular-nums;
+  text-align:right;
+  line-height:1.25;
+  padding-top:.1rem;
+}
+.entry-time .clock{
+  display:block;
+  font-size:var(--t-sm);
+  font-weight:600;
+  letter-spacing:.01em;
+  color:var(--ink-2);
+}
+.entry-time .mer{
+  display:block;
+  font-size:.625rem;
+  font-weight:600;
+  letter-spacing:.11em;
+  color:var(--ink-3);
+  margin-top:.1rem;
+}
+.entry-time .word{
+  display:block;
+  font-size:var(--t-sm);
+  font-style:italic;
+  color:var(--ink-3);
+}
+
+/* entry body */
+.prio{display:inline-block;margin-bottom:var(--s2)}
+.prio-fixed{color:var(--ink);border-bottom:3px double currentColor;padding-bottom:.08rem}
+.prio-must{
+  color:var(--paper);
+  background:var(--ink);
+  padding:.2rem .45rem .22rem;
+  letter-spacing:.12em;
+}
+.prio-yes{color:var(--ink-2)}
+.prio-check{color:var(--warn);border-bottom:1px dotted currentColor;padding-bottom:.1rem}
+.prio-maybe{color:var(--ink-3)}
+.prio-if-close{color:var(--ink-3);font-style:italic;letter-spacing:.07em}
+.prio-optional{color:var(--ink-3);font-weight:500}
+.prio-maybe-not{color:var(--ink-3);font-weight:500;font-style:italic;letter-spacing:.07em}
+.prio-skip{color:var(--ink-3);font-weight:500;text-decoration:line-through;text-decoration-thickness:1px}
+
+.name{
+  font-family:var(--serif);
+  font-size:var(--t-lg);
+  font-weight:600;
+  line-height:1.25;
+  letter-spacing:-.011em;
+  text-wrap:pretty;
+  overflow-wrap:break-word;
+}
+.meta{
+  font-family:var(--sans);
+  font-size:var(--t-sm);
+  color:var(--ink-3);
+  margin-top:var(--s2);
+  line-height:1.5;
+  overflow-wrap:break-word;
+}
+.hours{
+  font-family:var(--sans);
+  font-size:var(--t-sm);
+  color:var(--ink-2);
+  margin-top:var(--s2);
+  line-height:1.5;
+}
+.hours .hours-lbl{
+  color:var(--ink-3);
+  font-size:var(--t-xs);
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.09em;
+  margin-right:.45rem;
+}
+.hours.is-bad,
+.hours.is-bad .hours-lbl{color:var(--warn)}
+.warnline{
+  font-family:var(--sans);
+  font-size:var(--t-sm);
+  font-weight:600;
+  color:var(--warn);
+  margin-top:var(--s3);
+  padding-left:var(--s3);
+  border-left:2px solid var(--warn);   /* editor's change bar */
+  line-height:1.45;
+}
+.notes{
+  font-family:var(--serif);
+  font-size:var(--t-md);
+  color:var(--ink-2);
+  margin-top:var(--s3);
+  line-height:1.55;
+  max-width:33rem;
+}
+
+/* links */
+.links{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  column-gap:var(--s5);
+  margin-top:var(--s3);
+  border-top:1px solid var(--rule-soft);
+}
+.links a{
+  display:inline-flex;
+  align-items:center;
+  min-height:2.75rem;               /* >= 44px tap target */
+  font-family:var(--sans);
+  font-size:var(--t-xs);
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.09em;
+  color:var(--ink-2);
+  text-decoration:underline;
+  text-decoration-thickness:1px;
+  text-underline-offset:.3em;
+  text-decoration-color:var(--rule);
+}
+.links a:hover,.links a:focus-visible{color:var(--ink);text-decoration-color:var(--accent)}
+.links a:active{color:var(--ink)}
+@media (prefers-reduced-motion: no-preference){
+  .links a{transition:color .14s ease, text-decoration-color .14s ease}
+}
+
+/* ─── entry states ────────────────────────────────────────────────────────── */
+/* skip: dimmed by stepping down the ink ramp, not by opacity — still legible */
+.entry.is-skip .name{color:var(--ink-2);font-weight:400}
+.entry.is-skip .entry-time .clock{color:var(--ink-3)}
+.entry.is-skip .notes{color:var(--ink-3)}
+
+/* visited: preview of tap-to-mark-visited (see the script) */
+.entry.is-visited .name{color:var(--ink-2)}
+.entry.is-visited .notes{color:var(--ink-3)}
+.visited-mark{
+  display:inline-flex;
+  align-items:baseline;
+  gap:.3rem;
+  color:var(--ink-3);
+  margin-left:var(--s3);
+}
+
+/* note rows: quiet text, no links, no badge chrome */
+.entry.is-note .name{
+  font-size:var(--t-md);
+  font-weight:400;
+  font-style:italic;
+  color:var(--ink-2);
+}
+.entry.is-note .notes{color:var(--ink-3)}
+
+/* ─── footer ──────────────────────────────────────────────────────────────── */
+.foot{
+  margin-top:var(--s8);
+  padding-top:var(--s5);
+  padding-bottom:calc(var(--s8) + env(safe-area-inset-bottom));
+  border-top:1px solid var(--rule);
+}
+.foot-note{
+  font-family:var(--serif);
+  font-size:var(--t-md);
+  color:var(--ink-2);
+  line-height:1.55;
+  max-width:33rem;
+}
+.colophon{color:var(--ink-3);margin-top:var(--s4)}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="masthead">
+    <div class="masthead-rule" aria-hidden="true"></div>
+    <p class="kicker lbl">Wayfeather · Field Guide</p>
+    <h1 class="wordmark" id="wordmark"></h1>
+    <p class="dateline" id="dateline"></p>
+  </header>
+</div>
+
+<div id="navSentinel" aria-hidden="true"></div>
+<div class="navbar" id="navbar">
+  <nav class="daynav" id="daynav" role="tablist" aria-label="Days"></nav>
+</div>
+
+<div class="page">
+  <main id="app"></main>
+  <footer class="foot">
+    <p class="foot-note" id="tripNotes"></p>
+    <p class="colophon lbl" id="colophon"></p>
+  </footer>
+</div>
+
+<script>
+window.TRIP = {
+ "schema": 1,
+ "id": "chicago-test",
+ "name": "Chicago Test Trip",
+ "tz": "America/Chicago",
+ "start": "2027-06-04",
+ "end": "2027-06-06",
+ "base": {
+  "name": "Palmer House (test base)",
+  "address": "17 E Monroe St, Chicago, IL 60603"
+ },
+ "notes": "Fictional test trip — real public places, invented schedule. Safe to commit.",
+ "days": [
+  {
+   "key": "fri",
+   "date": "2027-06-04",
+   "bullet": "F",
+   "label": "FRI",
+   "color": "#00A1DE",
+   "title": "Friday · Jun 4",
+   "subtitle": "Arrive → Loop: Art Institute → deep dish"
+  },
+  {
+   "key": "sat",
+   "date": "2027-06-05",
+   "bullet": "S",
+   "label": "SAT",
+   "color": "#C60C30",
+   "title": "Saturday · Jun 5",
+   "subtitle": "Wicker Park: books → records → tacos"
+  },
+  {
+   "key": "sun",
+   "date": "2027-06-06",
+   "bullet": "S",
+   "label": "SUN",
+   "color": "#009B3A",
+   "title": "Sunday · Jun 6",
+   "subtitle": "Conservatory morning → Green Mill nightcap"
+  },
+  {
+   "key": "bonus",
+   "date": null,
+   "bullet": "+",
+   "label": "XTRA",
+   "color": "#565A5C",
+   "title": "Extras",
+   "subtitle": "Unscheduled — slot into any open block"
+  }
+ ],
+ "places": [
+  {
+   "id": "palmer-house-check-in",
+   "day": "fri",
+   "cluster": "Arrival — Loop",
+   "time": "3:00 PM",
+   "name": "Palmer House — check-in",
+   "type": "Stay",
+   "address": "17 E Monroe St, Chicago, IL 60603",
+   "lat": null,
+   "lng": null,
+   "hours": "Check-in 3:00 PM",
+   "cost": "",
+   "priority": "fixed",
+   "notes": "Test base. Drop bags and walk one block to the museum.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "art-institute-of-chicago",
+   "day": "fri",
+   "cluster": "Arrival — Loop",
+   "time": "3:45 PM",
+   "name": "Art Institute of Chicago",
+   "type": "Art",
+   "address": "111 S Michigan Ave, Chicago, IL 60603",
+   "lat": null,
+   "lng": null,
+   "hours": "Thu–Mon 11–5; CLOSED Tue/Wed",
+   "cost": "$32",
+   "priority": "must",
+   "notes": "The lions. Last entry an hour before close — test must row.",
+   "website": "https://www.artic.edu/",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "chicago-cultural-center",
+   "day": "fri",
+   "cluster": "Arrival — Loop",
+   "time": "5:15 PM",
+   "name": "Chicago Cultural Center",
+   "type": "Sight",
+   "address": "78 E Washington St, Chicago, IL 60602",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 10–5",
+   "cost": "Free",
+   "priority": "yes",
+   "notes": "Tiffany dome — free, quick, on the walk.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "lou-malnatis-state-st",
+   "day": "fri",
+   "cluster": "Evening — Loop",
+   "time": "7:00 PM",
+   "name": "Lou Malnati's (State St)",
+   "type": "Food",
+   "address": "805 S State St, Chicago, IL 60605",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 11–11",
+   "cost": "$$",
+   "priority": "fixed",
+   "notes": "Test reservation row — booked, immovable.",
+   "website": "https://www.loumalnatis.com/",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "myopic-books",
+   "day": "sat",
+   "cluster": "Wicker Park loop",
+   "time": "11:00 AM",
+   "name": "Myopic Books",
+   "type": "Books",
+   "address": "1564 N Milwaukee Ave, Chicago, IL 60622",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 11–10",
+   "cost": "",
+   "priority": "yes",
+   "notes": "Three floors of used books.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "reckless-records",
+   "day": "sat",
+   "cluster": "Wicker Park loop",
+   "time": "12:00 PM",
+   "name": "Reckless Records",
+   "type": "Music",
+   "address": "1379 N Milwaukee Ave, Chicago, IL 60622",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 10–8",
+   "cost": "",
+   "priority": "yes",
+   "notes": "Flagship location — listening stations.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "quimbys-bookstore",
+   "day": "sat",
+   "cluster": "Wicker Park loop",
+   "time": "12:45 PM",
+   "name": "Quimby's Bookstore",
+   "type": "Books",
+   "address": "1854 W North Ave, Chicago, IL 60622",
+   "lat": null,
+   "lng": null,
+   "hours": "Mon–Sat 12–7; Sun 12–6",
+   "cost": "",
+   "priority": "if-close",
+   "notes": "Zines and small press — test if-close row.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "big-star-tacos",
+   "day": "sat",
+   "cluster": "Lunch — Wicker Park",
+   "time": "1:30 PM",
+   "name": "Big Star",
+   "type": "Food",
+   "address": "1531 N Damen Ave, Chicago, IL 60622",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 11–12",
+   "cost": "$",
+   "priority": "maybe",
+   "notes": "Patio tacos — test maybe row; long waits on weekends.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "sat-evening-open",
+   "day": "sat",
+   "cluster": "Evening",
+   "time": "open",
+   "name": "Evening open",
+   "type": "",
+   "address": "",
+   "lat": null,
+   "lng": null,
+   "hours": "",
+   "cost": "",
+   "priority": "note",
+   "notes": "Nothing booked — test note row, renders as text with no links.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "garfield-park-conservatory",
+   "day": "sun",
+   "cluster": "Morning — Garfield Park",
+   "time": "10:00 AM",
+   "name": "Garfield Park Conservatory",
+   "type": "Park",
+   "address": "300 N Central Park Ave, Chicago, IL 60624",
+   "lat": null,
+   "lng": null,
+   "hours": "Wed–Sun 10–5; CLOSED Mon/Tue",
+   "cost": "Free (reserve)",
+   "priority": "check",
+   "notes": "Test call-ahead row — timed entry on busy weekends.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "Reserve a slot — walk-ins limited",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "green-mill",
+   "day": "sun",
+   "cluster": "Evening — Uptown",
+   "time": "8:00 PM",
+   "name": "Green Mill Cocktail Lounge",
+   "type": "Music",
+   "address": "4802 N Broadway, Chicago, IL 60640",
+   "lat": null,
+   "lng": null,
+   "hours": "Nightly from 8",
+   "cost": "cover varies",
+   "priority": "optional",
+   "notes": "Jazz since 1907 — test optional row.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "navy-pier",
+   "day": "bonus",
+   "cluster": "Only if desperate",
+   "time": "",
+   "name": "Navy Pier",
+   "type": "Sight",
+   "address": "600 E Grand Ave, Chicago, IL 60611",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 10–9",
+   "cost": "",
+   "priority": "maybe-not",
+   "notes": "Tourist gauntlet — test maybe-not row.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "intl-museum-surgical-science",
+   "day": "bonus",
+   "cluster": "Probably skip",
+   "time": "",
+   "name": "International Museum of Surgical Science",
+   "type": "Museum",
+   "address": "1524 N Lake Shore Dr, Chicago, IL 60610",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 10–5",
+   "cost": "$20",
+   "priority": "skip",
+   "notes": "Test skip row — renders dimmed.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  }
+ ]
+};
+</script>
+
+<script>
+(function(){
+  "use strict";
+
+  var T = window.TRIP || {};
+  var DAYS = Array.isArray(T.days) ? T.days : [];
+  var PLACES = Array.isArray(T.places) ? T.places : [];
+
+  /* ── VISITED PREVIEW ───────────────────────────────────────────────────────
+     Tap-to-mark-visited is not built yet. One priority:"yes" place is rendered
+     in the visited state so the treatment can be judged alongside live rows.
+     Static and presentational only — nothing reads or writes this but CSS.   */
+  var VISITED_PREVIEW = ["chicago-cultural-center"];
+
+  /* ── helpers ───────────────────────────────────────────────────────────── */
+  var enc = encodeURIComponent;
+  var ESC = {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};
+  function esc(s){
+    return String(s === null || s === undefined ? "" : s).replace(/[&<>"']/g, function(c){ return ESC[c]; });
+  }
+
+  /* Mirrors the two extremes of the CSS ink ramp. Kept in sync by hand — they
+     are the only colours the accent contrast test needs to consider. */
+  var THEME = {
+    light: { ink:"#14130F", paper:"#FBFAF7" },
+    dark:  { ink:"#EDEAE3", paper:"#121210" }
+  };
+
+  function rgb(hex){
+    var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
+    if(!m) return null;
+    var n = parseInt(m[1], 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function lum(c){
+    function f(v){ v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+    return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+  }
+  function contrast(a, b){
+    var x = lum(a), y = lum(b), hi = Math.max(x, y), lo = Math.min(x, y);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+  /* Pick the legible text colour to sit ON an author-supplied accent.
+     `darkText` from the trip file is honoured as a preference, but only when
+     that choice already clears 4.5:1 — otherwise the higher-contrast option
+     wins. A trip can therefore ship any palette without a contrast audit. */
+  function textOn(accent, mode, darkText){
+    var bg = rgb(accent);
+    var pair = THEME[mode];
+    if(!bg) return pair.ink;
+    var bgc = bg;
+    var cInk = contrast(rgb(pair.ink), bgc);
+    var cPaper = contrast(rgb(pair.paper), bgc);
+    if(typeof darkText === "boolean"){
+      var wantDark = mode === "light" ? darkText : !darkText;
+      var want = wantDark ? pair.ink : pair.paper;
+      var got = wantDark ? cInk : cPaper;
+      if(got >= 4.5) return want;
+    }
+    return cInk >= cPaper ? pair.ink : pair.paper;
+  }
+
+  /* Fallback locality for synthesised search URLs, derived from the trip's base
+     address ("17 E Monroe St, Chicago, IL 60603" -> "Chicago, IL"). v0 hardcoded
+     "NYC"; a multi-trip app cannot. */
+  function locality(){
+    var addr = (T.base && T.base.address) || "";
+    var parts = addr.split(",").map(function(s){ return s.trim(); }).filter(Boolean);
+    if(parts.length >= 2){
+      var city = parts[parts.length - 2];
+      var st = (parts[parts.length - 1] || "").split(/\s+/)[0];
+      return st ? city + ", " + st : city;
+    }
+    return T.name || "";
+  }
+  var LOC = locality();
+
+  /* ── link synthesis (v0 parity) ────────────────────────────────────────── */
+  function queryFor(p){
+    return enc((p.name || "") + (p.address ? ", " + p.address : (LOC ? " " + LOC : "")));
+  }
+  function linksFor(p){
+    if(!p.name || p.priority === "note") return "";
+    var L = [];
+    if(p.website) L.push(["Site", p.website]);
+    L.push(["Yelp", p.yelp || "https://www.yelp.com/search?find_desc=" + enc(p.name) + "&find_loc=" + enc(p.address || LOC)]);
+    L.push(["Google Maps", p.gmaps || "https://www.google.com/maps/search/?api=1&query=" + queryFor(p)]);
+    if(p.address) L.push(["Apple Maps", "https://maps.apple.com/?q=" + enc(p.name) + "&address=" + enc(p.address)]);
+    L.push(["Search", "https://www.google.com/search?q=" + enc(p.name + (LOC ? " " + LOC : ""))]);
+    return '<nav class="links" aria-label="Links for ' + esc(p.name) + '">' + L.map(function(pair){
+      return '<a href="' + esc(pair[1]) + '" target="_blank" rel="noopener noreferrer">' + esc(pair[0]) + "</a>";
+    }).join("") + "</nav>";
+  }
+
+  /* Google Maps walking directions across a cluster — v0's walkLink, verbatim. */
+  function walkLink(stops){
+    var a = stops.filter(function(s){ return s.address; }).map(function(s){ return enc(s.address); });
+    if(a.length < 2) return "";
+    var wp = a.slice(1, -1).join("|");
+    return "https://www.google.com/maps/dir/?api=1&origin=" + a[0] +
+           "&destination=" + a[a.length - 1] +
+           (wp ? "&waypoints=" + wp : "") + "&travelmode=walking";
+  }
+
+  /* v0's badHours warning regex, verbatim. */
+  function badHours(h){
+    return /closed mon|closed tue|closed sun|closed wed|unverified|closed weekends|closed$/i.test(h || "") ||
+           /^CLOSED/i.test(h || "");
+  }
+
+  var PRIORITY = {
+    fixed:       "Booked",
+    must:        "Must",
+    yes:         "Yes",
+    check:       "Call ahead",
+    maybe:       "Maybe",
+    "if-close":  "If close by",
+    optional:    "Optional",
+    "maybe-not": "Maybe not",
+    skip:        "Skip / closed"
+    /* note: no mark — the whole row is set as quiet text instead */
+  };
+
+  /* "3:45 PM" -> ["3:45","PM"];  "open" -> ["open",""];  "" -> ["",""] */
+  function splitTime(s){
+    var m = /^\s*(\d{1,2}:\d{2})\s*([AaPp])\.?[Mm]\.?\s*$/.exec(s || "");
+    if(m) return [m[1], m[2].toUpperCase() + "M"];
+    return [String(s || "").trim(), ""];
+  }
+
+  var MONTH = new Intl.DateTimeFormat("en-US", { month: "short" });
+  function d12(iso){ return new Date(iso + "T12:00:00"); }   /* noon: no TZ slip */
+  function fmtRange(a, b){
+    if(!a) return "";
+    var A = d12(a);
+    if(!b) return MONTH.format(A) + " " + A.getDate() + ", " + A.getFullYear();
+    var B = d12(b);
+    if(A.getFullYear() === B.getFullYear()){
+      if(A.getMonth() === B.getMonth()){
+        return MONTH.format(A) + " " + A.getDate() + " – " + B.getDate() + ", " + A.getFullYear();
+      }
+      return MONTH.format(A) + " " + A.getDate() + " – " + MONTH.format(B) + " " + B.getDate() + ", " + A.getFullYear();
+    }
+    return MONTH.format(A) + " " + A.getDate() + ", " + A.getFullYear() +
+           " – " + MONTH.format(B) + " " + B.getDate() + ", " + B.getFullYear();
+  }
+
+  /* ── entry ─────────────────────────────────────────────────────────────── */
+  function entryHTML(p){
+    var isNote = p.priority === "note";
+    var isSkip = p.priority === "skip";
+    var visited = VISITED_PREVIEW.indexOf(p.id) !== -1;
+
+    var cls = ["entry"];
+    if(isNote) cls.push("is-note");
+    if(isSkip) cls.push("is-skip");
+    if(visited) cls.push("is-visited");
+
+    var t = splitTime(p.time);
+    var time = "";
+    if(t[0] && t[1])      time = '<span class="clock">' + esc(t[0]) + '</span><span class="mer">' + esc(t[1]) + "</span>";
+    else if(t[0])         time = '<span class="word">' + esc(t[0]) + "</span>";
+
+    var mark = "";
+    if(!isNote && PRIORITY[p.priority]){
+      mark = '<p class="prio lbl prio-' + esc(p.priority) + '">' + esc(PRIORITY[p.priority]) + "</p>";
+    }
+
+    var metaBits = [p.type, p.address].filter(Boolean).join(" · ");
+    if(p.cost) metaBits += (metaBits ? " · " : "") + p.cost;
+    var meta = metaBits ? '<p class="meta">' + esc(metaBits) + "</p>" : "";
+
+    var hours = p.hours
+      ? '<p class="hours' + (badHours(p.hours) ? " is-bad" : "") + '">' +
+          '<span class="hours-lbl">' + (badHours(p.hours) ? "⚠︎ Hours" : "Hours") + "</span> " +
+          "<span>" + esc(p.hours) + "</span></p>"
+      : "";
+
+    var warn = p.warn ? '<p class="warnline">⚠︎ ' + esc(p.warn) + "</p>" : "";
+
+    var visitedMark = visited
+      ? '<span class="visited-mark lbl" aria-label="Visited">✓ Visited</span>'
+      : "";
+
+    var notes = p.notes ? '<p class="notes">' + esc(p.notes) + "</p>" : "";
+
+    return (visited ? "<!-- Visited-state preview: static styling for the upcoming tap-to-mark-visited feature. -->" : "") +
+      '<li class="' + cls.join(" ") + '">' +
+        '<p class="entry-time">' + time + "</p>" +
+        '<div class="entry-body">' +
+          mark +
+          '<h4 class="name">' + esc(p.name) + visitedMark + "</h4>" +
+          meta + hours + warn + notes + linksFor(p) +
+        "</div>" +
+      "</li>";
+  }
+
+  /* ── day panel ─────────────────────────────────────────────────────────── */
+  function panelHTML(d){
+    var stops = PLACES.filter(function(p){ return p.day === d.key; });
+
+    var clusters = [];
+    stops.forEach(function(s){                       /* order of first appearance */
+      if(clusters.indexOf(s.cluster) === -1) clusters.push(s.cluster);
+    });
+
+    var body = clusters.map(function(name){
+      var cs = stops.filter(function(s){ return s.cluster === name; });
+      var w = walkLink(cs);
+      return '<section class="cluster">' +
+        '<div class="cluster-head">' +
+          '<h3 class="cluster-name lbl">' + esc(name) + "</h3>" +
+          (w ? '<a class="walk lbl" href="' + esc(w) + '" target="_blank" rel="noopener noreferrer">Walk the route ↗</a>' : "") +
+        "</div>" +
+        '<ol class="stops">' + cs.map(entryHTML).join("") + "</ol>" +
+      "</section>";
+    }).join("");
+
+    var count = stops.length + (stops.length === 1 ? " stop" : " stops");
+    var accent = d.color || "#565A5C";
+
+    return '<section class="panel" id="panel-' + esc(d.key) + '" role="tabpanel" ' +
+             'aria-labelledby="tab-' + esc(d.key) + '" ' +
+             'style="--accent:' + esc(accent) + ';--on-accent:' + esc(textOn(accent, "light", d.darkText)) + '">' +
+      '<header class="day-head">' +
+        '<div class="day-mark" aria-hidden="true">' + esc(d.bullet || "") + "</div>" +
+        '<p class="folio lbl">' + esc(d.label || "") + " · " + count + "</p>" +
+        '<h2 class="day-title">' + esc(d.title || d.label || d.key) + "</h2>" +
+        (d.subtitle ? '<p class="day-sub">' + esc(d.subtitle) + "</p>" : "") +
+        '<div class="day-head-rule"></div>' +
+      "</header>" + body +
+    "</section>";
+  }
+
+  /* ── render ────────────────────────────────────────────────────────────── */
+  var app = document.getElementById("app");
+  var nav = document.getElementById("daynav");
+
+  document.title = (T.name ? T.name + " · " : "") + "Wayfeather";
+  document.getElementById("wordmark").textContent = T.name || "Wayfeather";
+
+  var datelineBits = [fmtRange(T.start, T.end)];
+  if(T.base && T.base.name) datelineBits.push(T.base.name);
+  datelineBits.push(PLACES.length + (PLACES.length === 1 ? " place" : " places"));
+  document.getElementById("dateline").textContent = datelineBits.filter(Boolean).join(" · ");
+
+  document.getElementById("tripNotes").textContent = T.notes || "";
+  document.getElementById("colophon").textContent = "Wayfeather · schema " + (T.schema === undefined ? "?" : T.schema) + " · " + (T.id || "");
+
+  app.innerHTML = DAYS.map(panelHTML).join("");
+
+  nav.innerHTML = DAYS.map(function(d){
+    var accent = d.color || "#565A5C";
+    return '<button class="daytab" type="button" role="tab" id="tab-' + esc(d.key) + '" ' +
+             'aria-controls="panel-' + esc(d.key) + '" aria-selected="false" tabindex="-1" ' +
+             'data-key="' + esc(d.key) + '" style="--accent:' + esc(accent) + '">' +
+        '<span class="daytab-bullet" aria-hidden="true">' + esc(d.bullet || "") + "</span>" +
+        '<span class="daytab-label">' + esc(d.label || d.key) + "</span>" +
+      "</button>";
+  }).join("");
+
+  /* Dark-mode `--on-accent` for the day mark: recomputed against the dark ramp
+     whenever the OS theme flips, so the mark stays >= 4.5:1 in both modes. */
+  var mqDark = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  function applyOnAccent(){
+    var mode = mqDark && mqDark.matches ? "dark" : "light";
+    DAYS.forEach(function(d){
+      var el = document.getElementById("panel-" + d.key);
+      if(el) el.style.setProperty("--on-accent", textOn(d.color || "#565A5C", mode, d.darkText));
+    });
+  }
+  applyOnAccent();
+  if(mqDark){
+    if(mqDark.addEventListener) mqDark.addEventListener("change", applyOnAccent);
+    else if(mqDark.addListener) mqDark.addListener(applyOnAccent);
+  }
+
+  /* ── day switching ─────────────────────────────────────────────────────── */
+  var keys = DAYS.map(function(d){ return d.key; });
+  var tabs = Array.prototype.slice.call(nav.querySelectorAll(".daytab"));
+  var current = null;
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function select(key, opts){
+    if(!key || keys.indexOf(key) === -1) return;
+    current = key;
+    tabs.forEach(function(t){
+      var on = t.dataset.key === key;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      t.tabIndex = on ? 0 : -1;
+    });
+    DAYS.forEach(function(d){
+      var el = document.getElementById("panel-" + d.key);
+      if(el) el.hidden = d.key !== key;
+    });
+    if(opts && opts.focus){
+      var t = tabs[keys.indexOf(key)];
+      if(t) t.focus();
+    }
+    if(opts && opts.scroll){
+      window.scrollTo({ top: document.getElementById("navbar").offsetTop, behavior: reduce ? "auto" : "smooth" });
+    }
+  }
+
+  nav.addEventListener("click", function(e){
+    var t = e.target.closest ? e.target.closest(".daytab") : null;
+    if(t) select(t.dataset.key, { scroll: true });
+  });
+
+  nav.addEventListener("keydown", function(e){
+    var i = keys.indexOf(current), j = -1;
+    if(e.key === "ArrowRight" || e.key === "ArrowDown") j = (i + 1) % keys.length;
+    else if(e.key === "ArrowLeft" || e.key === "ArrowUp") j = (i - 1 + keys.length) % keys.length;
+    else if(e.key === "Home") j = 0;
+    else if(e.key === "End") j = keys.length - 1;
+    else return;
+    e.preventDefault();
+    select(keys[j], { focus: true });
+  });
+
+  /* Auto-open today's day when today falls inside the trip; else the first day.
+     ISO strings compare lexicographically, which dodges every timezone trap. */
+  function pad(n){ return (n < 10 ? "0" : "") + n; }
+  var now = new Date();
+  var today = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
+  var initial = keys[0];
+  if(T.start && T.end && today >= T.start && today <= T.end){
+    for(var i = 0; i < DAYS.length; i++){
+      if(DAYS[i].date === today){ initial = DAYS[i].key; break; }
+    }
+  }
+  select(initial);
+
+  /* Sticky nav picks up the safe-area inset only once it reaches the top edge,
+     so the status bar never eats the tabs in installed/standalone mode. */
+  var sentinel = document.getElementById("navSentinel");
+  var navbar = document.getElementById("navbar");
+  if(window.IntersectionObserver && sentinel){
+    new IntersectionObserver(function(entries){
+      navbar.classList.toggle("is-stuck", !entries[0].isIntersecting);
+    }, { threshold: 0 }).observe(sentinel);
+  }
+})();
+</script>
+</body>
+</html>

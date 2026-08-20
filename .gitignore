@@ -1,6 +1,9 @@
 # macOS
 .DS_Store
 
+# local Claude Code session config (machine-specific)
+.claude/
+
 # deps (Vitest, scripts)
 node_modules/
 

@@ -1,0 +1,1194 @@
+<!doctype html>
+<!--
+================================================================================
+DESIGN NOTES — Candidate A: Soft Cards
+================================================================================
+
+A warm, modern consumer-app skin for Wayfeather. The reference points are Apple
+Journal and Airbnb: a quiet off-white ground, generously rounded surfaces that
+float on soft layered shadows, a big greeting header, and a pill-shaped
+segmented day control. Nothing here is thematic — no signage band, no route
+bullets, no line spines, no Helvetica-as-identity. Type is the native
+-apple-system stack so an installed PWA reads as part of iOS.
+
+--------------------------------------------------------------------------------
+1. COLOR TOKENS (neutral ground — fixed, mode-aware)
+--------------------------------------------------------------------------------
+  --ground / --surface / --surface-2   page ground, card, recessed card
+  --hair / --hair-2                    hairline borders
+  --ink / --ink-2 / --ink-3            primary / secondary / tertiary text
+  --focus                              focus ring (mode-specific blue)
+  --nav-bg                             translucent sticky-bar fill
+
+  Semantic pairs (bg + ink, each pair verified >= 4.5:1):
+  --ok-*      hours look fine          --bad-*     hours warning / closures
+  --warn-*    call-ahead, warn line    --info-*    "maybe"
+  --violet-*  "if close by"            --gold-*    "must" (the one saturated badge)
+  --neutral-* optional / maybe-not / skip
+
+--------------------------------------------------------------------------------
+2. DATA-DRIVEN DAY COLOR (the part that matters)
+--------------------------------------------------------------------------------
+Day colors come from trip.days[].color and are NEVER hardcoded. But a raw brand
+hex (e.g. #00A1DE) only reaches 2.9:1 against white, so it cannot legally carry
+text. So each day's hex is *projected* at runtime into four derived values, then
+written onto the day's panel and tab as inline custom properties:
+
+  --d-ink      hue+saturation preserved, lightness walked DOWN until the color
+               clears 4.6:1 against a light reference luminance (0.85).
+               Used for: small accents, cluster dots, "fixed" times, the
+               selected-tab fill. Because it clears 4.6:1 on light, white text
+               on it is automatically >= 5:1 — so the filled tab is safe too.
+  --d-ink-dk   same walk, upward, against a dark reference luminance (0.02).
+  --d-tint     same hue, saturation damped, L 0.945 — the day-header wash.
+  --d-soft     same hue, L 0.90 — chips and the walk-route pill.
+               (--d-tint-dk / --d-soft-dk are the dark-mode twins at L .145/.20.)
+
+CSS then binds `--accent`, `--tint`, `--soft`, `--on-accent` from the light set,
+and re-binds them from the dark set inside the prefers-color-scheme block. The
+saturated end of the scale is reserved for small key moments — the selected day
+pill, cluster dots, the time on a booked stop, the visited check — while the
+tints do the broad, quiet work. days[].darkText is honored when present: it
+flips the on-fill text to near-black, but only if that still passes 4.5:1.
+
+--------------------------------------------------------------------------------
+3. TYPE SCALE (system stack, tabular numerals on all times)
+--------------------------------------------------------------------------------
+  11 / 12 / 13 / 15 / 17 / 20 px  (--t-2xs … --t-xl)
+  hero title: clamp(28px, 8.5vw, 40px), weight 700, tracking -0.03em
+  Weights used: 400 body, 500 meta, 600 names/labels, 700 hero+badges.
+
+--------------------------------------------------------------------------------
+4. SPACING / RADII / ELEVATION
+--------------------------------------------------------------------------------
+  space  4 / 8 / 12 / 16 / 20 / 24 / 32 / 44 px   (--s1 … --s8)
+  radii  8 sm · 12 md · 16 lg · 20 xl · 999 pill  — cards sit at 16–18px
+  elev   --e1 resting hairline lift · --e2 the two-layer card shadow
+         (tight 1px contact shadow + wide diffuse shadow) · --e-nav for the
+         sticky bar. Dark mode swaps shadow for a hairline + deeper ambient,
+         because shadows do not read on a near-black ground.
+
+--------------------------------------------------------------------------------
+5. RATIONALE
+--------------------------------------------------------------------------------
+The old page shouted; a field guide read on a street corner should not. Soft
+Cards puts every stop on its own floating card with one job per line — time,
+name, the "type · address · cost" spine, hours, then actions — so the answer to
+"what's next, is it open, how do I get there" is a single glance, not a parse.
+The day's identity color earns its keep as atmosphere (a tinted day header, a
+dot per cluster) rather than as chrome, which keeps three saturated brand hexes
+from fighting each other on one screen. And every interactive element is a
+44px-tall rounded target, because the real use case is one thumb, outdoors,
+walking.
+
+NOTE: this file is a design candidate. Data is embedded verbatim as window.TRIP;
+the shipped app will fetch it through the Contents API instead.
+================================================================================
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F6F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E0E10" media="(prefers-color-scheme: dark)">
+<title>Wayfeather — Soft Cards</title>
+<style>
+/* ─── 1. TOKENS ────────────────────────────────────────────────────────────── */
+:root{
+  /* neutrals */
+  --ground:#F6F5F2;
+  --surface:#FFFFFF;
+  --surface-2:#F1EFEA;
+  --hair:#E7E4DD;
+  --hair-2:#D6D2C9;
+  --ink:#17171A;
+  --ink-2:#56565C;
+  --ink-3:#64646B;
+  --focus:#1D4ED8;
+  --nav-bg:rgba(246,245,242,.86);
+  --dot-on:rgba(255,255,255,.30);
+
+  /* semantic pairs */
+  --ok-bg:#E4F2E8;      --ok-ink:#166A38;
+  --bad-bg:#FBE9E7;     --bad-ink:#A3261A;
+  --warn-bg:#FBEEDD;    --warn-ink:#8A4F06;
+  --info-bg:#E9EFFA;    --info-ink:#2C4E8A;
+  --violet-bg:#F0EAFA;  --violet-ink:#5A3E97;
+  --gold-bg:#F2C14E;    --gold-ink:#3A2A02;
+  --neutral-bg:#EDEBE6;
+
+  /* type scale */
+  --t-2xs:11px; --t-xs:12px; --t-sm:13px; --t-md:15px;
+  --t-lg:17px;  --t-xl:20px;
+
+  /* space scale */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px;
+  --s5:20px; --s6:24px; --s7:32px; --s8:44px;
+
+  /* radii */
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:20px; --r-pill:999px;
+
+  /* elevation */
+  --e1:0 1px 2px rgba(23,23,26,.05), 0 1px 1px rgba(23,23,26,.04);
+  --e2:0 1px 2px rgba(23,23,26,.05), 0 4px 12px rgba(23,23,26,.055),
+       0 14px 30px rgba(23,23,26,.045);
+  --e-nav:0 1px 0 rgba(23,23,26,.07), 0 8px 20px rgba(23,23,26,.05);
+  --card-ring:0 0 0 1px rgba(23,23,26,.035);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --ground:#0E0E10;
+    --surface:#18181B;
+    --surface-2:#141416;
+    --hair:rgba(255,255,255,.09);
+    --hair-2:rgba(255,255,255,.16);
+    --ink:#F2F1EE;
+    --ink-2:#B9B8B4;
+    --ink-3:#9B9A94;
+    --focus:#8AB0FF;
+    --nav-bg:rgba(14,14,16,.84);
+    --dot-on:rgba(0,0,0,.22);
+
+    --ok-bg:#12301F;      --ok-ink:#7EDCA4;
+    --bad-bg:#3A1512;     --bad-ink:#FF9C90;
+    --warn-bg:#33230C;    --warn-ink:#F3C07A;
+    --info-bg:#141E33;    --info-ink:#9DBBF2;
+    --violet-bg:#1F1733;  --violet-ink:#C4AAF5;
+    --gold-bg:#E8B93F;    --gold-ink:#2E2100;
+    --neutral-bg:#232327;
+
+    --e1:0 1px 2px rgba(0,0,0,.5);
+    --e2:0 1px 2px rgba(0,0,0,.45), 0 8px 22px rgba(0,0,0,.42);
+    --e-nav:0 1px 0 rgba(255,255,255,.07), 0 10px 24px rgba(0,0,0,.5);
+    --card-ring:0 0 0 1px rgba(255,255,255,.055);
+  }
+}
+
+/* ─── 2. BASE ──────────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,system-ui,"Segoe UI",Roboto,
+              "Helvetica Neue",Arial,sans-serif;
+  font-size:var(--t-md);
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+h1,h2,h3,h4,p{margin:0}
+a{color:inherit}
+button{font:inherit;color:inherit;background:none;border:0;margin:0}
+button,a{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:var(--r-sm)}
+.wrap{
+  max-width:640px;margin:0 auto;
+  padding-left:max(16px, env(safe-area-inset-left));
+  padding-right:max(16px, env(safe-area-inset-right));
+}
+.u-tab-num{font-variant-numeric:tabular-nums}
+
+/* ─── 3. HERO (greeting header) ────────────────────────────────────────────── */
+.hero{padding-top:calc(env(safe-area-inset-top) + var(--s6));padding-bottom:var(--s5)}
+.hero-eyebrow{
+  font-size:var(--t-xs);font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:var(--s2);
+}
+.hero-title{
+  font-size:clamp(28px,8.5vw,40px);font-weight:700;letter-spacing:-.03em;
+  line-height:1.06;
+}
+.hero-sub{
+  margin-top:var(--s3);font-size:var(--t-md);color:var(--ink-2);
+  line-height:1.4;
+}
+.hero-base{display:block;margin-top:2px;font-size:var(--t-sm);color:var(--ink-3)}
+@media (min-width:640px){
+  .hero{padding-top:calc(env(safe-area-inset-top) + var(--s7));padding-bottom:var(--s6)}
+}
+
+/* ─── 4. DAY BAR (sticky pill segmented control) ───────────────────────────── */
+.daybar{
+  position:sticky;top:0;z-index:30;
+  background:var(--nav-bg);
+  -webkit-backdrop-filter:saturate(180%) blur(18px);
+  backdrop-filter:saturate(180%) blur(18px);
+  padding-top:env(safe-area-inset-top);
+  box-shadow:var(--e-nav);
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .daybar{background:var(--ground)}
+}
+.tabs{
+  display:flex;gap:var(--s2);
+  overflow-x:auto;overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  scroll-snap-type:x proximity;
+  padding:10px max(16px, env(safe-area-inset-left)) 10px max(16px, env(safe-area-inset-right));
+  max-width:640px;margin:0 auto;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  --accent:var(--d-ink); --on-accent:var(--d-on);
+  flex:0 0 auto;scroll-snap-align:start;
+  display:flex;align-items:center;gap:var(--s2);
+  min-height:var(--s8);padding:0 14px 0 10px;   /* --s8 is the 44px tap target */
+  border-radius:var(--r-pill);
+  background:var(--surface);
+  box-shadow:var(--card-ring),var(--e1);
+  cursor:pointer;
+}
+.tab-dot{
+  width:24px;height:24px;flex:0 0 auto;border-radius:50%;
+  background:var(--accent);color:var(--on-accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:var(--t-xs);font-weight:700;line-height:1;
+}
+.tab-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1.1}
+.tab-label{font-size:var(--t-xs);font-weight:700;letter-spacing:.05em;color:var(--ink)}
+.tab-date{font-size:var(--t-2xs);font-weight:500;color:var(--ink-3);margin-top:1px}
+.tab[aria-selected="true"]{background:var(--accent);box-shadow:var(--e1)}
+.tab[aria-selected="true"] .tab-label,
+.tab[aria-selected="true"] .tab-date{color:var(--on-accent)}
+.tab[aria-selected="true"] .tab-dot{background:var(--dot-on);color:var(--on-accent)}
+@media (prefers-color-scheme: dark){
+  .tab{--accent:var(--d-ink-dk); --on-accent:var(--d-on-dk)}
+}
+@media (prefers-reduced-motion: no-preference){
+  /* fill and label ease together — if only the fill animated, the label would
+     flip instantly and sit at low contrast for the length of the transition */
+  .tab{transition:background-color .18s ease, box-shadow .18s ease}
+  .tab-dot,.tab-label,.tab-date{transition:background-color .18s ease, color .18s ease}
+}
+
+/* ─── 5. DAY PANEL ─────────────────────────────────────────────────────────── */
+.day{
+  --accent:var(--d-ink); --tint:var(--d-tint);
+  --soft:var(--d-soft);  --on-accent:var(--d-on);
+  display:none;padding-bottom:var(--s7);
+}
+@media (prefers-color-scheme: dark){
+  .day{
+    --accent:var(--d-ink-dk); --tint:var(--d-tint-dk);
+    --soft:var(--d-soft-dk);  --on-accent:var(--d-on-dk);
+  }
+}
+.day.is-on{display:block}
+
+.dayhead{
+  display:flex;gap:var(--s3);align-items:flex-start;
+  background:var(--tint);
+  border-radius:var(--r-xl);
+  padding:var(--s4) var(--s4) var(--s5);
+  margin:var(--s5) 0 var(--s6);
+}
+.dayhead-mark{
+  flex:0 0 auto;width:34px;height:34px;border-radius:var(--r-md);
+  background:var(--accent);color:var(--on-accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:var(--t-lg);font-weight:700;line-height:1;
+}
+.dayhead h2{font-size:var(--t-xl);font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.dayhead p{margin-top:var(--s1);font-size:var(--t-sm);color:var(--ink-2);line-height:1.4}
+.dayhead-count{
+  display:inline-block;margin-top:var(--s3);
+  font-size:var(--t-2xs);font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--accent);
+}
+
+/* ─── 6. CLUSTER ───────────────────────────────────────────────────────────── */
+.cluster{margin-bottom:var(--s6)}
+.cluster-head{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
+  margin:0 var(--s1) var(--s3);
+}
+.cluster-name{
+  display:flex;align-items:center;gap:var(--s2);min-width:0;
+  font-size:var(--t-sm);font-weight:600;letter-spacing:.01em;color:var(--ink-2);
+}
+.cluster-dot{
+  width:8px;height:8px;flex:0 0 auto;border-radius:50%;background:var(--accent);
+}
+.walk{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;
+  min-height:var(--s8);padding:0 var(--s3);
+  border-radius:var(--r-pill);
+  background:var(--soft);color:var(--accent);
+  font-size:var(--t-xs);font-weight:700;text-decoration:none;white-space:nowrap;
+}
+.walk:active{background:var(--accent);color:var(--on-accent)}
+
+.stops{display:flex;flex-direction:column;gap:var(--s3)}
+
+/* ─── 7. PLACE CARD ────────────────────────────────────────────────────────── */
+.card{
+  background:var(--surface);
+  border-radius:18px;
+  padding:var(--s4);
+  box-shadow:var(--card-ring),var(--e2);
+}
+@media (min-width:640px){ .card{padding:var(--s5)} }
+.card-top{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:var(--s3);min-height:22px;margin-bottom:var(--s2);
+}
+.time{
+  font-size:var(--t-xs);font-weight:600;letter-spacing:.02em;color:var(--ink-3);
+  white-space:nowrap;
+}
+.card.p-fixed .time{color:var(--accent);font-weight:700}
+.card h3{font-size:var(--t-lg);font-weight:600;letter-spacing:-.015em;line-height:1.25}
+.meta{margin-top:var(--s1);font-size:var(--t-sm);color:var(--ink-3);line-height:1.4}
+/* separators inherit the meta color: a dimmer middot would be a visible glyph
+   below 4.5:1, and spacing already does the de-emphasis */
+.meta .dot{padding:0 5px}
+.hours{
+  display:inline-flex;align-items:center;gap:5px;margin-top:var(--s3);
+  padding:5px 10px;border-radius:var(--r-pill);
+  background:var(--ok-bg);color:var(--ok-ink);
+  font-size:var(--t-xs);font-weight:600;
+}
+.hours.is-bad{background:var(--bad-bg);color:var(--bad-ink)}
+.warnline{
+  display:flex;gap:7px;margin-top:var(--s3);
+  padding:9px 11px;border-radius:var(--r-md);
+  background:var(--warn-bg);color:var(--warn-ink);
+  font-size:var(--t-sm);font-weight:600;line-height:1.35;
+}
+.notes{margin-top:var(--s3);font-size:var(--t-sm);color:var(--ink-2);line-height:1.5}
+
+/* links */
+.links{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s4)}
+.links a{
+  display:inline-flex;align-items:center;
+  min-height:var(--s8);padding:0 var(--s3);
+  border-radius:var(--r-pill);
+  background:var(--surface-2);
+  font-size:var(--t-sm);font-weight:600;text-decoration:none;color:var(--ink);
+}
+.links a:active{background:var(--accent);color:var(--on-accent)}
+@media (prefers-reduced-motion: no-preference){
+  .links a,.walk{transition:background-color .14s ease,color .14s ease}
+}
+
+/* ─── 8. PRIORITY BADGES (ten distinct treatments) ─────────────────────────── */
+.badge{
+  flex:0 0 auto;display:inline-flex;align-items:center;
+  padding:4px 9px;border-radius:var(--r-pill);
+  font-size:var(--t-2xs);font-weight:700;letter-spacing:.03em;white-space:nowrap;
+  border:1px solid transparent;
+}
+.badge.b-fixed     {background:var(--ink);        color:var(--surface)}
+.badge.b-must      {background:var(--gold-bg);    color:var(--gold-ink)}
+.badge.b-yes       {background:var(--ok-bg);      color:var(--ok-ink)}
+.badge.b-maybe     {background:var(--info-bg);    color:var(--info-ink)}
+.badge.b-if-close  {background:var(--violet-bg);  color:var(--violet-ink)}
+.badge.b-check     {background:var(--warn-bg);    color:var(--warn-ink)}
+.badge.b-maybe-not {background:transparent;color:var(--ink-3);border-style:dashed;border-color:var(--hair-2)}
+.badge.b-optional  {background:transparent;color:var(--ink-3);border-color:var(--hair-2)}
+.badge.b-skip      {background:var(--neutral-bg);color:var(--ink-3);border-color:var(--hair)}
+
+/* card-level priority treatment */
+.card.p-must{box-shadow:0 0 0 1.5px var(--gold-bg),var(--e2)}
+.card.p-skip{
+  background:var(--surface-2);
+  box-shadow:none;
+  border:1px dashed var(--hair-2);
+  padding:calc(var(--s4) - 1px);
+}
+.card.p-skip h3{color:var(--ink-2);font-weight:500}
+.card.p-skip .hours,.card.p-skip .links a{filter:grayscale(1)}
+
+/* ─── 9. NOTE ROW (priority: note — quiet text, no chrome) ─────────────────── */
+.noterow{
+  padding:var(--s3) var(--s4);
+  border-radius:var(--r-lg);
+  border:1px dashed var(--hair-2);
+  background:transparent;
+}
+.noterow-top{display:flex;align-items:baseline;gap:var(--s2);flex-wrap:wrap}
+.noterow-time{font-size:var(--t-xs);font-weight:600;color:var(--ink-3)}
+.noterow-name{font-size:var(--t-md);font-weight:600;color:var(--ink-2)}
+.noterow-text{margin-top:var(--s1);font-size:var(--t-sm);color:var(--ink-3);line-height:1.5}
+
+/* ─── 10. VISITED PREVIEW (visual only — see index of features below) ──────── */
+.card.is-visited{
+  background:var(--surface-2);
+  box-shadow:var(--card-ring);
+}
+.card.is-visited h3{color:var(--ink-2)}
+.visited-tag{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;
+  font-size:var(--t-2xs);font-weight:700;letter-spacing:.03em;color:var(--accent);
+}
+.visited-check{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--accent);color:var(--on-accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;line-height:1;
+}
+
+/* ─── 11. EMPTY + FOOTER ───────────────────────────────────────────────────── */
+.empty{
+  padding:var(--s6);border-radius:var(--r-lg);border:1px dashed var(--hair-2);
+  font-size:var(--t-sm);color:var(--ink-3);text-align:center;
+}
+.foot{
+  padding-top:var(--s6);
+  padding-bottom:calc(var(--s7) + env(safe-area-inset-bottom));
+  border-top:1px solid var(--hair);margin-top:var(--s5);
+}
+.foot p{font-size:var(--t-sm);color:var(--ink-3);line-height:1.55;text-align:center}
+</style>
+</head>
+<body>
+
+<header class="hero wrap">
+  <p class="hero-eyebrow" id="heroEyebrow"></p>
+  <h1 class="hero-title" id="heroTitle"></h1>
+  <p class="hero-sub" id="heroSub"></p>
+</header>
+
+<div class="daybar">
+  <div class="tabs" role="tablist" aria-label="Trip days" id="tabs"></div>
+</div>
+
+<main class="wrap" id="panels"></main>
+
+<footer class="foot wrap">
+  <p id="tripNotes"></p>
+</footer>
+
+<script>
+window.TRIP = {
+ "schema": 1,
+ "id": "chicago-test",
+ "name": "Chicago Test Trip",
+ "tz": "America/Chicago",
+ "start": "2027-06-04",
+ "end": "2027-06-06",
+ "base": {
+  "name": "Palmer House (test base)",
+  "address": "17 E Monroe St, Chicago, IL 60603"
+ },
+ "notes": "Fictional test trip — real public places, invented schedule. Safe to commit.",
+ "days": [
+  {
+   "key": "fri",
+   "date": "2027-06-04",
+   "bullet": "F",
+   "label": "FRI",
+   "color": "#00A1DE",
+   "title": "Friday · Jun 4",
+   "subtitle": "Arrive → Loop: Art Institute → deep dish"
+  },
+  {
+   "key": "sat",
+   "date": "2027-06-05",
+   "bullet": "S",
+   "label": "SAT",
+   "color": "#C60C30",
+   "title": "Saturday · Jun 5",
+   "subtitle": "Wicker Park: books → records → tacos"
+  },
+  {
+   "key": "sun",
+   "date": "2027-06-06",
+   "bullet": "S",
+   "label": "SUN",
+   "color": "#009B3A",
+   "title": "Sunday · Jun 6",
+   "subtitle": "Conservatory morning → Green Mill nightcap"
+  },
+  {
+   "key": "bonus",
+   "date": null,
+   "bullet": "+",
+   "label": "XTRA",
+   "color": "#565A5C",
+   "title": "Extras",
+   "subtitle": "Unscheduled — slot into any open block"
+  }
+ ],
+ "places": [
+  {
+   "id": "palmer-house-check-in",
+   "day": "fri",
+   "cluster": "Arrival — Loop",
+   "time": "3:00 PM",
+   "name": "Palmer House — check-in",
+   "type": "Stay",
+   "address": "17 E Monroe St, Chicago, IL 60603",
+   "lat": null,
+   "lng": null,
+   "hours": "Check-in 3:00 PM",
+   "cost": "",
+   "priority": "fixed",
+   "notes": "Test base. Drop bags and walk one block to the museum.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "art-institute-of-chicago",
+   "day": "fri",
+   "cluster": "Arrival — Loop",
+   "time": "3:45 PM",
+   "name": "Art Institute of Chicago",
+   "type": "Art",
+   "address": "111 S Michigan Ave, Chicago, IL 60603",
+   "lat": null,
+   "lng": null,
+   "hours": "Thu–Mon 11–5; CLOSED Tue/Wed",
+   "cost": "$32",
+   "priority": "must",
+   "notes": "The lions. Last entry an hour before close — test must row.",
+   "website": "https://www.artic.edu/",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "chicago-cultural-center",
+   "day": "fri",
+   "cluster": "Arrival — Loop",
+   "time": "5:15 PM",
+   "name": "Chicago Cultural Center",
+   "type": "Sight",
+   "address": "78 E Washington St, Chicago, IL 60602",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 10–5",
+   "cost": "Free",
+   "priority": "yes",
+   "notes": "Tiffany dome — free, quick, on the walk.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "lou-malnatis-state-st",
+   "day": "fri",
+   "cluster": "Evening — Loop",
+   "time": "7:00 PM",
+   "name": "Lou Malnati's (State St)",
+   "type": "Food",
+   "address": "805 S State St, Chicago, IL 60605",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 11–11",
+   "cost": "$$",
+   "priority": "fixed",
+   "notes": "Test reservation row — booked, immovable.",
+   "website": "https://www.loumalnatis.com/",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "myopic-books",
+   "day": "sat",
+   "cluster": "Wicker Park loop",
+   "time": "11:00 AM",
+   "name": "Myopic Books",
+   "type": "Books",
+   "address": "1564 N Milwaukee Ave, Chicago, IL 60622",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 11–10",
+   "cost": "",
+   "priority": "yes",
+   "notes": "Three floors of used books.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "reckless-records",
+   "day": "sat",
+   "cluster": "Wicker Park loop",
+   "time": "12:00 PM",
+   "name": "Reckless Records",
+   "type": "Music",
+   "address": "1379 N Milwaukee Ave, Chicago, IL 60622",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 10–8",
+   "cost": "",
+   "priority": "yes",
+   "notes": "Flagship location — listening stations.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "quimbys-bookstore",
+   "day": "sat",
+   "cluster": "Wicker Park loop",
+   "time": "12:45 PM",
+   "name": "Quimby's Bookstore",
+   "type": "Books",
+   "address": "1854 W North Ave, Chicago, IL 60622",
+   "lat": null,
+   "lng": null,
+   "hours": "Mon–Sat 12–7; Sun 12–6",
+   "cost": "",
+   "priority": "if-close",
+   "notes": "Zines and small press — test if-close row.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "big-star-tacos",
+   "day": "sat",
+   "cluster": "Lunch — Wicker Park",
+   "time": "1:30 PM",
+   "name": "Big Star",
+   "type": "Food",
+   "address": "1531 N Damen Ave, Chicago, IL 60622",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 11–12",
+   "cost": "$",
+   "priority": "maybe",
+   "notes": "Patio tacos — test maybe row; long waits on weekends.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "sat-evening-open",
+   "day": "sat",
+   "cluster": "Evening",
+   "time": "open",
+   "name": "Evening open",
+   "type": "",
+   "address": "",
+   "lat": null,
+   "lng": null,
+   "hours": "",
+   "cost": "",
+   "priority": "note",
+   "notes": "Nothing booked — test note row, renders as text with no links.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "garfield-park-conservatory",
+   "day": "sun",
+   "cluster": "Morning — Garfield Park",
+   "time": "10:00 AM",
+   "name": "Garfield Park Conservatory",
+   "type": "Park",
+   "address": "300 N Central Park Ave, Chicago, IL 60624",
+   "lat": null,
+   "lng": null,
+   "hours": "Wed–Sun 10–5; CLOSED Mon/Tue",
+   "cost": "Free (reserve)",
+   "priority": "check",
+   "notes": "Test call-ahead row — timed entry on busy weekends.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "Reserve a slot — walk-ins limited",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "green-mill",
+   "day": "sun",
+   "cluster": "Evening — Uptown",
+   "time": "8:00 PM",
+   "name": "Green Mill Cocktail Lounge",
+   "type": "Music",
+   "address": "4802 N Broadway, Chicago, IL 60640",
+   "lat": null,
+   "lng": null,
+   "hours": "Nightly from 8",
+   "cost": "cover varies",
+   "priority": "optional",
+   "notes": "Jazz since 1907 — test optional row.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "navy-pier",
+   "day": "bonus",
+   "cluster": "Only if desperate",
+   "time": "",
+   "name": "Navy Pier",
+   "type": "Sight",
+   "address": "600 E Grand Ave, Chicago, IL 60611",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 10–9",
+   "cost": "",
+   "priority": "maybe-not",
+   "notes": "Tourist gauntlet — test maybe-not row.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "intl-museum-surgical-science",
+   "day": "bonus",
+   "cluster": "Probably skip",
+   "time": "",
+   "name": "International Museum of Surgical Science",
+   "type": "Museum",
+   "address": "1524 N Lake Shore Dr, Chicago, IL 60610",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 10–5",
+   "cost": "$20",
+   "priority": "skip",
+   "notes": "Test skip row — renders dimmed.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  }
+ ]
+};
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var TRIP = window.TRIP;
+
+  /* ── tiny helpers ─────────────────────────────────────────────────────── */
+  var enc = encodeURIComponent;
+  var ENT = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+  function esc(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return ENT[c]; }); }
+  function attr(v) { return esc(v); }
+
+  /* ── color science: project a data hex into accessible tokens ─────────── */
+  function hexToRgb(hex) {
+    var h = String(hex || "#888888").replace("#", "").trim();
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    if (!/^[0-9a-f]{6}$/i.test(h)) h = "888888";
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+  function toHex(rgb) {
+    return "#" + rgb.map(function (n) {
+      var s = Math.max(0, Math.min(255, Math.round(n))).toString(16);
+      return s.length === 1 ? "0" + s : s;
+    }).join("");
+  }
+  function lin(c) { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+  function lum(rgb) { return 0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2]); }
+  function ratio(a, b) { var hi = Math.max(a, b), lo = Math.min(a, b); return (hi + 0.05) / (lo + 0.05); }
+
+  function rgbToHsl(rgb) {
+    var r = rgb[0] / 255, g = rgb[1] / 255, b = rgb[2] / 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var h = 0, s = 0, l = (max + min) / 2, d = max - min;
+    if (d !== 0) {
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = ((g - b) / d + (g < b ? 6 : 0));
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h /= 6;
+    }
+    return [h, s, l];
+  }
+  function hslToRgb(h, s, l) {
+    if (s === 0) { var v = l * 255; return [v, v, v]; }
+    function hue(p, q, t) {
+      if (t < 0) t += 1; if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    }
+    var q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+    return [hue(p, q, h + 1 / 3) * 255, hue(p, q, h) * 255, hue(p, q, h - 1 / 3) * 255];
+  }
+
+  // Walk lightness until the color clears `target` contrast against `bgLum`.
+  function tone(hex, bgLum, target, dir) {
+    var hsl = rgbToHsl(hexToRgb(hex)), h = hsl[0], s = hsl[1], l = hsl[2];
+    for (var i = 0; i <= 110; i++) {
+      var rgb = hslToRgb(h, s, l);
+      if (ratio(lum(rgb), bgLum) >= target) return toHex(rgb);
+      l += dir * 0.01;
+      if (l < 0 || l > 1) break;
+    }
+    return dir < 0 ? "#141417" : "#F0EFEC";
+  }
+  // Same hue, damped saturation, pinned lightness — the soft wash.
+  function wash(hex, satScale, l) {
+    var hsl = rgbToHsl(hexToRgb(hex));
+    return toHex(hslToRgb(hsl[0], Math.min(hsl[1] * satScale, 0.78), l));
+  }
+  // Text color to sit ON a filled accent. days[].darkText is honored when it
+  // still clears 4.5:1; otherwise the higher-contrast option wins.
+  function onFill(inkHex, preferDark) {
+    var L = lum(hexToRgb(inkHex));
+    var dark = "#0E0E10", light = "#FFFFFF";
+    var cDark = ratio(L, lum(hexToRgb(dark)));
+    var cLight = ratio(L, lum(hexToRgb(light)));
+    if (preferDark === true && cDark >= 4.5) return dark;
+    return cLight >= cDark ? light : dark;
+  }
+
+  var LIGHT_REF = 0.85;   // the #F6F5F2 ground, rounded down
+  var DARK_REF  = 0.02;   // the #18181B card, rounded up
+
+  function dayVars(day) {
+    var tintL = wash(day.color, 0.85, 0.945);
+    var softL = wash(day.color, 0.90, 0.900);
+    var tintD = wash(day.color, 0.55, 0.145);
+    var softD = wash(day.color, 0.50, 0.200);
+
+    // The accent is set on the ground AND on both washes, so derive it against
+    // whichever of those surfaces is hardest: the darkest in light mode, the
+    // lightest in dark mode. This keeps 4.5:1 for any hue a trip file supplies.
+    var refL = Math.min(LIGHT_REF, lum(hexToRgb(tintL)), lum(hexToRgb(softL)));
+    var refD = Math.max(DARK_REF,  lum(hexToRgb(tintD)), lum(hexToRgb(softD)));
+
+    var ink   = tone(day.color, refL, 4.6, -1);
+    var inkDk = tone(day.color, refD, 4.6, +1);
+    return [
+      "--d-ink:"      + ink,
+      "--d-ink-dk:"   + inkDk,
+      "--d-tint:"     + tintL,
+      "--d-tint-dk:"  + tintD,
+      "--d-soft:"     + softL,
+      "--d-soft-dk:"  + softD,
+      "--d-on:"       + onFill(ink, day.darkText === true),
+      "--d-on-dk:"    + onFill(inkDk, true)
+    ].join(";");
+  }
+
+  /* ── dates ────────────────────────────────────────────────────────────── */
+  var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var WD  = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  function parseISO(s) {
+    if (!s) return null;
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s));
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+  }
+  function localISO(d) {
+    d = d || new Date();
+    var p = function (n) { return (n < 10 ? "0" : "") + n; };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+  function shortDate(iso) { var d = parseISO(iso); return d ? MON[d.getMonth()] + " " + d.getDate() : ""; }
+  function dayGap(a, b) { return Math.round((parseISO(b) - parseISO(a)) / 86400000); }
+  function rangeLabel(a, b) {
+    var A = parseISO(a), B = parseISO(b);
+    if (!A || !B) return "";
+    var sameMonth = A.getFullYear() === B.getFullYear() && A.getMonth() === B.getMonth();
+    var left  = WD[A.getDay()] + " " + MON[A.getMonth()] + " " + A.getDate();
+    var right = sameMonth ? WD[B.getDay()] + " " + B.getDate()
+                          : WD[B.getDay()] + " " + MON[B.getMonth()] + " " + B.getDate();
+    return left + " – " + right + ", " + B.getFullYear();
+  }
+
+  /* ── location hint (v0 hardcoded "NYC"; derived from trip.base here) ──── */
+  var LOC = (function () {
+    var addr = (TRIP.base && TRIP.base.address) || "";
+    var parts = addr.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+    if (parts.length >= 3) {
+      var city = parts[parts.length - 2];
+      var st = parts[parts.length - 1].split(/\s+/)[0];
+      if (city && st) return city + ", " + st;
+    }
+    return TRIP.name || "";
+  })();
+
+  /* ── v0 parity: badHours, links, walkLink ─────────────────────────────── */
+  function badHours(h) {
+    return /closed mon|closed tue|closed sun|closed wed|unverified|closed weekends|closed$/i.test(h || "")
+        || /^CLOSED/i.test(h || "");
+  }
+  function query(p) { return enc((p.name || "") + (p.address ? ", " + p.address : " " + LOC)); }
+  function linkList(p) {
+    if (!p.name || p.priority === "note") return [];
+    var L = [];
+    if (p.website) L.push(["Site", p.website, "Open the website for " + p.name]);
+    L.push(["Yelp", p.yelp || "https://www.yelp.com/search?find_desc=" + enc(p.name) + "&find_loc=" + enc(p.address || LOC),
+            "Look up " + p.name + " on Yelp"]);
+    L.push(["G Maps", p.gmaps || "https://www.google.com/maps/search/?api=1&query=" + query(p),
+            "Open " + p.name + " in Google Maps"]);
+    if (p.address) L.push(["Apple Maps", "https://maps.apple.com/?q=" + enc(p.name) + "&address=" + enc(p.address),
+            "Open " + p.name + " in Apple Maps"]);
+    L.push(["Search", "https://www.google.com/search?q=" + enc(p.name + " " + LOC),
+            "Search the web for " + p.name]);
+    return L;
+  }
+  function linksHTML(p) {
+    var L = linkList(p);
+    if (!L.length) return "";
+    return '<div class="links">' + L.map(function (x) {
+      return '<a href="' + attr(x[1]) + '" target="_blank" rel="noopener noreferrer"' +
+             ' aria-label="' + attr(x[2]) + '">' + esc(x[0]) + "</a>";
+    }).join("") + "</div>";
+  }
+  function walkLink(stops) {
+    var a = stops.filter(function (s) { return s.address; })
+                 .map(function (s) { return enc(s.address); });
+    if (a.length < 2) return "";
+    var wp = a.slice(1, -1).join("|");
+    return "https://www.google.com/maps/dir/?api=1&origin=" + a[0] +
+           "&destination=" + a[a.length - 1] + (wp ? "&waypoints=" + wp : "") +
+           "&travelmode=walking";
+  }
+
+  /* ── priority badges: all ten values styled distinctly ─────────────────── */
+  var BADGE = {
+    fixed:       "Booked",
+    must:        "★ Must",
+    yes:         "Yes",
+    maybe:       "Maybe",
+    "maybe-not": "Maybe not",
+    "if-close":  "If close by",
+    optional:    "Optional",
+    check:       "Call ahead",
+    skip:        "Skip / closed"
+    // `note` deliberately has no badge — it renders as a quiet text row.
+  };
+
+  /* Visited preview: one priority:"yes" place, styled only. */
+  var VISITED_PREVIEW = "chicago-cultural-center";
+
+  /* ── rendering ────────────────────────────────────────────────────────── */
+  function noteHTML(p) {
+    return '<div class="noterow">' +
+      '<div class="noterow-top">' +
+        (p.time ? '<span class="noterow-time u-tab-num">' + esc(p.time) + "</span>" : "") +
+        (p.name ? '<span class="noterow-name">' + esc(p.name) + "</span>" : "") +
+      "</div>" +
+      (p.notes ? '<p class="noterow-text">' + esc(p.notes) + "</p>" : "") +
+    "</div>";
+  }
+
+  function cardHTML(p) {
+    if (p.priority === "note") return noteHTML(p);
+
+    var visited = p.id === VISITED_PREVIEW;
+    var cls = "card p-" + esc(p.priority || "none") + (visited ? " is-visited" : "");
+
+    var right = "";
+    if (visited) {
+      right = '<span class="visited-tag">' +
+                '<span class="visited-check" aria-hidden="true">✓</span>Visited</span>';
+    } else if (BADGE[p.priority]) {
+      right = '<span class="badge b-' + esc(p.priority) + '">' + esc(BADGE[p.priority]) + "</span>";
+    }
+
+    var metaBits = [];
+    if (p.type) metaBits.push(esc(p.type));
+    if (p.address) metaBits.push(esc(p.address));
+    if (p.cost) metaBits.push(esc(p.cost));
+    var meta = metaBits.length
+      ? '<p class="meta">' + metaBits.join('<span class="dot" aria-hidden="true">·</span>') + "</p>"
+      : "";
+
+    var hours = p.hours
+      ? '<p class="hours' + (badHours(p.hours) ? " is-bad" : "") + '">' +
+          '<span aria-hidden="true">' + (badHours(p.hours) ? "⚠" : "◷") + "</span>" +
+          "<span>" + esc(p.hours) + "</span></p>"
+      : "";
+
+    var warn = p.warn
+      ? '<p class="warnline"><span aria-hidden="true">⚠</span><span>' + esc(p.warn) + "</span></p>"
+      : "";
+
+    return (visited
+        ? "<!-- PREVIEW: 'visited' card state — visual only. The upcoming " +
+          "tap-to-mark-visited feature will toggle this class per place and " +
+          "persist it through the normal GitHub write path. -->"
+        : "") +
+      '<article class="' + cls + '">' +
+        '<div class="card-top">' +
+          '<span class="time u-tab-num">' + esc(p.time || "") + "</span>" + right +
+        "</div>" +
+        "<h3>" + esc(p.name || "") + "</h3>" +
+        meta + hours + warn +
+        (p.notes ? '<p class="notes">' + esc(p.notes) + "</p>" : "") +
+        linksHTML(p) +
+      "</article>";
+  }
+
+  function clusterHTML(name, stops) {
+    var w = walkLink(stops);
+    return '<section class="cluster">' +
+      '<div class="cluster-head">' +
+        '<h3 class="cluster-name">' +
+          '<span class="cluster-dot" aria-hidden="true"></span>' +
+          "<span>" + esc(name) + "</span>" +
+        "</h3>" +
+        (w ? '<a class="walk" href="' + attr(w) + '" target="_blank" rel="noopener noreferrer"' +
+             ' aria-label="Walking directions through ' + attr(name) + '">Walk it' +
+             '<span aria-hidden="true">↗</span></a>' : "") +
+      "</div>" +
+      '<div class="stops">' + stops.map(cardHTML).join("") + "</div>" +
+    "</section>";
+  }
+
+  function panelHTML(day) {
+    var stops = TRIP.places.filter(function (p) { return p.day === day.key; });
+    var clusters = [];
+    stops.forEach(function (s) {
+      if (clusters.indexOf(s.cluster) === -1) clusters.push(s.cluster);
+    });
+
+    var count = day.date
+      ? stops.length + (stops.length === 1 ? " stop" : " stops")
+      : stops.length + (stops.length === 1 ? " idea" : " ideas") + " · unscheduled";
+
+    var body = clusters.length
+      ? clusters.map(function (c) {
+          return clusterHTML(c, stops.filter(function (s) { return s.cluster === c; }));
+        }).join("")
+      : '<p class="empty">Nothing on the plan for this day yet.</p>';
+
+    return '<section class="day" id="panel-' + attr(day.key) + '" role="tabpanel" ' +
+             'aria-labelledby="tab-' + attr(day.key) + '" style="' + attr(dayVars(day)) + '">' +
+        '<div class="dayhead">' +
+          '<span class="dayhead-mark" aria-hidden="true">' + esc(day.bullet || "") + "</span>" +
+          "<div><h2>" + esc(day.title || day.label || day.key) + "</h2>" +
+          (day.subtitle ? "<p>" + esc(day.subtitle) + "</p>" : "") +
+          '<span class="dayhead-count">' + esc(count) + "</span></div>" +
+        "</div>" +
+        body +
+      "</section>";
+  }
+
+  function tabHTML(day) {
+    return '<button class="tab" type="button" role="tab" id="tab-' + attr(day.key) + '" ' +
+      'aria-controls="panel-' + attr(day.key) + '" aria-selected="false" tabindex="-1" ' +
+      'data-key="' + attr(day.key) + '" style="' + attr(dayVars(day)) + '">' +
+      '<span class="tab-dot" aria-hidden="true">' + esc(day.bullet || "") + "</span>" +
+      '<span class="tab-text">' +
+        '<span class="tab-label">' + esc(day.label || day.key) + "</span>" +
+        (day.date ? '<span class="tab-date u-tab-num">' + esc(shortDate(day.date)) + "</span>" : "") +
+      "</span></button>";
+  }
+
+  /* ── hero ─────────────────────────────────────────────────────────────── */
+  function renderHero() {
+    var today = localISO();
+    var dated = TRIP.days.filter(function (d) { return d.date; });
+    var eyebrow;
+
+    if (TRIP.start && TRIP.end && today >= TRIP.start && today <= TRIP.end) {
+      var idx = dated.map(function (d) { return d.date; }).indexOf(today);
+      eyebrow = idx >= 0 ? "Day " + (idx + 1) + " of " + dated.length : "On the trip";
+    } else if (TRIP.start && today > TRIP.end) {
+      eyebrow = "Past trip";
+    } else if (TRIP.start) {
+      var n = dayGap(today, TRIP.start);
+      var s = parseISO(TRIP.start);
+      eyebrow = n <= 1 ? "Tomorrow"
+              : n <= 60 ? "In " + n + " days"
+              : "Upcoming · " + MON[s.getMonth()] + " " + s.getFullYear();
+    } else {
+      eyebrow = "Field guide";
+    }
+
+    document.getElementById("heroEyebrow").textContent = eyebrow;
+    document.getElementById("heroTitle").textContent = TRIP.name || "Trip";
+
+    var sub = document.getElementById("heroSub");
+    sub.innerHTML = esc(rangeLabel(TRIP.start, TRIP.end)) +
+      (TRIP.base && TRIP.base.name
+        ? '<span class="hero-base">Base · ' + esc(TRIP.base.name) + "</span>"
+        : "");
+
+    document.getElementById("tripNotes").textContent = TRIP.notes || "";
+    document.title = (TRIP.name || "Wayfeather") + " — Wayfeather";
+  }
+
+  /* ── tabs behaviour ───────────────────────────────────────────────────── */
+  var tabsEl = document.getElementById("tabs");
+  var panelsEl = document.getElementById("panels");
+  var current = null;
+
+  function select(key, moveFocus) {
+    current = key;
+    var tabs = tabsEl.querySelectorAll(".tab");
+    for (var i = 0; i < tabs.length; i++) {
+      var on = tabs[i].dataset.key === key;
+      tabs[i].setAttribute("aria-selected", on ? "true" : "false");
+      tabs[i].tabIndex = on ? 0 : -1;
+      if (on) {
+        if (moveFocus) tabs[i].focus();
+        if (tabs[i].scrollIntoView) {
+          tabs[i].scrollIntoView({ block: "nearest", inline: "nearest" });
+        }
+      }
+    }
+    var panels = panelsEl.querySelectorAll(".day");
+    for (var j = 0; j < panels.length; j++) {
+      panels[j].classList.toggle("is-on", panels[j].id === "panel-" + key);
+    }
+    window.scrollTo(0, 0);
+  }
+
+  function render() {
+    renderHero();
+    panelsEl.innerHTML = TRIP.days.map(panelHTML).join("");
+    tabsEl.innerHTML = TRIP.days.map(tabHTML).join("");
+
+    tabsEl.addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest(".tab") : null;
+      if (b) select(b.dataset.key, false);
+    });
+
+    tabsEl.addEventListener("keydown", function (e) {
+      var keys = TRIP.days.map(function (d) { return d.key; });
+      var i = keys.indexOf(current);
+      var next = null;
+      if (e.key === "ArrowRight") next = keys[(i + 1) % keys.length];
+      else if (e.key === "ArrowLeft") next = keys[(i - 1 + keys.length) % keys.length];
+      else if (e.key === "Home") next = keys[0];
+      else if (e.key === "End") next = keys[keys.length - 1];
+      if (next) { e.preventDefault(); select(next, true); }
+    });
+
+    // Auto-open today's day when today falls inside [start, end]; else day one.
+    var today = localISO();
+    var initial = TRIP.days[0] && TRIP.days[0].key;
+    if (TRIP.start && TRIP.end && today >= TRIP.start && today <= TRIP.end) {
+      var hit = TRIP.days.filter(function (d) { return d.date === today; })[0];
+      if (hit) initial = hit.key;
+    }
+    if (initial) select(initial, false);
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wayfeather &middot; wallpaper samples</title>
+<style>
+:root{--ground:#F7F2E6;--surface:#FFFCF5;--ink:#1F1B15;--ink-2:#544C41;--ink-3:#62594C;
+--accent:#4B6630;--brown:#6B4F3A;--hair:#E5DECD;--soft:#D7E3C5;
+--serif:ui-serif,"New York",Georgia,Times,serif;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+*{box-sizing:border-box}
+body{margin:0;background:#2A2721;color:#EDE6D6;font:15px/1.55 var(--sans);}
+header{max-width:1180px;margin:0 auto;padding:44px 28px 20px}
+h1{font:600 30px/1.2 var(--serif);margin:0 0 10px;color:#F7F2E6;letter-spacing:-.01em}
+.lede{margin:0 0 4px;max-width:66ch;color:#BDB3A0}
+.lede b{color:#EDE6D6;font-weight:600}
+.legend{max-width:1180px;margin:16px auto 0;padding:14px 28px;border-top:1px solid #423d34;
+  border-bottom:1px solid #423d34;color:#9C9384;font-size:13px}
+.legend code{color:#CFC5B1;background:#37332b;padding:1px 5px;border-radius:4px}
+main{max-width:1180px;margin:0 auto;padding:8px 28px 80px}
+.variant{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:34px;align-items:start;
+  padding:34px 0;border-bottom:1px solid #3A362E}
+.variant:last-child{border-bottom:0}
+.idx{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+.num{font:600 12px/1 var(--sans);letter-spacing:.14em;color:#8C8371}
+h2{font:600 25px/1.2 var(--serif);margin:0;color:#F7F2E6}
+.blurb{margin:12px 0 20px;max-width:52ch;color:#BDB3A0}
+dl{display:grid;grid-template-columns:86px minmax(0,1fr);gap:7px 14px;margin:0;font-size:13.5px}
+dt{color:#8C8371;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;padding-top:2px}
+dd{margin:0;color:#D8CFBC}
+.bars{margin-top:20px;display:grid;grid-template-columns:86px minmax(0,1fr);gap:7px 14px;
+  align-items:center;font-size:12.5px}
+.bar{height:7px;background:#3A362E;border-radius:4px;overflow:hidden;position:relative}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#6E8A46,#A8C070);border-radius:4px}
+.bar u{position:absolute;top:-3px;bottom:-3px;width:2px;background:#C97F4A;text-decoration:none}
+.val{color:#9C9384;font-variant-numeric:tabular-nums}
+/* the phone band */
+.phone{width:380px;border-radius:26px;overflow:hidden;background:var(--ground);
+  box-shadow:0 18px 40px -12px rgba(0,0,0,.65),0 0 0 1px #4A443A;}
+.screen{background-color:var(--ground);background-repeat:repeat;padding:20px 16px 26px;min-height:520px}
+.daytitle{font:600 21px/1.25 var(--serif);color:var(--ink);margin:6px 2px 3px}
+.daysub{font:13px/1.4 var(--sans);color:var(--ink-3);margin:0 2px 18px}
+.card{background:var(--surface);border-radius:16px;padding:14px 15px;margin-bottom:13px;
+  box-shadow:0 1px 2px rgba(60,48,30,.08),0 6px 16px -6px rgba(60,48,30,.16)}
+.row{display:flex;gap:13px;align-items:flex-start}
+.time{font:600 17px/1.2 var(--sans);color:var(--brown);font-variant-numeric:tabular-nums;
+  white-space:nowrap;padding-top:1px}
+.time span{font-size:10.5px;margin-left:2px;letter-spacing:.04em}
+.grow{min-width:0}
+h4{font:600 17px/1.28 var(--serif);color:var(--ink);margin:0 0 2px}
+.meta{font:12.5px/1.4 var(--sans);color:var(--ink-3);margin:0}
+.prose{font:14px/1.5 var(--serif);color:var(--ink-2);margin:9px 0 0}
+.chips{display:flex;gap:7px;margin:10px 0 0}
+.chip{font:600 11.5px/1 var(--sans);color:var(--ink-3);background:#F0EADA;
+  border-radius:6px;padding:5px 8px}
+.chip.must{background:var(--soft);color:#33471E}
+.gap{height:96px}
+.tail{font:600 13px/1 var(--sans);color:var(--accent);padding:12px 4px 0}
+@media (max-width:900px){.variant{grid-template-columns:minmax(0,1fr)}}
+</style></head>
+<body>
+<header>
+  <h1>Wallpaper samples</h1>
+  <p class="lede">Ten seamless tiles for the cream ground, answering &ldquo;<b>a bit too light, I can&rsquo;t see it</b>.&rdquo;
+  Every band below is a real 380&nbsp;px phone width with the tile set as an actual repeating
+  background and opaque stopover cards on top &mdash; so you are judging the pattern the way you will
+  meet it, under an itinerary rather than beside one.</p>
+</header>
+<div class="legend">
+  Ordered <b>lightest &rarr; boldest</b> by mean luminance drop across the tile &mdash; the number that
+  tracks &ldquo;can I see it from arm&rsquo;s length&rdquo;. The <code>|</code> tick on each bar marks
+  today&rsquo;s wallpaper. <code>ink&nbsp;%</code> is how much of the tile carries any mark at all;
+  <code>peak &Delta;L</code> is how dark the darkest mark gets &mdash; a tile can be sparse yet bold
+  (few marks, strong ones) or dense yet quiet (many marks, faint ones).
+</div>
+<main>
+  <section class="variant">
+    <div>
+      <div class="idx"><span class="num">01 / 10 &middot; WP-01</span></div>
+      <h2>Field Trail</h2>
+      <p class="blurb">The existing motif's own family, one confident step up: crisper bird, a fourth cluster, tone deepened.</p>
+      <dl>
+        <dt>Tone</dt><dd>warm brown, single</dd>
+        <dt>Density</dt><dd>sparse · large</dd>
+        <dt>Motif</dt><dd>swallow + dashed flight trail (current lineage)</dd>
+        <dt>Tile</dt><dd>360 &times; 360 px &middot; 3.6 KB</dd>
+      </dl>
+      <div class="bars">
+        <dt>Presence</dt>
+        <div class="bar"><i style="width:20%"></i>
+          <u style="left:5.5%" title="today"></u></div>
+        <dt></dt><div class="val">3.6&times; today&rsquo;s weight &middot; ink 0.84% (today 0.41%) &middot; peak &Delta;L 19 (today 11)</div>
+      </div>
+    </div>
+    <div class="phone"><div class="screen"
+         style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360' viewBox='0 0 360 360'%3E%3Cpath d='M-92 33C-70 5 -46 1 -34 15c8 10 -7 18 -12 8C-52 11 -33 3 -21 7c6 2 9 -2 11 -8' transform='translate(118 96) rotate(-16)' fill='none' stroke='%236B4F3A' stroke-opacity='0.1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 7'/%3E%3Cpath d='M-92 33C-70 5 -46 1 -34 15c8 10 -7 18 -12 8C-52 11 -33 3 -21 7c6 2 9 -2 11 -8' transform='translate(118 456) rotate(-16)' fill='none' stroke='%236B4F3A' stroke-opacity='0.1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 7'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(118 96) rotate(-8) scale(1.15)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M-92 33C-70 5 -46 1 -34 15c8 10 -7 18 -12 8C-52 11 -33 3 -21 7c6 2 9 -2 11 -8' transform='translate(-58 188) rotate(22) scale(0.8)' fill='none' stroke='%236B4F3A' stroke-opacity='0.1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 7'/%3E%3Cpath d='M-92 33C-70 5 -46 1 -34 15c8 10 -7 18 -12 8C-52 11 -33 3 -21 7c6 2 9 -2 11 -8' transform='translate(302 188) rotate(22) scale(0.8)' fill='none' stroke='%236B4F3A' stroke-opacity='0.1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 7'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(302 188) rotate(11) scale(0.92)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M-92 33C-70 5 -46 1 -34 15c8 10 -7 18 -12 8C-52 11 -33 3 -21 7c6 2 9 -2 11 -8' transform='translate(188 -68) rotate(-5) scale(0.9)' fill='none' stroke='%236B4F3A' stroke-opacity='0.1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 7'/%3E%3Cpath d='M-92 33C-70 5 -46 1 -34 15c8 10 -7 18 -12 8C-52 11 -33 3 -21 7c6 2 9 -2 11 -8' transform='translate(188 292) rotate(-5) scale(0.9)' fill='none' stroke='%236B4F3A' stroke-opacity='0.1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 7'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(188 292) rotate(-2.5) scale(1.03)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M-92 33C-70 5 -46 1 -34 15c8 10 -7 18 -12 8C-52 11 -33 3 -21 7c6 2 9 -2 11 -8' transform='translate(36 236) rotate(9) scale(0.72)' fill='none' stroke='%236B4F3A' stroke-opacity='0.1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 7'/%3E%3Cpath d='M-92 33C-70 5 -46 1 -34 15c8 10 -7 18 -12 8C-52 11 -33 3 -21 7c6 2 9 -2 11 -8' transform='translate(396 236) rotate(9) scale(0.72)' fill='none' stroke='%236B4F3A' stroke-opacity='0.1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 7'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(36 236) rotate(4.5) scale(0.83)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3C/svg%3E&quot;);background-size:360px 360px">
+      <p class="daytitle">Day 3 &middot; Brooklyn</p>
+      <p class="daysub">Slow morning, then the park before the light goes.</p>
+      
+      <article class="card">
+        <div class="row">
+          <div class="time">10:30<span>AM</span></div>
+          <div class="grow">
+            <h4>Prospect Park Boathouse</h4>
+            <p class="meta">Brooklyn · 40 min · $$</p>
+          </div>
+        </div>
+        <div class="chips"><span class="chip must">&#9733; Must</span><span class="chip">Open till 5</span></div>
+      </article>
+      <article class="card">
+        <div class="row">
+          <div class="time">12:15<span>PM</span></div>
+          <div class="grow">
+            <h4>Fen&#780;s Coffee &amp; Provisions</h4>
+            <p class="meta">Park Slope · 25 min</p>
+          </div>
+        </div>
+        <p class="prose">Grab the window seat if it&#8217;s free &mdash; the light in there is worth the wait.</p>
+      </article>
+
+      <div class="gap"></div>
+      <p class="tail">&#10010; Add another stopover</p>
+    </div></div>
+  </section>
+  <section class="variant">
+    <div>
+      <div class="idx"><span class="num">02 / 10 &middot; WP-07</span></div>
+      <h2>Solitary</h2>
+      <p class="blurb">The sparsest way to be confidently visible: almost no coverage, but the shape you do meet is unmistakable.</p>
+      <dl>
+        <dt>Tone</dt><dd>deep brown, single</dd>
+        <dt>Density</dt><dd>very sparse · very large</dd>
+        <dt>Motif</dt><dd>one large bird per tile</dd>
+        <dt>Tile</dt><dd>480 &times; 480 px &middot; 1.2 KB</dd>
+      </dl>
+      <div class="bars">
+        <dt>Presence</dt>
+        <div class="bar"><i style="width:26%"></i>
+          <u style="left:5.5%" title="today"></u></div>
+        <dt></dt><div class="val">4.8&times; today&rsquo;s weight &middot; ink 0.71% (today 0.41%) &middot; peak &Delta;L 35 (today 11)</div>
+      </div>
+    </div>
+    <div class="phone"><div class="screen"
+         style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='480' viewBox='0 0 480 480'%3E%3Cpath d='M-86 24C-58 -8 -14 -12 16 6' transform='translate(214 150) rotate(-12) scale(1.5)' fill='none' stroke='%2357402E' stroke-opacity='0.07' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3.5 8'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(214 150) rotate(-12) scale(3.4)' fill='%2357402E' fill-opacity='0.14'/%3E%3Cpath d='M-14 2C-10.4 -3.6 -5.4 -6.6 0 -2C5.4 -6.6 10.4 -3.6 14 2' transform='translate(402 372) rotate(8) scale(1.15)' fill='none' stroke='%2357402E' stroke-opacity='0.12' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-14 2C-10.4 -3.6 -5.4 -6.6 0 -2C5.4 -6.6 10.4 -3.6 14 2' transform='translate(74 344) rotate(-14) scale(0.9)' fill='none' stroke='%2357402E' stroke-opacity='0.1' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E&quot;);background-size:480px 480px">
+      <p class="daytitle">Day 3 &middot; Brooklyn</p>
+      <p class="daysub">Slow morning, then the park before the light goes.</p>
+      
+      <article class="card">
+        <div class="row">
+          <div class="time">10:30<span>AM</span></div>
+          <div class="grow">
+            <h4>Prospect Park Boathouse</h4>
+            <p class="meta">Brooklyn · 40 min · $$</p>
+          </div>
+        </div>
+        <div class="chips"><span class="chip must">&#9733; Must</span><span class="chip">Open till 5</span></div>
+      </article>
+      <article class="card">
+        <div class="row">
+          <div class="time">12:15<span>PM</span></div>
+          <div class="grow">
+            <h4>Fen&#780;s Coffee &amp; Provisions</h4>
+            <p class="meta">Park Slope · 25 min</p>
+          </div>
+        </div>
+        <p class="prose">Grab the window seat if it&#8217;s free &mdash; the light in there is worth the wait.</p>
+      </article>
+
+      <div class="gap"></div>
+      <p class="tail">&#10010; Add another stopover</p>
+    </div></div>
+  </section>
+  <section class="variant">
+    <div>
+      <div class="idx"><span class="num">03 / 10 &middot; WP-03</span></div>
+      <h2>Slipstream</h2>
+      <p class="blurb">Pure trail texture, no bird anywhere. A dash needs a markedly heavier tone than a solid mark before it registers at all, so this one carries the darkest stroke in the set.</p>
+      <dl>
+        <dt>Tone</dt><dd>matcha moss, single</dd>
+        <dt>Density</dt><dd>very sparse · very large</dd>
+        <dt>Motif</dt><dd>dashed flight trails only, no birds</dd>
+        <dt>Tile</dt><dd>420 &times; 420 px &middot; 3.9 KB</dd>
+      </dl>
+      <div class="bars">
+        <dt>Presence</dt>
+        <div class="bar"><i style="width:31%"></i>
+          <u style="left:5.5%" title="today"></u></div>
+        <dt></dt><div class="val">5.6&times; today&rsquo;s weight &middot; ink 0.74% (today 0.41%) &middot; peak &Delta;L 35 (today 11)</div>
+      </div>
+    </div>
+    <div class="phone"><div class="screen"
+         style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420'%3E%3Cpath d='M-92 33C-70 5 -46 1 -34 15c8 10 -7 18 -12 8C-52 11 -33 3 -21 7c6 2 9 -2 11 -8' transform='translate(156 96) rotate(-14) scale(1.05)' fill='none' stroke='%234B6630' stroke-opacity='0.23' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 7'/%3E%3Cpath d='M-92 33C-70 5 -46 1 -34 15c8 10 -7 18 -12 8C-52 11 -33 3 -21 7c6 2 9 -2 11 -8' transform='translate(156 516) rotate(-14) scale(1.05)' fill='none' stroke='%234B6630' stroke-opacity='0.23' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 7'/%3E%3Cpath d='M-74 30C-50 8 -22 0 2 8c9 3 12 -4 6 -8c-5 -3 -11 1 -9 7' transform='translate(-22 210) rotate(18) scale(0.95)' fill='none' stroke='%234B6630' stroke-opacity='0.23' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 7'/%3E%3Cpath d='M-74 30C-50 8 -22 0 2 8c9 3 12 -4 6 -8c-5 -3 -11 1 -9 7' transform='translate(398 210) rotate(18) scale(0.95)' fill='none' stroke='%234B6630' stroke-opacity='0.23' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 7'/%3E%3Cpath d='M-86 24C-58 -8 -14 -12 16 6' transform='translate(240 -76) rotate(-6) scale(0.9)' fill='none' stroke='%234B6630' stroke-opacity='0.23' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3.5 8'/%3E%3Cpath d='M-86 24C-58 -8 -14 -12 16 6' transform='translate(240 344) rotate(-6) scale(0.9)' fill='none' stroke='%234B6630' stroke-opacity='0.23' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3.5 8'/%3E%3Cpath d='M-52 22C-38 2 -18 -6 0 -2c8 2 10 8 4 11c-6 3 -11 -2 -7 -6' transform='translate(70 286) rotate(26) scale(0.9)' fill='none' stroke='%234B6630' stroke-opacity='0.23' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='2.5 6'/%3E%3Cpath d='M-46 14C-30 -6 -6 -12 14 -6' transform='translate(-28 52) rotate(-22) scale(0.85)' fill='none' stroke='%234B6630' stroke-opacity='0.23' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 8'/%3E%3Cpath d='M-46 14C-30 -6 -6 -12 14 -6' transform='translate(392 52) rotate(-22) scale(0.85)' fill='none' stroke='%234B6630' stroke-opacity='0.23' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 8'/%3E%3Cpath d='M-52 22C-38 2 -18 -6 0 -2c8 2 10 8 4 11c-6 3 -11 -2 -7 -6' transform='translate(300 148) rotate(-20) scale(0.75)' fill='none' stroke='%234B6630' stroke-opacity='0.23' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='2.5 6'/%3E%3Cpath d='M-46 14C-30 -6 -6 -12 14 -6' transform='translate(148 232) rotate(12) scale(0.8)' fill='none' stroke='%234B6630' stroke-opacity='0.23' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 8'/%3E%3Cpath d='M-74 30C-50 8 -22 0 2 8c9 3 12 -4 6 -8c-5 -3 -11 1 -9 7' transform='translate(116 -10) rotate(24) scale(0.7)' fill='none' stroke='%234B6630' stroke-opacity='0.23' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 7'/%3E%3Cpath d='M-74 30C-50 8 -22 0 2 8c9 3 12 -4 6 -8c-5 -3 -11 1 -9 7' transform='translate(116 410) rotate(24) scale(0.7)' fill='none' stroke='%234B6630' stroke-opacity='0.23' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 7'/%3E%3Cpath d='M-46 14C-30 -6 -6 -12 14 -6' transform='translate(0 372) rotate(-10) scale(0.9)' fill='none' stroke='%234B6630' stroke-opacity='0.23' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 8'/%3E%3Cpath d='M-46 14C-30 -6 -6 -12 14 -6' transform='translate(420 372) rotate(-10) scale(0.9)' fill='none' stroke='%234B6630' stroke-opacity='0.23' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3 8'/%3E%3C/svg%3E&quot;);background-size:420px 420px">
+      <p class="daytitle">Day 3 &middot; Brooklyn</p>
+      <p class="daysub">Slow morning, then the park before the light goes.</p>
+      
+      <article class="card">
+        <div class="row">
+          <div class="time">10:30<span>AM</span></div>
+          <div class="grow">
+            <h4>Prospect Park Boathouse</h4>
+            <p class="meta">Brooklyn · 40 min · $$</p>
+          </div>
+        </div>
+        <div class="chips"><span class="chip must">&#9733; Must</span><span class="chip">Open till 5</span></div>
+      </article>
+      <article class="card">
+        <div class="row">
+          <div class="time">12:15<span>PM</span></div>
+          <div class="grow">
+            <h4>Fen&#780;s Coffee &amp; Provisions</h4>
+            <p class="meta">Park Slope · 25 min</p>
+          </div>
+        </div>
+        <p class="prose">Grab the window seat if it&#8217;s free &mdash; the light in there is worth the wait.</p>
+      </article>
+
+      <div class="gap"></div>
+      <p class="tail">&#10010; Add another stopover</p>
+    </div></div>
+  </section>
+  <section class="variant">
+    <div>
+      <div class="idx"><span class="num">04 / 10 &middot; WP-08</span></div>
+      <h2>Flight Range</h2>
+      <p class="blurb">Near birds large and darker, far ones small and paler — the field gets air in it instead of even noise.</p>
+      <dl>
+        <dt>Tone</dt><dd>warm brown, single</dd>
+        <dt>Density</dt><dd>medium · mixed sizes</dd>
+        <dt>Motif</dt><dd>mixed bird sizes reading as near and far</dd>
+        <dt>Tile</dt><dd>440 &times; 440 px &middot; 4.4 KB</dd>
+      </dl>
+      <div class="bars">
+        <dt>Presence</dt>
+        <div class="bar"><i style="width:42%"></i>
+          <u style="left:5.5%" title="today"></u></div>
+        <dt></dt><div class="val">7.6&times; today&rsquo;s weight &middot; ink 1.13% (today 0.41%) &middot; peak &Delta;L 27 (today 11)</div>
+      </div>
+    </div>
+    <div class="phone"><div class="screen"
+         style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='440' height='440' viewBox='0 0 440 440'%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(88 84) rotate(20.84) scale(2.3)' fill='%236B4F3A' fill-opacity='0.17'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(330 158) rotate(-21.39) scale(1.75)' fill='%236B4F3A' fill-opacity='0.16'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(196 296) rotate(-12.71) scale(2.05)' fill='%236B4F3A' fill-opacity='0.17'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(-24 348) rotate(-6.3) scale(1.5)' fill='%236B4F3A' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(416 348) rotate(-6.3) scale(1.5)' fill='%236B4F3A' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(30 372) rotate(15.37) scale(1.35)' fill='%236B4F3A' fill-opacity='0.14'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(232 44) rotate(-8.88) scale(0.78)' fill='%236B4F3A' fill-opacity='0.1'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(392 240) rotate(8.32) scale(0.7)' fill='%236B4F3A' fill-opacity='0.1'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(110 202) rotate(6.15) scale(0.82)' fill='%236B4F3A' fill-opacity='0.1'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(300 396) rotate(-1.03) scale(0.74)' fill='%236B4F3A' fill-opacity='0.1'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(152 -12) rotate(-8.82) scale(0.68)' fill='%236B4F3A' fill-opacity='0.09'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(152 428) rotate(-8.82) scale(0.68)' fill='%236B4F3A' fill-opacity='0.09'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(-2 62) rotate(-2.63) scale(0.8)' fill='%236B4F3A' fill-opacity='0.1'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(438 62) rotate(-2.63) scale(0.8)' fill='%236B4F3A' fill-opacity='0.1'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(16 168) rotate(22.42) scale(0.72)' fill='%236B4F3A' fill-opacity='0.1'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(268 200) rotate(-11.94) scale(0.6)' fill='%236B4F3A' fill-opacity='0.09'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(352 12) rotate(-2.08) scale(0.64)' fill='%236B4F3A' fill-opacity='0.09'/%3E%3C/svg%3E&quot;);background-size:440px 440px">
+      <p class="daytitle">Day 3 &middot; Brooklyn</p>
+      <p class="daysub">Slow morning, then the park before the light goes.</p>
+      
+      <article class="card">
+        <div class="row">
+          <div class="time">10:30<span>AM</span></div>
+          <div class="grow">
+            <h4>Prospect Park Boathouse</h4>
+            <p class="meta">Brooklyn · 40 min · $$</p>
+          </div>
+        </div>
+        <div class="chips"><span class="chip must">&#9733; Must</span><span class="chip">Open till 5</span></div>
+      </article>
+      <article class="card">
+        <div class="row">
+          <div class="time">12:15<span>PM</span></div>
+          <div class="grow">
+            <h4>Fen&#780;s Coffee &amp; Provisions</h4>
+            <p class="meta">Park Slope · 25 min</p>
+          </div>
+        </div>
+        <p class="prose">Grab the window seat if it&#8217;s free &mdash; the light in there is worth the wait.</p>
+      </article>
+
+      <div class="gap"></div>
+      <p class="tail">&#10010; Add another stopover</p>
+    </div></div>
+  </section>
+  <section class="variant">
+    <div>
+      <div class="idx"><span class="num">05 / 10 &middot; WP-02</span></div>
+      <h2>Covey</h2>
+      <p class="blurb">An all-over textile. Every bird sits near-upright so a dense field still reads calm.</p>
+      <dl>
+        <dt>Tone</dt><dd>warm brown, single</dd>
+        <dt>Density</dt><dd>dense · small</dd>
+        <dt>Motif</dt><dd>birds only — swallows and swifts</dd>
+        <dt>Tile</dt><dd>360 &times; 360 px &middot; 7.7 KB</dd>
+      </dl>
+      <div class="bars">
+        <dt>Presence</dt>
+        <div class="bar"><i style="width:45%"></i>
+          <u style="left:5.5%" title="today"></u></div>
+        <dt></dt><div class="val">8.1&times; today&rsquo;s weight &middot; ink 1.67% (today 0.41%) &middot; peak &Delta;L 19 (today 11)</div>
+      </div>
+    </div>
+    <div class="phone"><div class="screen"
+         style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360' viewBox='0 0 360 360'%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(48.04 46.7) rotate(24.15) scale(1)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(104.27 29.73) rotate(-7.47) scale(0.84)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(167.41 26.1) rotate(-25.25) scale(0.81)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(259.11 37.18) rotate(14.25) scale(0.91)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(317.55 25.57) rotate(-12.93) scale(0.8)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(67.32 98.93) rotate(-9.39) scale(0.82)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(151.47 98.42) rotate(14.99) scale(0.81)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(220.76 116.94) rotate(9.54) scale(0.98)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(289.22 96.8) rotate(2.45) scale(0.8)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(2.23 99.64) rotate(4.47) scale(0.82)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(362.23 99.64) rotate(4.47) scale(0.82)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(44.99 175.21) rotate(18.04) scale(0.86)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(111.29 190.72) rotate(6.6) scale(1)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(167.88 191.5) rotate(-24.32) scale(1.01)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(249.99 174.03) rotate(-4.04) scale(0.84)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(322.49 175.47) rotate(-3.03) scale(0.86)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(64.79 244.68) rotate(-14.47) scale(0.83)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(150.58 243.34) rotate(13.19) scale(0.82)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(220.61 263.84) rotate(9.25) scale(1.01)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(281.86 239.52) rotate(-12.32) scale(0.78)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(-5.23 243.44) rotate(-10.49) scale(0.82)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(354.77 243.44) rotate(-10.49) scale(0.82)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(26.26 313.32) rotate(-19.54) scale(0.8)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(120.33 326.4) rotate(24.73) scale(0.92)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(170.25 315.46) rotate(-19.57) scale(0.82)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(251.64 314.49) rotate(-0.72) scale(0.81)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(329.55 314.18) rotate(11.14) scale(0.81)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3C/svg%3E&quot;);background-size:360px 360px">
+      <p class="daytitle">Day 3 &middot; Brooklyn</p>
+      <p class="daysub">Slow morning, then the park before the light goes.</p>
+      
+      <article class="card">
+        <div class="row">
+          <div class="time">10:30<span>AM</span></div>
+          <div class="grow">
+            <h4>Prospect Park Boathouse</h4>
+            <p class="meta">Brooklyn · 40 min · $$</p>
+          </div>
+        </div>
+        <div class="chips"><span class="chip must">&#9733; Must</span><span class="chip">Open till 5</span></div>
+      </article>
+      <article class="card">
+        <div class="row">
+          <div class="time">12:15<span>PM</span></div>
+          <div class="grow">
+            <h4>Fen&#780;s Coffee &amp; Provisions</h4>
+            <p class="meta">Park Slope · 25 min</p>
+          </div>
+        </div>
+        <p class="prose">Grab the window seat if it&#8217;s free &mdash; the light in there is worth the wait.</p>
+      </article>
+
+      <div class="gap"></div>
+      <p class="tail">&#10010; Add another stopover</p>
+    </div></div>
+  </section>
+  <section class="variant">
+    <div>
+      <div class="idx"><span class="num">06 / 10 &middot; WP-09</span></div>
+      <h2>Plume & Path</h2>
+      <p class="blurb">Feathers drawn as outline, shaft and barbs. The most ornithological-plate page in the set.</p>
+      <dl>
+        <dt>Tone</dt><dd>deep moss + moss</dd>
+        <dt>Density</dt><dd>medium · large</dd>
+        <dt>Motif</dt><dd>engraved feathers + dashed trails</dd>
+        <dt>Tile</dt><dd>400 &times; 400 px &middot; 5.4 KB</dd>
+      </dl>
+      <div class="bars">
+        <dt>Presence</dt>
+        <div class="bar"><i style="width:60%"></i>
+          <u style="left:5.5%" title="today"></u></div>
+        <dt></dt><div class="val">10.8&times; today&rsquo;s weight &middot; ink 1.45% (today 0.41%) &middot; peak &Delta;L 52 (today 11)</div>
+      </div>
+    </div>
+    <div class="phone"><div class="screen"
+         style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24Z' transform='translate(300 86) rotate(24) scale(1.2)' fill='none' stroke='%233C5326' stroke-opacity='0.19' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-3.9 -12.6L0.4 -16.2M-4.5 -7.4L0 -11.6M-4.5 -2.2L-0.2 -6.8M-3.6 2.6L-0.5 -1.8M5.4 -13.6L1.2 -16.8M6 -8.4L1 -12.2M5.7 -3.2L0.7 -7.4M4.2 1.4L0.4 -2.6M1.4 -21L-0.1 6.4' transform='translate(300 86) rotate(24) scale(1.2)' fill='none' stroke='%233C5326' stroke-opacity='0.15' stroke-width='1.25' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24Z' transform='translate(110 214) rotate(-18) scale(1.35)' fill='none' stroke='%233C5326' stroke-opacity='0.19' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-3.9 -12.6L0.4 -16.2M-4.5 -7.4L0 -11.6M-4.5 -2.2L-0.2 -6.8M-3.6 2.6L-0.5 -1.8M5.4 -13.6L1.2 -16.8M6 -8.4L1 -12.2M5.7 -3.2L0.7 -7.4M4.2 1.4L0.4 -2.6M1.4 -21L-0.1 6.4' transform='translate(110 214) rotate(-18) scale(1.35)' fill='none' stroke='%233C5326' stroke-opacity='0.15' stroke-width='1.25' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24Z' transform='translate(352 328) rotate(8) scale(1.1)' fill='none' stroke='%233C5326' stroke-opacity='0.19' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-3.9 -12.6L0.4 -16.2M-4.5 -7.4L0 -11.6M-4.5 -2.2L-0.2 -6.8M-3.6 2.6L-0.5 -1.8M5.4 -13.6L1.2 -16.8M6 -8.4L1 -12.2M5.7 -3.2L0.7 -7.4M4.2 1.4L0.4 -2.6M1.4 -21L-0.1 6.4' transform='translate(352 328) rotate(8) scale(1.1)' fill='none' stroke='%233C5326' stroke-opacity='0.15' stroke-width='1.25' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24Z' transform='translate(30 60) rotate(40) scale(0.95)' fill='none' stroke='%233C5326' stroke-opacity='0.19' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-3.9 -12.6L0.4 -16.2M-4.5 -7.4L0 -11.6M-4.5 -2.2L-0.2 -6.8M-3.6 2.6L-0.5 -1.8M5.4 -13.6L1.2 -16.8M6 -8.4L1 -12.2M5.7 -3.2L0.7 -7.4M4.2 1.4L0.4 -2.6M1.4 -21L-0.1 6.4' transform='translate(30 60) rotate(40) scale(0.95)' fill='none' stroke='%233C5326' stroke-opacity='0.15' stroke-width='1.25' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24Z' transform='translate(206 -14) rotate(-34)' fill='none' stroke='%233C5326' stroke-opacity='0.19' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24Z' transform='translate(206 386) rotate(-34)' fill='none' stroke='%233C5326' stroke-opacity='0.19' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-3.9 -12.6L0.4 -16.2M-4.5 -7.4L0 -11.6M-4.5 -2.2L-0.2 -6.8M-3.6 2.6L-0.5 -1.8M5.4 -13.6L1.2 -16.8M6 -8.4L1 -12.2M5.7 -3.2L0.7 -7.4M4.2 1.4L0.4 -2.6M1.4 -21L-0.1 6.4' transform='translate(206 -14) rotate(-34)' fill='none' stroke='%233C5326' stroke-opacity='0.15' stroke-width='1.25' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-3.9 -12.6L0.4 -16.2M-4.5 -7.4L0 -11.6M-4.5 -2.2L-0.2 -6.8M-3.6 2.6L-0.5 -1.8M5.4 -13.6L1.2 -16.8M6 -8.4L1 -12.2M5.7 -3.2L0.7 -7.4M4.2 1.4L0.4 -2.6M1.4 -21L-0.1 6.4' transform='translate(206 386) rotate(-34)' fill='none' stroke='%233C5326' stroke-opacity='0.15' stroke-width='1.25' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-86 24C-58 -8 -14 -12 16 6' transform='translate(180 130) rotate(-10) scale(0.9)' fill='none' stroke='%234B6630' stroke-opacity='0.13' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3.5 8'/%3E%3Cpath d='M-86 24C-58 -8 -14 -12 16 6' transform='translate(0 268) rotate(16) scale(0.85)' fill='none' stroke='%234B6630' stroke-opacity='0.13' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3.5 8'/%3E%3Cpath d='M-86 24C-58 -8 -14 -12 16 6' transform='translate(400 268) rotate(16) scale(0.85)' fill='none' stroke='%234B6630' stroke-opacity='0.13' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3.5 8'/%3E%3Cpath d='M-86 24C-58 -8 -14 -12 16 6' transform='translate(96 -50) rotate(-4) scale(0.8)' fill='none' stroke='%234B6630' stroke-opacity='0.13' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3.5 8'/%3E%3Cpath d='M-86 24C-58 -8 -14 -12 16 6' transform='translate(96 350) rotate(-4) scale(0.8)' fill='none' stroke='%234B6630' stroke-opacity='0.13' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' stroke-dasharray='3.5 8'/%3E%3C/svg%3E&quot;);background-size:400px 400px">
+      <p class="daytitle">Day 3 &middot; Brooklyn</p>
+      <p class="daysub">Slow morning, then the park before the light goes.</p>
+      
+      <article class="card">
+        <div class="row">
+          <div class="time">10:30<span>AM</span></div>
+          <div class="grow">
+            <h4>Prospect Park Boathouse</h4>
+            <p class="meta">Brooklyn · 40 min · $$</p>
+          </div>
+        </div>
+        <div class="chips"><span class="chip must">&#9733; Must</span><span class="chip">Open till 5</span></div>
+      </article>
+      <article class="card">
+        <div class="row">
+          <div class="time">12:15<span>PM</span></div>
+          <div class="grow">
+            <h4>Fen&#780;s Coffee &amp; Provisions</h4>
+            <p class="meta">Park Slope · 25 min</p>
+          </div>
+        </div>
+        <p class="prose">Grab the window seat if it&#8217;s free &mdash; the light in there is worth the wait.</p>
+      </article>
+
+      <div class="gap"></div>
+      <p class="tail">&#10010; Add another stopover</p>
+    </div></div>
+  </section>
+  <section class="variant">
+    <div>
+      <div class="idx"><span class="num">07 / 10 &middot; WP-06</span></div>
+      <h2>Passage</h2>
+      <p class="blurb">A skein ranked along parallel diagonals, sized down toward the back of each line. Directional.</p>
+      <dl>
+        <dt>Tone</dt><dd>matcha moss, single</dd>
+        <dt>Density</dt><dd>medium · small-to-medium</dd>
+        <dt>Motif</dt><dd>diagonal migrating flock</dd>
+        <dt>Tile</dt><dd>400 &times; 400 px &middot; 9.6 KB</dd>
+      </dl>
+      <div class="bars">
+        <dt>Presence</dt>
+        <div class="bar"><i style="width:61%"></i>
+          <u style="left:5.5%" title="today"></u></div>
+        <dt></dt><div class="val">11.0&times; today&rsquo;s weight &middot; ink 1.89% (today 0.41%) &middot; peak &Delta;L 22 (today 11)</div>
+      </div>
+    </div>
+    <div class="phone"><div class="screen"
+         style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(330.9 78.45) rotate(-31.17) scale(1.15)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(-18.79 2.47) rotate(-35.76) scale(1.09)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(-18.79 402.47) rotate(-35.76) scale(1.09)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(381.21 2.47) rotate(-35.76) scale(1.09)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(381.21 402.47) rotate(-35.76) scale(1.09)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(19.88 337.35) rotate(-30.84) scale(1.04)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(66.64 285.42) rotate(-23.62) scale(0.98)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(108.8 217.01) rotate(-29.97) scale(0.93)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(161.79 154.56) rotate(-29.65) scale(0.87)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(202.07 95.07) rotate(-34.98) scale(0.82)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(27.02 57.89) rotate(-25.93) scale(1.15)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(79.46 3.08) rotate(-37.96) scale(1.09)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(79.46 403.08) rotate(-37.96) scale(1.09)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(116.11 333.84) rotate(-34.34) scale(1.04)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(174.94 272.26) rotate(-22.86) scale(0.98)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(218.68 216.77) rotate(-37.31) scale(0.93)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(265.13 152.77) rotate(-37.22) scale(0.87)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(309.94 77.67) rotate(-25.08) scale(0.82)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(131.54 47.43) rotate(-36.88) scale(1.15)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(180.76 -16.21) rotate(-23.33) scale(1.09)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(180.76 383.79) rotate(-23.33) scale(1.09)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(217.42 320.6) rotate(-30.33) scale(1.04)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(268.03 252.44) rotate(-37.52) scale(0.98)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(309.62 202.69) rotate(-22.69) scale(0.93)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(353.59 138.16) rotate(-29.02) scale(0.87)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(7.71 77.01) rotate(-26.73) scale(0.82)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(407.71 77.01) rotate(-26.73) scale(0.82)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(235.08 35.72) rotate(-30.93) scale(1.15)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(277 374.37) rotate(-36.14) scale(1.09)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(328.76 311.23) rotate(-29.59) scale(1.04)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(373.7 251.97) rotate(-32.28) scale(0.98)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(15.36 180.62) rotate(-34.08) scale(0.93)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(415.36 180.62) rotate(-34.08) scale(0.93)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(58.18 124.67) rotate(-30.26) scale(0.87)' fill='%234B6630' fill-opacity='0.15'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(109.51 58.29) rotate(-23.49) scale(0.82)' fill='%234B6630' fill-opacity='0.15'/%3E%3C/svg%3E&quot;);background-size:400px 400px">
+      <p class="daytitle">Day 3 &middot; Brooklyn</p>
+      <p class="daysub">Slow morning, then the park before the light goes.</p>
+      
+      <article class="card">
+        <div class="row">
+          <div class="time">10:30<span>AM</span></div>
+          <div class="grow">
+            <h4>Prospect Park Boathouse</h4>
+            <p class="meta">Brooklyn · 40 min · $$</p>
+          </div>
+        </div>
+        <div class="chips"><span class="chip must">&#9733; Must</span><span class="chip">Open till 5</span></div>
+      </article>
+      <article class="card">
+        <div class="row">
+          <div class="time">12:15<span>PM</span></div>
+          <div class="grow">
+            <h4>Fen&#780;s Coffee &amp; Provisions</h4>
+            <p class="meta">Park Slope · 25 min</p>
+          </div>
+        </div>
+        <p class="prose">Grab the window seat if it&#8217;s free &mdash; the light in there is worth the wait.</p>
+      </article>
+
+      <div class="gap"></div>
+      <p class="tail">&#10010; Add another stopover</p>
+    </div></div>
+  </section>
+  <section class="variant">
+    <div>
+      <div class="idx"><span class="num">08 / 10 &middot; WP-10</span></div>
+      <h2>Tracks</h2>
+      <p class="blurb">The track key from the back of a field guide. Tightest, most textile-like weave here.</p>
+      <dl>
+        <dt>Tone</dt><dd>warm brown, single</dd>
+        <dt>Density</dt><dd>very dense · very small</dd>
+        <dt>Motif</dt><dd>wildcard — bird footprints in a diamond lattice</dd>
+        <dt>Tile</dt><dd>360 &times; 360 px &middot; 9.5 KB</dd>
+      </dl>
+      <div class="bars">
+        <dt>Presence</dt>
+        <div class="bar"><i style="width:74%"></i>
+          <u style="left:5.5%" title="today"></u></div>
+        <dt></dt><div class="val">13.3&times; today&rsquo;s weight &middot; ink 2.38% (today 0.41%) &middot; peak &Delta;L 22 (today 11)</div>
+      </div>
+    </div>
+    <div class="phone"><div class="screen"
+         style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360' viewBox='0 0 360 360'%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(25.08 35.41) rotate(-11.47) scale(1.11)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(85.8 32.87) rotate(-9.8) scale(1.07)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(154.09 32.97) rotate(9.55) scale(1.07)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(207.62 28.22) rotate(-5.55) scale(0.99)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(272.66 35.59) rotate(6.21) scale(1.11)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(331.95 30.49) rotate(4.55) scale(1.03)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(58.65 88.87) rotate(176.86) scale(1)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(122.63 89.15) rotate(186.13) scale(1.01)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(180.41 91.57) rotate(180.96) scale(1.05)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(241.59 84.49) rotate(183.71) scale(0.93)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(296.77 92.47) rotate(172.46) scale(1.06)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(0.84 94.05) rotate(181.97) scale(1.09)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(360.84 94.05) rotate(181.97) scale(1.09)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(24.63 146.78) rotate(-12.53) scale(0.97)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(90.02 152.96) rotate(0.06) scale(1.07)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(146.34 153.18) rotate(-8.54) scale(1.07)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(208.92 147.67) rotate(-2.51) scale(0.98)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(273.95 145.29) rotate(9.22) scale(0.94)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(335.21 147.73) rotate(12.15) scale(0.98)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(58.35 206.44) rotate(176.14) scale(0.96)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(119.62 214.11) rotate(179.1) scale(1.09)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(176.65 210.65) rotate(172.19) scale(1.03)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(239.28 207.62) rotate(178.33) scale(0.98)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(295.56 212.37) rotate(169.65) scale(1.06)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(-1.02 209.64) rotate(177.62) scale(1.01)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(358.98 209.64) rotate(177.62) scale(1.01)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(31.23 265.28) rotate(2.88) scale(0.94)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(93.81 274.69) rotate(8.9) scale(1.1)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(147.05 273.79) rotate(-6.88) scale(1.08)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(212.39 267.58) rotate(5.57) scale(0.98)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(267.24 265.01) rotate(-6.44) scale(0.94)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(328.97 269.41) rotate(-2.4) scale(1.01)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(59.84 329.78) rotate(179.63) scale(1.02)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(120.58 325.5) rotate(181.36) scale(0.94)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(176.69 330.71) rotate(172.29) scale(1.03)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(239.67 326.09) rotate(179.23) scale(0.95)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(297.32 335.75) rotate(173.75) scale(1.12)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(3.59 332.72) rotate(188.37) scale(1.07)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M0 0L-5.6 -6.8M0 0L0.2 -8.8M0 0L5.8 -6.6M0 0L-0.4 3' transform='translate(363.59 332.72) rotate(188.37) scale(1.07)' fill='none' stroke='%236B4F3A' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E&quot;);background-size:360px 360px">
+      <p class="daytitle">Day 3 &middot; Brooklyn</p>
+      <p class="daysub">Slow morning, then the park before the light goes.</p>
+      
+      <article class="card">
+        <div class="row">
+          <div class="time">10:30<span>AM</span></div>
+          <div class="grow">
+            <h4>Prospect Park Boathouse</h4>
+            <p class="meta">Brooklyn · 40 min · $$</p>
+          </div>
+        </div>
+        <div class="chips"><span class="chip must">&#9733; Must</span><span class="chip">Open till 5</span></div>
+      </article>
+      <article class="card">
+        <div class="row">
+          <div class="time">12:15<span>PM</span></div>
+          <div class="grow">
+            <h4>Fen&#780;s Coffee &amp; Provisions</h4>
+            <p class="meta">Park Slope · 25 min</p>
+          </div>
+        </div>
+        <p class="prose">Grab the window seat if it&#8217;s free &mdash; the light in there is worth the wait.</p>
+      </article>
+
+      <div class="gap"></div>
+      <p class="tail">&#10010; Add another stopover</p>
+    </div></div>
+  </section>
+  <section class="variant">
+    <div>
+      <div class="idx"><span class="num">09 / 10 &middot; WP-05</span></div>
+      <h2>Perch</h2>
+      <p class="blurb">The most literally field-guide of the set. Two house tones, kept a step apart so the bird leads.</p>
+      <dl>
+        <dt>Tone</dt><dd>brown bird on moss sprig</dd>
+        <dt>Density</dt><dd>medium · large</dd>
+        <dt>Motif</dt><dd>perching birds on small sprigs</dd>
+        <dt>Tile</dt><dd>420 &times; 420 px &middot; 5.2 KB</dd>
+      </dl>
+      <div class="bars">
+        <dt>Presence</dt>
+        <div class="bar"><i style="width:75%"></i>
+          <u style="left:5.5%" title="today"></u></div>
+        <dt></dt><div class="val">13.6&times; today&rsquo;s weight &middot; ink 1.73% (today 0.41%) &middot; peak &Delta;L 48 (today 11)</div>
+      </div>
+    </div>
+    <div class="phone"><div class="screen"
+         style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420'%3E%3Cpath d='M-30 4.4C-18 3 -4 2.2 12 1.6' transform='translate(96 88) scale(1.25)' fill='none' stroke='%234B6630' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-11 2.6C-14.4 -1.4 -19 -2.6 -22.4 -0.8C-19.6 2.8 -15 4 -11 2.6ZM-1 2.2C-3.4 5.8 -3 9.8 0.2 11.8C2 8.2 1.6 4.2 -1 2.2Z' transform='translate(96 88) scale(1.25)' fill='%234B6630' fill-opacity='0.14'/%3E%3Cpath d='M2.2 -21.6C5.6 -21.6 8 -19.8 8.4 -17.6L14.8 -16.2 L8.4 -14.6C9.6 -12.8 10.4 -10.6 10.4 -8.4C10.4 -5.2 8 -3 4.8 -3C3.4 -3 2.2 -3.4 1.2 -4L-14 -0.6 L-12.4 -6 L-4.8 -10.2C-4.8 -13 -4.2 -16 -2.8 -18.4C-1.6 -20.4 0.2 -21.6 2.2 -21.6Z' transform='translate(96 82.75) scale(1.25)' fill='%236B4F3A' fill-opacity='0.17'/%3E%3Cpath d='M3.3 -3.4L2.6 1.6M6.4 -3.6L6.9 1.6' transform='translate(96 82.75) scale(1.25)' fill='none' stroke='%236B4F3A' stroke-opacity='0.17' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-30 4.4C-18 3 -4 2.2 12 1.6' transform='translate(300 202) scale(-1.05 1.05)' fill='none' stroke='%234B6630' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-11 2.6C-14.4 -1.4 -19 -2.6 -22.4 -0.8C-19.6 2.8 -15 4 -11 2.6ZM-1 2.2C-3.4 5.8 -3 9.8 0.2 11.8C2 8.2 1.6 4.2 -1 2.2Z' transform='translate(300 202) scale(-1.05 1.05)' fill='%234B6630' fill-opacity='0.14'/%3E%3Cpath d='M2.2 -21.6C5.6 -21.6 8 -19.8 8.4 -17.6L14.8 -16.2 L8.4 -14.6C9.6 -12.8 10.4 -10.6 10.4 -8.4C10.4 -5.2 8 -3 4.8 -3C3.4 -3 2.2 -3.4 1.2 -4L-14 -0.6 L-12.4 -6 L-4.8 -10.2C-4.8 -13 -4.2 -16 -2.8 -18.4C-1.6 -20.4 0.2 -21.6 2.2 -21.6Z' transform='translate(300 197.59) scale(-1.05 1.05)' fill='%236B4F3A' fill-opacity='0.17'/%3E%3Cpath d='M3.3 -3.4L2.6 1.6M6.4 -3.6L6.9 1.6' transform='translate(300 197.59) scale(-1.05 1.05)' fill='none' stroke='%236B4F3A' stroke-opacity='0.17' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-30 4.4C-18 3 -4 2.2 12 1.6' transform='translate(176 322) scale(1.15)' fill='none' stroke='%234B6630' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-11 2.6C-14.4 -1.4 -19 -2.6 -22.4 -0.8C-19.6 2.8 -15 4 -11 2.6ZM-1 2.2C-3.4 5.8 -3 9.8 0.2 11.8C2 8.2 1.6 4.2 -1 2.2Z' transform='translate(176 322) scale(1.15)' fill='%234B6630' fill-opacity='0.14'/%3E%3Cpath d='M2.2 -21.6C5.6 -21.6 8 -19.8 8.4 -17.6L14.8 -16.2 L8.4 -14.6C9.6 -12.8 10.4 -10.6 10.4 -8.4C10.4 -5.2 8 -3 4.8 -3C3.4 -3 2.2 -3.4 1.2 -4L-14 -0.6 L-12.4 -6 L-4.8 -10.2C-4.8 -13 -4.2 -16 -2.8 -18.4C-1.6 -20.4 0.2 -21.6 2.2 -21.6Z' transform='translate(176 317.17) scale(1.15)' fill='%236B4F3A' fill-opacity='0.17'/%3E%3Cpath d='M3.3 -3.4L2.6 1.6M6.4 -3.6L6.9 1.6' transform='translate(176 317.17) scale(1.15)' fill='none' stroke='%236B4F3A' stroke-opacity='0.17' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-30 4.4C-18 3 -4 2.2 12 1.6' transform='translate(-28 386) scale(-0.95 0.95)' fill='none' stroke='%234B6630' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-30 4.4C-18 3 -4 2.2 12 1.6' transform='translate(392 386) scale(-0.95 0.95)' fill='none' stroke='%234B6630' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-11 2.6C-14.4 -1.4 -19 -2.6 -22.4 -0.8C-19.6 2.8 -15 4 -11 2.6ZM-1 2.2C-3.4 5.8 -3 9.8 0.2 11.8C2 8.2 1.6 4.2 -1 2.2Z' transform='translate(392 386) scale(-0.95 0.95)' fill='%234B6630' fill-opacity='0.14'/%3E%3Cpath d='M2.2 -21.6C5.6 -21.6 8 -19.8 8.4 -17.6L14.8 -16.2 L8.4 -14.6C9.6 -12.8 10.4 -10.6 10.4 -8.4C10.4 -5.2 8 -3 4.8 -3C3.4 -3 2.2 -3.4 1.2 -4L-14 -0.6 L-12.4 -6 L-4.8 -10.2C-4.8 -13 -4.2 -16 -2.8 -18.4C-1.6 -20.4 0.2 -21.6 2.2 -21.6Z' transform='translate(392 382.01) scale(-0.95 0.95)' fill='%236B4F3A' fill-opacity='0.17'/%3E%3Cpath d='M3.3 -3.4L2.6 1.6M6.4 -3.6L6.9 1.6' transform='translate(392 382.01) scale(-0.95 0.95)' fill='none' stroke='%236B4F3A' stroke-opacity='0.17' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-30 4.4C-18 3 -4 2.2 12 1.6' transform='translate(26 268) scale(-0.9 0.9)' fill='none' stroke='%234B6630' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-30 4.4C-18 3 -4 2.2 12 1.6' transform='translate(446 268) scale(-0.9 0.9)' fill='none' stroke='%234B6630' stroke-opacity='0.14' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M-11 2.6C-14.4 -1.4 -19 -2.6 -22.4 -0.8C-19.6 2.8 -15 4 -11 2.6ZM-1 2.2C-3.4 5.8 -3 9.8 0.2 11.8C2 8.2 1.6 4.2 -1 2.2Z' transform='translate(26 268) scale(-0.9 0.9)' fill='%234B6630' fill-opacity='0.14'/%3E%3Cpath d='M2.2 -21.6C5.6 -21.6 8 -19.8 8.4 -17.6L14.8 -16.2 L8.4 -14.6C9.6 -12.8 10.4 -10.6 10.4 -8.4C10.4 -5.2 8 -3 4.8 -3C3.4 -3 2.2 -3.4 1.2 -4L-14 -0.6 L-12.4 -6 L-4.8 -10.2C-4.8 -13 -4.2 -16 -2.8 -18.4C-1.6 -20.4 0.2 -21.6 2.2 -21.6Z' transform='translate(26 264.22) scale(-0.9 0.9)' fill='%236B4F3A' fill-opacity='0.17'/%3E%3Cpath d='M3.3 -3.4L2.6 1.6M6.4 -3.6L6.9 1.6' transform='translate(26 264.22) scale(-0.9 0.9)' fill='none' stroke='%236B4F3A' stroke-opacity='0.17' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E&quot;);background-size:420px 420px">
+      <p class="daytitle">Day 3 &middot; Brooklyn</p>
+      <p class="daysub">Slow morning, then the park before the light goes.</p>
+      
+      <article class="card">
+        <div class="row">
+          <div class="time">10:30<span>AM</span></div>
+          <div class="grow">
+            <h4>Prospect Park Boathouse</h4>
+            <p class="meta">Brooklyn · 40 min · $$</p>
+          </div>
+        </div>
+        <div class="chips"><span class="chip must">&#9733; Must</span><span class="chip">Open till 5</span></div>
+      </article>
+      <article class="card">
+        <div class="row">
+          <div class="time">12:15<span>PM</span></div>
+          <div class="grow">
+            <h4>Fen&#780;s Coffee &amp; Provisions</h4>
+            <p class="meta">Park Slope · 25 min</p>
+          </div>
+        </div>
+        <p class="prose">Grab the window seat if it&#8217;s free &mdash; the light in there is worth the wait.</p>
+      </article>
+
+      <div class="gap"></div>
+      <p class="tail">&#10010; Add another stopover</p>
+    </div></div>
+  </section>
+  <section class="variant">
+    <div>
+      <div class="idx"><span class="num">10 / 10 &middot; WP-04</span></div>
+      <h2>Quill Scatter</h2>
+      <p class="blurb">Feathers are falling, so full 360° rotation reads natural rather than chaotic.</p>
+      <dl>
+        <dt>Tone</dt><dd>warm brown, single</dd>
+        <dt>Density</dt><dd>medium · medium</dd>
+        <dt>Motif</dt><dd>scattered feathers</dd>
+        <dt>Tile</dt><dd>400 &times; 400 px &middot; 7.5 KB</dd>
+      </dl>
+      <div class="bars">
+        <dt>Presence</dt>
+        <div class="bar"><i style="width:100%"></i>
+          <u style="left:5.5%" title="today"></u></div>
+        <dt></dt><div class="val">18.0&times; today&rsquo;s weight &middot; ink 2.83% (today 0.41%) &middot; peak &Delta;L 22 (today 11)</div>
+      </div>
+    </div>
+    <div class="phone"><div class="screen"
+         style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(29.87 33.65) rotate(15.32) scale(0.9)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(168.49 64.52) rotate(331.28) scale(1.18)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(267.48 64.66) rotate(323) scale(1.18)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(346.06 41.31) rotate(147.73) scale(0.97)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(105.34 135.53) rotate(223.73) scale(0.92)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(206.8 155.39) rotate(235.62) scale(1.1)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(313.41 157.12) rotate(289.75) scale(1.11)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(-11.99 145.37) rotate(81.92) scale(1.01)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(388.01 145.37) rotate(81.92) scale(1.01)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(64.99 269.13) rotate(302.62) scale(1.22)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(137.92 264.66) rotate(81.18) scale(1.18)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(247.45 244.85) rotate(159.15) scale(1)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(329.29 232.15) rotate(10.6) scale(0.89)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(91.73 362.8) rotate(112.31) scale(1.17)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(200.92 336.18) rotate(187.49) scale(0.92)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(285.25 350.53) rotate(59.29) scale(1.05)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(-17.74 330.67) rotate(34.86) scale(0.87)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3Cpath d='M1.5 -24C-1.4 -19.6 -4 -15 -4.6 -9.5C-5 -3.5 -3.2 1.8 -1.1 6.2C-1 10 -1.2 13.8 -1.6 17.4C-0.3 13.8 0.3 10 0.5 6.4C3.4 2 5.8 -3.6 6.2 -9.5C6.6 -15.2 4.4 -20.2 1.5 -24ZM1.35 -19.8C-0.5 -13.4 -1.3 -6.2 -1 0.8C-0.95 2.4 -0.8 4 -0.5 5.4C0 4 0.3 2.4 0.35 0.8C0.65 -6.2 1.2 -13.4 2.1 -19.8Z' transform='translate(382.26 330.67) rotate(34.86) scale(0.87)' fill='%236B4F3A' fill-opacity='0.14' fill-rule='evenodd'/%3E%3C/svg%3E&quot;);background-size:400px 400px">
+      <p class="daytitle">Day 3 &middot; Brooklyn</p>
+      <p class="daysub">Slow morning, then the park before the light goes.</p>
+      
+      <article class="card">
+        <div class="row">
+          <div class="time">10:30<span>AM</span></div>
+          <div class="grow">
+            <h4>Prospect Park Boathouse</h4>
+            <p class="meta">Brooklyn · 40 min · $$</p>
+          </div>
+        </div>
+        <div class="chips"><span class="chip must">&#9733; Must</span><span class="chip">Open till 5</span></div>
+      </article>
+      <article class="card">
+        <div class="row">
+          <div class="time">12:15<span>PM</span></div>
+          <div class="grow">
+            <h4>Fen&#780;s Coffee &amp; Provisions</h4>
+            <p class="meta">Park Slope · 25 min</p>
+          </div>
+        </div>
+        <p class="prose">Grab the window seat if it&#8217;s free &mdash; the light in there is worth the wait.</p>
+      </article>
+
+      <div class="gap"></div>
+      <p class="tail">&#10010; Add another stopover</p>
+    </div></div>
+  </section>
+</main>
+</body></html>

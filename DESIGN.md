@@ -133,7 +133,9 @@ Stopover cards:
 
 List tail, per day: **＋ Add another stopover** (manual add sheet) and **✦ Find me something** — lists the trip's unhandled extras (the XTRA pool); choosing one stamps it with the current time, moves it into today, and slots it chronologically into the stack (adopting the neighboring cluster). Locally this edits the overlay; from M2 the same action is a Contents-API write (§4).
 
-**Editing** — tapping a card opens an edit sheet (name, time, day, cluster, hours, cost, notes, priority); add uses the same sheet blank; delete stays soft (`skip` first). Until M2 these write to a local overlay (`localStorage`) shaped like the future git write path.
+**Editing** — **only the card's pencil button opens the edit sheet**; card bodies, state text, and labels never navigate (decided 2026-08-20 after a real mis-tap — the Flew-past state text was reachable through body-tap-to-edit). The sheet: name, time, day/Move-to, cluster, hours, cost, notes, priority; add uses the same sheet blank; delete stays soft (`skip` first). Until M2 these write to a local overlay (`localStorage`) shaped like the future git write path.
+
+**Handled-state contrast (v4.1):** Landed and Flew past must read differently at a glance — Landed is quietly celebratory (accent check, warm tint), Flew past is the most muted thing on screen (deeper recess, grey, clearly written-off). Both keep their Undo.
 
 Machine-readable schema: **`data/schema.json`** mirrors §3 so an LLM can be handed the schema plus a fixture as the template for generating a new itinerary. Keep them in lockstep.
 

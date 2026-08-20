@@ -73,7 +73,7 @@ Trip data lives under `data/trips/` in whichever repo holds it — test fixtures
   "name": "Chicago Test Trip",
   "tz": "America/Chicago",
   "start": "2027-06-04", "end": "2027-06-06",
-  "base": { "name": "Palmer House (test base)", "address": "17 E Monroe St, ..." },
+  "base": { "name": "Palmer House (test base)", "address": "17 E Monroe St, ...", "lat": null, "lng": null },
   "notes": "free-text banner shown in the footer",
   "days": [
     { "key": "fri", "date": "2027-06-04", "bullet": "F", "label": "FRI",

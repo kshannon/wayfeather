@@ -7,7 +7,9 @@
  "end": "2027-10-09",
  "base": {
   "name": "Starved Rock Lodge (test base)",
-  "address": "2668 E 875th Rd, Oglesby, IL 61348"
+  "address": "2668 E 875th Rd, Oglesby, IL 61348",
+  "lat": null,
+  "lng": null
  },
  "notes": "Fictional drive-trip test data — exercises Drive legs and a two-day trip.",
  "days": [
@@ -120,8 +122,8 @@
    "name": "Matthiessen State Park — Dells loop",
    "type": "Sight",
    "address": "2500 IL-178, Oglesby, IL 61348",
-   "lat": null,
-   "lng": null,
+   "lat": 41.286443,
+   "lng": -89.030276,
    "hours": "Daily 8–sunset",
    "cost": "Free",
    "priority": "yes",

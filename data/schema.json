@@ -26,7 +26,9 @@
           "additionalProperties": false,
           "properties": {
             "name": { "type": "string" },
-            "address": { "type": "string", "description": "Also supplies the locality used to synthesize search URLs (\"City, ST\")." }
+            "address": { "type": "string", "description": "Also supplies the locality used to synthesize search URLs (\"City, ST\")." },
+            "lat": { "oneOf": [{ "type": "number" }, { "type": "null" }], "description": "Filled by the geocode script (the base geocodes like any stopover; the map draws the Nest pin from it). Never invented by an LLM." },
+            "lng": { "oneOf": [{ "type": "number" }, { "type": "null" }] }
           }
         },
         "notes": { "type": "string", "description": "Free-text banner shown in the footer (e.g. when hours were last verified)." },

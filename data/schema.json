@@ -55,7 +55,8 @@
         "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "Legacy per-day color. Kept in data; the current UI uses a single app accent and ignores it." },
         "darkText": { "type": "boolean", "description": "Legacy hint that the color needs dark text. Optional; UI currently ignores it." },
         "title": { "type": "string", "description": "Day heading, e.g. \"Friday · Jun 4\"." },
-        "subtitle": { "type": "string", "description": "One-line plan for the day." }
+        "subtitle": { "type": "string", "description": "One-line plan for the day." },
+        "plan": { "type": "string", "description": "Optional longer day-plan paragraph shown under the title on the day card; subtitle stays the one-liner." }
       }
     },
     "place": {

@@ -76,7 +76,8 @@ Trip data lives under `data/trips/` in whichever repo holds it — test fixtures
   "days": [
     { "key": "fri", "date": "2027-06-04", "bullet": "F", "label": "FRI",
       "color": "#00A1DE", "darkText": false,
-      "title": "Friday · Jun 4", "subtitle": "Arrive → Loop: Art Institute → deep dish" }
+      "title": "Friday · Jun 4", "subtitle": "Arrive → Loop: Art Institute → deep dish",
+      "plan": "Optional longer paragraph rendered under the title on the day card." }
   ],
   "places": [
     { "id": "art-institute-of-chicago", "day": "fri", "cluster": "Arrival — Loop",
@@ -106,20 +107,24 @@ Schema changes bump `schema` and the app refuses versions it doesn't know, with 
 
 ## 5. UI
 
-**Direction (updated 2026-08-20 after the v2 review): Soft Cards v3, light mode only.** Warm consumer-app aesthetic — quiet off-white ground, rounded cards with soft shadows, `-apple-system` stack. **One accent for the whole app** instead of per-day color: **Cerulean** (default) or **Matcha**, picked in Settings; both tuned to clear WCAG on every surface they touch. The `color` field stays in trip data but this UI ignores it. Buttons are rounded rectangles, not pills — app-wide. Working candidate: `app/candidates/soft-cards-v3.html` (v1/v2 candidates kept for reference). UI copy calls a place a **stopover** (what a migrating bird calls a stop).
+**Direction (updated 2026-08-20, v4 avian pass): Soft Cards, light mode only, one theme.** Warm consumer-app aesthetic — cream ground, rounded cards with soft shadows, `-apple-system` stack. **Single palette, "avian matcha"**: mossy matcha green as the one accent ("a strong mossy" — keep it strong), warm brown as the secondary for glyphs and times, and a warm cream ground carrying a *very faint* monotone wallpaper pattern — small bird silhouettes with dashed flight loops, original artwork drawn as an inline SVG tile, sparse and low-contrast; cards sit opaque on top so text contrast never depends on it. The cerulean option and the accent picker are removed. The `color` field stays in trip data but the UI ignores it. Buttons are rounded rectangles, not pills; forward carats (▸) are drawn as a tiny flying-bird glyph; confetti particles are feather-shaped. Candidates v1–v3 are frozen references; the avian pass lands on the modular `/app` (M1).
+
+**Avian voice (light touch — theming must aid meaning, never cosplay):** a place is a **stopover**; the base is the **Nest** (birdhouse icon, still the Apple Maps link); **Did it! → "Landed!"**; **Skip it → "Flew past"** (undo unchanged). Everything else stays plain English — wherever bird voice would read cute over clear, plain labels win.
 
 **App chrome — bottom tab bar** (dissolves the old menu sheet): **Itinerary · Map · Trips · Settings**.
 
-- *Itinerary* — the day view. Segmented day strip at top: adjoined blocks (not pills), large press areas, one finger-sweep spans the trip, completed days greyed (complete = every actionable stopover handled, or the date has passed). Pull-to-refresh (slide down + release) with short sha + "updated just now"; header base line deep-links to Apple Maps.
+- *Itinerary* — the day view. Segmented day strip at top: adjoined blocks (not pills), large press areas, one finger-sweep spans the trip, completed days greyed (complete = every actionable stopover handled, or the date has passed). Pull-to-refresh (slide down + release) with "updated just now" (+ short sha once the API path exists); the header **Nest** line (birdhouse icon) deep-links to Apple Maps. The day card shows bullet + title, the one-line `subtitle`, an optional longer **`plan`** paragraph (new optional day field, §3), and "N stopovers".
 - *Map* — the schematic route view as a resident tab: the current day as a node line with direction arrows; docked bottom card shows the next unhandled stopover with ◀ ▶ cycling; tapping a node jumps the card; Did it!/Skip it work from the dock. "Route"/"Walk it" buttons jump here. Geographic tiles (Leaflet + coordinates) stay on the roadmap.
-- *Trips* — the loader: trips from `index.json` grouped past/upcoming; picking one switches the itinerary + map scene.
-- *Settings* — accent picker (Cerulean/Matcha), reset local changes; M2 adds PAT + repo owner/name, clear cache, About.
+- *Trips* — the loader: trips from `index.json` grouped past/upcoming, with generous air between trip cards; picking one switches the itinerary + map scene.
+- *Settings* — reset local changes; M2 adds PAT + repo owner/name, clear cache, About.
 
 Stopover cards:
 
 - **Time** — larger, top-left. `fixed` stopovers show a small reservation glyph beside the time (mandatory-to-be-there); other times read as planned, not binding.
 - **Chips** — only **★ Must** and a quiet **Maybe** (collapses `maybe`/`maybe-not`/`if-close`/`optional`). Booked-ness is carried by the reservation glyph; `yes` is unmarked; `check` renders the ⚠ Call ahead line; `skip`/`note` stay row states. Schema enum unchanged.
-- **Did it! / Skip it** — rounded-rect buttons; one-tap undo on both. Did it! fires a brief accent confetti burst from the button (suppressed under reduced-motion) and lands in "Done · 3:12 PM"; Skip it recesses the card flat grey.
+- **Landed! / Flew past** (the did-it / skip-it pair) — rounded-rect buttons; one-tap undo on both. Landed! fires a brief feather-confetti burst (suppressed under reduced-motion) and settles into "Landed · 3:12 PM"; Flew past recesses the card flat grey.
+- **Move to…** — a card action moves a stopover to any other day, or back to XTRA. **XTRA always exists**: if a trip file has no bonus day, the UI synthesizes one.
+- **Clusters** — free text, daypart-led by convention: **Morning / Afternoon / Evening / Twilight**, optionally "— area" (fixtures follow this; the edit sheet's cluster datalist seeds the four dayparts). **Route ▸** on the day card maps the whole day; **Walk it ▸** on a cluster maps just that stretch (with a Whole-day escape).
 - **Link tiles** — Site/Yelp/Google/Apple/Search as tidy rounded-rect icon tiles, generous targets, consistent stroke icons.
 
 List tail, per day: **＋ Add another stopover** (manual add sheet) and **✦ Find me something** — lists the trip's unhandled extras (the XTRA pool); choosing one stamps it with the current time, moves it into today, and slots it chronologically into the stack (adopting the neighboring cluster). Locally this edits the overlay; from M2 the same action is a Contents-API write (§4).

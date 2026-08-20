@@ -1,0 +1,120 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/kshannon/wayfeather/blob/main/data/schema.json",
+  "title": "Wayfeather trip data",
+  "description": "Machine-readable mirror of DESIGN.md §3 (keep in lockstep). A trip file is one self-contained itinerary; index.json lists the trips the loader offers. For an LLM generating an itinerary: copy the shape of a fixture in data/trips/, obey the field notes below, and NEVER invent opening hours, coordinates, addresses, or confirmation details — leave hours as \"\" and set priority to \"check\" when hours are unverified. Real trips must never contain data that can't be public if the repo is public (no confirmation codes, no private stay addresses).",
+  "oneOf": [
+    { "$ref": "#/$defs/trip" },
+    { "$ref": "#/$defs/index" }
+  ],
+  "$defs": {
+    "trip": {
+      "type": "object",
+      "required": ["schema", "id", "name", "tz", "start", "end", "days", "places"],
+      "additionalProperties": false,
+      "properties": {
+        "schema": { "const": 1, "description": "Data-format version. The app refuses versions it doesn't know; bump only on breaking changes." },
+        "id": { "$ref": "#/$defs/slug", "description": "Stable trip slug; matches the filename (<id>.json) and the id in index.json. Never regenerated on edit." },
+        "name": { "type": "string", "description": "Human trip name shown in the Trips tab." },
+        "tz": { "type": "string", "description": "IANA timezone the trip happens in, e.g. America/Chicago. Day-completion and 'today' logic use it." },
+        "start": { "$ref": "#/$defs/isoDate" },
+        "end": { "$ref": "#/$defs/isoDate", "description": "Inclusive last day." },
+        "base": {
+          "type": "object",
+          "description": "Where you sleep — hotel, Airbnb, lodge. The header links it to Apple Maps.",
+          "required": ["name", "address"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "address": { "type": "string", "description": "Also supplies the locality used to synthesize search URLs (\"City, ST\")." }
+          }
+        },
+        "notes": { "type": "string", "description": "Free-text banner shown in the footer (e.g. when hours were last verified)." },
+        "days": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/day" },
+          "description": "Ordered. Every places[].day must match a days[].key. A day with date: null (conventionally key \"bonus\") is the unscheduled XTRA pool that feeds 'Find me something'."
+        },
+        "places": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/place" },
+          "description": "Ordered chronologically within each day; the renderer groups by cluster in order of first appearance."
+        }
+      }
+    },
+    "day": {
+      "type": "object",
+      "required": ["key", "date", "bullet", "label", "color", "title", "subtitle"],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "$ref": "#/$defs/slug", "description": "Short stable key places refer to, e.g. \"fri\", \"bonus\"." },
+        "date": { "oneOf": [{ "$ref": "#/$defs/isoDate" }, { "type": "null" }], "description": "null marks an unscheduled pseudo-day (XTRA)." },
+        "bullet": { "type": "string", "maxLength": 2, "description": "1–2 character glyph for the day strip, e.g. \"F\", \"+\"." },
+        "label": { "type": "string", "description": "Short uppercase strip label, e.g. \"FRI\", \"XTRA\"." },
+        "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "Legacy per-day color. Kept in data; the current UI uses a single app accent and ignores it." },
+        "darkText": { "type": "boolean", "description": "Legacy hint that the color needs dark text. Optional; UI currently ignores it." },
+        "title": { "type": "string", "description": "Day heading, e.g. \"Friday · Jun 4\"." },
+        "subtitle": { "type": "string", "description": "One-line plan for the day." }
+      }
+    },
+    "place": {
+      "type": "object",
+      "description": "A stopover (the UI's word for a place).",
+      "required": ["id", "day", "cluster", "time", "name", "type", "address", "lat", "lng", "hours", "cost", "priority", "notes", "website", "yelp", "gmaps", "warn", "updatedAt"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/slug", "description": "Stable slug, unique within the trip. Never regenerated on edit." },
+        "day": { "type": "string", "description": "Must equal some days[].key." },
+        "cluster": { "type": "string", "description": "Walking-group heading, e.g. \"Late AM — Chelsea\". The reserved name \"Inbox\" holds quick captures not yet slotted." },
+        "time": { "type": "string", "description": "Display time, free text: \"3:00 PM\", \"~2:30 PM\", \"(optional)\", \"open\", or \"\". Chronological slotting parses h:mm AM/PM where present." },
+        "name": { "type": "string" },
+        "type": { "type": "string", "description": "Short category, free text: Food, Art, Books, Music, Stay, Drive, Walk, Sight, … \"\" allowed." },
+        "address": { "type": "string", "description": "Street address, or \"\" (Drive legs, notes). Used for map/search links." },
+        "lat": { "oneOf": [{ "type": "number" }, { "type": "null" }], "description": "Nullable; backfilled by the geocode script. NEVER invented by an LLM." },
+        "lng": { "oneOf": [{ "type": "number" }, { "type": "null" }] },
+        "hours": { "type": "string", "description": "Human-entered opening hours, e.g. \"Mon–Sat 10–6\", \"Closed Tue; other days 10:30–5:30\", \"Daily 11–5; CLOSED Tue/Wed\". NEVER invented — \"\" if unverified (pair with priority \"check\")." },
+        "cost": { "type": "string", "description": "Free text: \"$32\", \"$$\", \"Free\", \"\". (Beware JS String.replace: \"$$\" corrupts unless spliced with a function replacer.)" },
+        "priority": {
+          "enum": ["fixed", "must", "yes", "maybe", "maybe-not", "if-close", "optional", "check", "skip", "note"],
+          "description": "fixed = booked/immovable (UI shows a reservation glyph at the time). must = ★ chip. yes = default, unmarked. maybe / maybe-not / if-close / optional = collapsed into one quiet Maybe chip. check = call ahead (renders a ⚠ line). skip = kept but dimmed (also the soft-delete state). note = renders as a text row, no links."
+        },
+        "notes": { "type": "string", "description": "One-liner shown on the card." },
+        "website": { "type": "string", "description": "Official URL or \"\". Yelp/Maps/Search links are synthesized from name + address when their fields are \"\"." },
+        "yelp": { "type": "string" },
+        "gmaps": { "type": "string" },
+        "warn": { "type": "string", "description": "Red warning line, e.g. \"Closed Mondays — your only Chelsea day\". \"\" for none." },
+        "visited": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }], "description": "Runtime state set by the Did it! button (ISO timestamp). LLMs generating itineraries leave it null or omit it." },
+        "skipped": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }], "description": "Runtime state set by the Skip it button. A place is handled when either visited or skipped is set; visited wins for display." },
+        "updatedAt": { "$ref": "#/$defs/isoDate", "description": "Date of last human edit." }
+      }
+    },
+    "index": {
+      "type": "object",
+      "description": "data/trips/index.json — the trip loader's source of truth.",
+      "required": ["schema", "updated", "trips"],
+      "additionalProperties": false,
+      "properties": {
+        "schema": { "const": 1 },
+        "updated": { "$ref": "#/$defs/isoDate" },
+        "trips": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "dates", "file", "color"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "$ref": "#/$defs/slug" },
+              "name": { "type": "string" },
+              "dates": { "type": "string", "description": "Human range, e.g. \"Jun 4–6, 2027\"." },
+              "file": { "type": "string", "pattern": "^[a-z0-9-]+\\.json$" },
+              "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "Legacy; unused by the current UI." }
+            }
+          }
+        }
+      }
+    },
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "isoDate": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+  }
+}

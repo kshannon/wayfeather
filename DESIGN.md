@@ -92,7 +92,7 @@ Trip data lives under `data/trips/` in whichever repo holds it — test fixtures
 }
 ```
 
-Conventions: `id` is a stable slug, never regenerated on edit. `priority` is an enum — `fixed` (booked/immovable), `must`, `yes`, `maybe`, `maybe-not`, `if-close`, `optional`, `check` (call ahead), `skip`, `note` (renders as a text row, no links). `day` must match a `days[].key`; the special key `bonus` (or any day with `date: null`) renders as an unscheduled section. A reserved cluster name **`Inbox`** holds quick-captured places that haven't been slotted yet (see §6). `lat`/`lng` are nullable; the app works without them (links fall back to address queries) but the solver needs them. Link fields are optional — the renderer already synthesizes Yelp search, Google Maps, Apple Maps, and Google search URLs from name + address, exactly as v0 does (locality derived from `base.address`, never hardcoded). `visited` and `skipped` are nullable ISO timestamps set by the Did it! / Skip it buttons (additive to schema 1; absent means null). A place is *handled* when either is set; `visited` wins for display.
+Conventions: `id` is a stable slug, never regenerated on edit. `priority` is an enum — `fixed` (booked/immovable), `must`, `yes`, `maybe`, `maybe-not`, `if-close`, `optional`, `check` (call ahead), `skip`, `note` (renders as a text row, no links). `day` must match a `days[].key`; the special key `bonus` (or any day with `date: null`) renders as an unscheduled section. A reserved cluster name **`Inbox`** holds quick-captured places that haven't been slotted yet (see §6). `lat`/`lng` are nullable; the app works without them (links fall back to address queries) but the solver needs them. Link fields are optional — the renderer already synthesizes Yelp search, Google Maps, Apple Maps, and Google search URLs from name + address, exactly as v0 does (locality derived from `base.address`, never hardcoded). `visited` and `skipped` are nullable ISO timestamps set by the Did it! / Skip it buttons (additive to schema 1; absent means null). A place is *handled* when either is set; `visited` wins for display. The machine-readable version of this section is `data/schema.json` — update both together.
 
 Schema changes bump `schema` and the app refuses versions it doesn't know, with a "pull latest app" message.
 
@@ -106,36 +106,29 @@ Schema changes bump `schema` and the app refuses versions it doesn't know, with 
 
 ## 5. UI
 
-**Direction (decided 2026-08-20): Soft Cards, light mode only.** Warm consumer-app aesthetic — quiet off-white ground, rounded cards with soft shadows, `-apple-system` stack, day color as washes plus small saturated moments (accents derived at runtime to clear WCAG contrast against their surface, since wayfinding hexes aren't contrast-safe). No dark mode, by explicit preference. Working candidate: `app/candidates/soft-cards-v2.html`; the three v1 candidates stay for reference. Still invariant: fully data-driven rendering (day colors/labels from `trip.days`), day-nav → cluster → card hierarchy.
+**Direction (updated 2026-08-20 after the v2 review): Soft Cards v3, light mode only.** Warm consumer-app aesthetic — quiet off-white ground, rounded cards with soft shadows, `-apple-system` stack. **One accent for the whole app** instead of per-day color: **Cerulean** (default) or **Matcha**, picked in Settings; both tuned to clear WCAG on every surface they touch. The `color` field stays in trip data but this UI ignores it. Buttons are rounded rectangles, not pills — app-wide. Working candidate: `app/candidates/soft-cards-v3.html` (v1/v2 candidates kept for reference). UI copy calls a place a **stopover** (what a migrating bird calls a stop).
 
-Interaction spec (all from Kyle's 2026-08-20 review):
+**App chrome — bottom tab bar** (dissolves the old menu sheet): **Itinerary · Map · Trips · Settings**.
 
-- **Day strip** — horizontally scrollable pill row pinned at top; one finger-sweep shows the whole trip. A day greys out when *complete*: every actionable place (anything not `note`) is handled, or the day's date has passed.
-- **Pull-to-refresh** — slide the list down and release (a standalone PWA has no browser reload gesture, so we own it); on release it re-fetches and surfaces the short sha + "updated just now". The menu keeps a refresh row as fallback.
-- **Did it! / Skip it** — every card carries a **Did it!** button (sets `visited`) and a quieter **Skip it** (sets `skipped`); both one-tap reversible. Visited renders checked + subdued; skipped renders dimmed.
-- **Badges, cleaned up** — display collapses the ten priorities to three chips: **Booked** (`fixed`), **Must** (`must`), **Maybe** (`maybe`, `maybe-not`, `if-close`, `optional`). `yes` is the unmarked default, `check` renders as a "call ahead" warning line, and `skip`/`note` are row states, not chips. The schema enum is unchanged.
-- **Link row** — icon buttons (inline SVG only, ≥44px targets, screen-reader labels): Site · Yelp · Google Maps · Apple Maps · Search.
-- **Walk it → route view** — opens a full-screen sheet: the day as a schematic node line (stops in order, direction of travel arrowed), and the bottom quarter is a card showing the next unhandled stop with ◀ ▶ to cycle; tapping a node jumps the card. Schematic first; a geographic tile map (Leaflet + backfilled coordinates) stays on the roadmap.
-- **Add place** — floating **＋** button at the bottom; placeholder until M2 wires the add flow.
+- *Itinerary* — the day view. Segmented day strip at top: adjoined blocks (not pills), large press areas, one finger-sweep spans the trip, completed days greyed (complete = every actionable stopover handled, or the date has passed). Pull-to-refresh (slide down + release) with short sha + "updated just now"; header base line deep-links to Apple Maps.
+- *Map* — the schematic route view as a resident tab: the current day as a node line with direction arrows; docked bottom card shows the next unhandled stopover with ◀ ▶ cycling; tapping a node jumps the card; Did it!/Skip it work from the dock. "Route"/"Walk it" buttons jump here. Geographic tiles (Leaflet + coordinates) stay on the roadmap.
+- *Trips* — the loader: trips from `index.json` grouped past/upcoming; picking one switches the itinerary + map scene.
+- *Settings* — accent picker (Cerulean/Matcha), reset local changes; M2 adds PAT + repo owner/name, clear cache, About.
 
-Remaining chrome: **MENU** (top left) opens a full-height sheet (sketch shows structure, not final styling):
+Stopover cards:
 
-```
-┌────────────────────────────┐
-│ ▌WAYFEATHER           ✕    │
-│                            │
-│ TRIPS                      │
-│ ● Connecticut & Hudson…    │   ← from index.json; bullet in trip color
-│ ● New York City 2026   ✓   │
-│                            │
-│ ＋ Add place               │
-│ ↻ Refresh  (a41f2c9 · 2m)  │
-│ ⚙ Settings                 │   ← PAT, repo owner/name, clear cache
-│ ⓘ About                    │
-└────────────────────────────┘
-```
+- **Time** — larger, top-left. `fixed` stopovers show a small reservation glyph beside the time (mandatory-to-be-there); other times read as planned, not binding.
+- **Chips** — only **★ Must** and a quiet **Maybe** (collapses `maybe`/`maybe-not`/`if-close`/`optional`). Booked-ness is carried by the reservation glyph; `yes` is unmarked; `check` renders the ⚠ Call ahead line; `skip`/`note` stay row states. Schema enum unchanged.
+- **Did it! / Skip it** — rounded-rect buttons; one-tap undo on both. Did it! fires a brief accent confetti burst from the button (suppressed under reduced-motion) and lands in "Done · 3:12 PM"; Skip it recesses the card flat grey.
+- **Link tiles** — Site/Yelp/Google/Apple/Search as tidy rounded-rect icon tiles, generous targets, consistent stroke icons.
 
-Switching trips re-renders bullets, bands, and clusters entirely from the new trip file; `?trip=nyc-2026` in the URL (or `location.hash`) makes the state shareable and survives relaunch. The auto-open-today behavior from v0 generalizes: if today ∈ [start, end], open today's day tab.
+List tail, per day: **＋ Add another stopover** (manual add sheet) and **✦ Find me something** — lists the trip's unhandled extras (the XTRA pool); choosing one stamps it with the current time, moves it into today, and slots it chronologically into the stack (adopting the neighboring cluster). Locally this edits the overlay; from M2 the same action is a Contents-API write (§4).
+
+**Editing** — tapping a card opens an edit sheet (name, time, day, cluster, hours, cost, notes, priority); add uses the same sheet blank; delete stays soft (`skip` first). Until M2 these write to a local overlay (`localStorage`) shaped like the future git write path.
+
+Machine-readable schema: **`data/schema.json`** mirrors §3 so an LLM can be handed the schema plus a fixture as the template for generating a new itinerary. Keep them in lockstep.
+
+Switching trips (Trips tab) re-renders the whole scene from the new trip file; `?trip=nyc-2026` in the URL (or `location.hash`) makes the state shareable and survives relaunch. The auto-open-today behavior from v0 generalizes: if today ∈ [start, end], open today's day tab.
 
 PWA shell: `manifest.webmanifest` (`display: standalone`, light theme color matching the app ground, 180/192/512 icons — an MTA-style bullet with a "W" is the obvious icon), `apple-touch-icon`, and a service worker that precaches the app shell (cache-first for `/app/*`, network-only for API calls). Note iOS specifics: an installed web app has its own storage silo separate from the Safari tab, so enter the PAT *after* installing; and there's no Web Push needed here so we skip it.
 

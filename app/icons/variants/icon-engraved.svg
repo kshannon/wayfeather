@@ -1,0 +1,180 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Wayfeather app icon - engraved / field-guide plate variant. Avian matcha palette. -->
+  <defs>
+    <radialGradient id="eGround" cx="50%" cy="40%" r="78%">
+      <stop offset="0" stop-color="#F9F3E6"/>
+      <stop offset="0.6" stop-color="#F2E9D4"/>
+      <stop offset="1" stop-color="#E7D9BC"/>
+    </radialGradient>
+
+    <clipPath id="eCase">
+      <rect x="180" y="588" width="664" height="256" rx="32"/>
+    </clipPath>
+    <clipPath id="eShadow">
+      <ellipse cx="512" cy="864" rx="308" ry="28"/>
+    </clipPath>
+
+    <!-- bird-local clips (used inside the transformed bird group) -->
+    <clipPath id="eBody">
+      <path d="M616 268C610 236 596 214 570 216C544 218 516 238 504 266C486 300 460 306 436 324C416 348 402 372 402 406C402 436 406 456 420 468C442 486 468 490 490 486C520 480 546 470 562 452C582 430 594 414 598 394C604 366 610 344 612 322C614 302 616 286 616 268Z"/>
+    </clipPath>
+    <clipPath id="eShade">
+      <path d="M356 200C470 206 522 258 522 340C522 420 558 442 620 452L620 520L356 520Z"/>
+    </clipPath>
+    <clipPath id="eWing">
+      <path d="M524 340C484 352 446 384 420 442C452 438 488 416 512 386C524 370 528 354 524 340Z"/>
+    </clipPath>
+    <clipPath id="eTail">
+      <path d="M416 378C378 326 344 286 324 242L264 290C292 340 338 398 404 446Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- ground -->
+  <rect width="1024" height="1024" fill="url(#eGround)"/>
+  <!-- composition scaled up for icon presence; margins stay >=10% -->
+  <g transform="translate(-61.4,-76) scale(1.12)">
+
+  <!-- hatched cast shadow -->
+  <g clip-path="url(#eShadow)" fill="none" stroke="#6B4F3A" stroke-width="6" opacity="0.30">
+    <path d="M236 846H788M212 854H812M200 862H824M214 870H810M248 878H776"/>
+  </g>
+
+  <!-- ============ SUITCASE ============ -->
+  <g>
+    <!-- lower shell -->
+    <path d="M180 676H844V812A32 32 0 0 1 812 844H212A32 32 0 0 1 180 812Z" fill="#6B4F3A"/>
+    <!-- lid -->
+    <path d="M180 676V620A32 32 0 0 1 212 588H812A32 32 0 0 1 844 620V676Z" fill="#8A6A4F"/>
+
+    <!-- engraved tone: verticals at the rounded ends, shadow band along the base, lid underside -->
+    <g clip-path="url(#eCase)" fill="none" stroke="#3A2717">
+      <g stroke-width="6" opacity="0.26">
+        <path d="M188 584V848M202 584V848M216 584V848M230 584V848M244 584V848M258 584V848M272 584V848"/>
+        <path d="M752 584V848M766 584V848M780 584V848M794 584V848M808 584V848M822 584V848M836 584V848"/>
+      </g>
+      <g stroke-width="6" opacity="0.24">
+        <path d="M176 802H848M176 813H848M176 824H848M176 835H848"/>
+      </g>
+      <g stroke-width="5" opacity="0.22">
+        <path d="M176 686H848M176 696H848M176 706H848"/>
+      </g>
+    </g>
+
+    <!-- lid seam -->
+    <path d="M182 676H842" fill="none" stroke="#2C2117" stroke-width="9" opacity="0.85"/>
+
+    <!-- leather corner caps -->
+    <g fill="#4A3527">
+      <path d="M180 690V620A32 32 0 0 1 212 588H282Z"/>
+      <path d="M844 690V620A32 32 0 0 0 812 588H742Z"/>
+      <path d="M180 742V812A32 32 0 0 0 212 844H282Z"/>
+      <path d="M844 742V812A32 32 0 0 1 812 844H742Z"/>
+    </g>
+
+    <!-- feet -->
+    <g fill="#3A2717">
+      <rect x="286" y="840" width="70" height="26" rx="11"/>
+      <rect x="668" y="840" width="70" height="26" rx="11"/>
+    </g>
+
+    <!-- straps -->
+    <g fill="#4A3527" stroke="#2C2117" stroke-width="5">
+      <rect x="294" y="586" width="54" height="260"/>
+      <rect x="676" y="586" width="54" height="260"/>
+    </g>
+    <g fill="none" stroke="#2C2117" stroke-width="4" opacity="0.55">
+      <path d="M306 588V844M336 588V844M688 588V844M718 588V844"/>
+    </g>
+
+    <!-- buckles -->
+    <g fill="#B99055" stroke="#2C2117" stroke-width="6" stroke-linejoin="round">
+      <rect x="286" y="706" width="70" height="52" rx="8"/>
+      <rect x="668" y="706" width="70" height="52" rx="8"/>
+    </g>
+    <g fill="none" stroke="#2C2117" stroke-width="6">
+      <path d="M300 732H342M682 732H724"/>
+    </g>
+
+    <!-- latches flanking the handle -->
+    <g fill="#B99055" stroke="#2C2117" stroke-width="6" stroke-linejoin="round">
+      <rect x="424" y="652" width="56" height="48" rx="7"/>
+      <rect x="544" y="652" width="56" height="48" rx="7"/>
+    </g>
+    <g fill="none" stroke="#2C2117" stroke-width="5" opacity="0.75">
+      <path d="M438 676H466M558 676H586"/>
+    </g>
+
+    <!-- quiet travel sticker -->
+    <g transform="rotate(-7 432 784)">
+      <ellipse cx="432" cy="784" rx="46" ry="34" fill="#DCCFAF" stroke="#2C2117" stroke-width="6"/>
+      <ellipse cx="432" cy="784" rx="27" ry="17" fill="none" stroke="#2C2117" stroke-width="4" opacity="0.6"/>
+    </g>
+
+    <!-- shell outline -->
+    <rect x="180" y="588" width="664" height="256" rx="32" fill="none" stroke="#2C2117" stroke-width="12" stroke-linejoin="round"/>
+  </g>
+
+  <!-- ============ HANDLE ============ -->
+  <g>
+    <path d="M424 590C424 516 458 494 512 494C566 494 600 516 600 590L568 590C568 528 546 522 512 522C478 522 456 528 456 590Z" fill="#6B4F3A" stroke="#2C2117" stroke-width="11" stroke-linejoin="round"/>
+    <g fill="none" stroke="#2C2117" stroke-width="5" opacity="0.6">
+      <path d="M468 500C462 514 460 528 460 546M556 500C562 514 564 528 564 546"/>
+    </g>
+    <g fill="#B99055" stroke="#2C2117" stroke-width="7" stroke-linejoin="round">
+      <rect x="408" y="574" width="62" height="28" rx="7"/>
+      <rect x="554" y="574" width="62" height="28" rx="7"/>
+    </g>
+  </g>
+
+  <!-- ============ BIRD ============ -->
+  <g transform="translate(-51,-71.4) scale(1.1)">
+
+    <!-- tail (behind the body) -->
+    <path d="M416 378C378 326 344 286 324 242L264 290C292 340 338 398 404 446Z" fill="#35491F" stroke="#2C2117" stroke-width="10" stroke-linejoin="round"/>
+    <g clip-path="url(#eTail)" fill="none" stroke="#1C2711" stroke-width="6" opacity="0.55">
+      <path d="M400 392C368 342 342 306 320 264M386 408C354 358 328 322 304 280M370 424C338 374 312 338 288 296"/>
+    </g>
+
+    <!-- legs -->
+    <g fill="none" stroke="#5A4029" stroke-width="13" stroke-linecap="round">
+      <path d="M500 462L496 512M530 460L532 512"/>
+    </g>
+    <g fill="none" stroke="#5A4029" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M478 518L496 511L514 518M514 518L532 511L550 518"/>
+    </g>
+
+    <!-- beak -->
+    <path d="M610 272C636 279 658 288 676 297C656 306 632 314 608 316C614 304 615 286 610 272Z" fill="#7A5636" stroke="#2C2117" stroke-width="9" stroke-linejoin="round"/>
+
+    <!-- body -->
+    <path d="M616 268C610 236 596 214 570 216C544 218 516 238 504 266C486 300 460 306 436 324C416 348 402 372 402 406C402 436 406 456 420 468C442 486 468 490 490 486C520 480 546 470 562 452C582 430 594 414 598 394C604 366 610 344 612 322C614 302 616 286 616 268Z" fill="#4B6630"/>
+
+    <!-- pale underside -->
+    <path d="M424 462C448 484 486 490 516 478C552 464 580 432 594 396C600 372 602 350 600 336C588 372 566 410 536 436C502 464 458 470 424 462Z" fill="#C8D2A8" opacity="0.9" clip-path="url(#eBody)"/>
+
+    <!-- engraved shading on back and underside -->
+    <g clip-path="url(#eBody)">
+      <g clip-path="url(#eShade)" fill="none" stroke="#22301A" stroke-width="6" opacity="0.34">
+        <path d="M90 520L430 180M116 520L456 180M142 520L482 180M168 520L508 180M194 520L534 180M220 520L560 180M246 520L586 180M272 520L612 180M298 520L638 180M324 520L664 180M350 520L690 180M376 520L716 180M402 520L742 180M428 520L768 180M454 520L794 180"/>
+      </g>
+    </g>
+
+    <!-- crown cap -->
+    <path d="M616 268C610 236 596 214 570 216C544 218 516 238 504 266C528 258 560 252 588 258C602 261 611 264 616 268Z" fill="#35491F" opacity="0.85" clip-path="url(#eBody)"/>
+
+    <!-- folded wing -->
+    <path d="M524 340C484 352 446 384 420 442C452 438 488 416 512 386C524 370 528 354 524 340Z" fill="#35491F" stroke="#2C2117" stroke-width="8" stroke-linejoin="round"/>
+    <g clip-path="url(#eWing)" fill="none" stroke="#161F0E" stroke-width="6" opacity="0.5" stroke-linecap="round">
+      <path d="M512 352C476 372 444 404 424 442M446 396L416 432M462 404L432 440M478 412L448 448"/>
+    </g>
+
+    <!-- eye -->
+    <circle cx="584" cy="278" r="17" fill="#EDE4CA" opacity="0.55"/>
+    <circle cx="584" cy="278" r="11" fill="#20180F"/>
+    <circle cx="588.5" cy="273.5" r="3.6" fill="#F6EFDD"/>
+
+    <!-- silhouette line -->
+    <path d="M616 268C610 236 596 214 570 216C544 218 516 238 504 266C486 300 460 306 436 324C416 348 402 372 402 406C402 436 406 456 420 468C442 486 468 490 490 486C520 480 546 470 562 452C582 430 594 414 598 394C604 366 610 344 612 322C614 302 616 286 616 268Z" fill="none" stroke="#2C2117" stroke-width="11" stroke-linejoin="round"/>
+  </g>
+  </g>
+</svg>

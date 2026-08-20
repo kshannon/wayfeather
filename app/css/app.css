@@ -706,6 +706,8 @@ svg{display:block}
   height:100vh;height:100dvh;
   overflow:hidden;
   --stopbar-h:96px;              /* 6 + 34 + 6 + 44 + 6 — see .stopbar below   */
+                                 /* unchanged by the v4.3 two-row re-layout:   */
+                                 /* the arrows moved INTO the 44px action row  */
   --stopbar-gap:8px;             /* air between the bar and the tab bar        */
   --pill-top:calc(var(--safe-t) + 8px);
 }
@@ -823,13 +825,17 @@ svg{display:block}
 /* ── the stopover bar ─────────────────────────────────────────────────────── */
 /* Replaces the old growing dock (which content-sized up to 52vh and ate half
    the map). This one is FIXED at 96px and never grows: the name ellipsizes on
-   one line, the action row is one height in both its states, and everything
+   one line, the action row is one height in every state, and everything
    deeper — hours, notes, the link tiles, the pencil — lives behind Details.
 
-   ◀ and ▶ are pinned to the far ends and run the bar's full height, so the two
-   things you do most on this tab are the two easiest targets on the screen:
-   84x44 each, well past the 44pt minimum. Compact here means FEWER things, not
-   smaller taps — every control in the bar is at least 44px. */
+   TWO FULL-WIDTH ROWS (v4.3, DESIGN §5). ◀ and ▶ used to be pinned to the far
+   ends as full-height columns, which took 100px off EVERY row including the
+   title — "Art Institute of Chicago" ellipsized with half the bar empty
+   underneath it. So the bar became a column: the title row spans all 348px of
+   a 380px screen, and the arrows dropped into the action row as compact 44x44
+   buttons at its two ends. The height is unchanged, because the arrows landed
+   in a row that was already 44px tall. Compact still means FEWER things, not
+   smaller taps — every control in the bar is at least 44x44. */
 .stopbar{
   position:absolute;z-index:20;
   left:max(10px, env(safe-area-inset-left));
@@ -837,26 +843,23 @@ svg{display:block}
   bottom:calc(var(--tab-total) + var(--stopbar-gap));
   max-width:640px;margin:0 auto;
   height:var(--stopbar-h);
-  display:flex;align-items:stretch;gap:6px;
+  display:flex;flex-direction:column;align-items:stretch;gap:6px;
   padding:6px;
   background:var(--surface);
   border-radius:var(--r-lg);
   box-shadow:var(--card-ring),var(--e-float);
 }
 .stopbar:empty,.stopbar.is-empty{display:none}
-/* full-height cycling arrows at the two ends */
+/* compact cycling arrows, at the two ends of the ACTION row */
 .cycbtn{
-  flex:0 0 auto;width:44px;align-self:stretch;min-height:var(--s8);
+  flex:0 0 44px;width:44px;height:var(--s8);
   border-radius:var(--r-btn);
   display:flex;align-items:center;justify-content:center;
   background:var(--surface-2);color:var(--ink-2);cursor:pointer;
 }
 .cycbtn:active{background:var(--accent);color:var(--on-accent)}
-.stopbar-mid{
-  flex:1 1 auto;min-width:0;
-  display:flex;flex-direction:column;gap:6px;
-}
-/* the name line: time, reservation glyph, then the name — one line, ellipsized */
+/* the title row: time, reservation glyph, the name, the position — full width,
+   one line, ellipsized */
 .stopbar-line{
   height:34px;flex:0 0 auto;
   display:flex;align-items:center;gap:7px;min-width:0;
@@ -874,53 +877,65 @@ svg{display:block}
   flex:0 0 auto;font-size:var(--t-caption2);font-weight:700;
   font-variant-numeric:tabular-nums;color:var(--ink-3);letter-spacing:.02em;
 }
-/* the action row — 44px tall whether it holds the two buttons or the state */
+/* the action row — 44px tall whether it holds the two buttons or the state.
+   ◀ … ▶ bracket it; .stopbar-mid is the elastic middle the render fills. */
 .stopbar-acts{height:var(--s8);flex:0 0 auto;display:flex;align-items:stretch;gap:5px}
+.stopbar-mid{flex:1 1 auto;min-width:0;display:flex;align-items:stretch;gap:5px}
 .stopbar-state{flex:1 1 auto;min-width:0;display:flex}
 .stopbar-state .acts{flex:1 1 auto;margin-top:0;gap:5px;flex-wrap:nowrap}
 .stopbar-state .act{min-height:var(--s8);padding:0 var(--s2);font-size:var(--t-caption)}
 /* The handled state, compacted into the same 44px slot.
 
-   THE MARKER IS DROPPED HERE, and only here. Two 44px arrows own 100px of a
-   380px bar, leaving 243px to hold the state, its Undo and Details — and
-   "Landed · 3:12 PM" plus the 22px ✓ disc overran that by 46px, ellipsizing the
-   very timestamp the state exists to report. In the compact bar the GROUND
-   already carries the state (v4.2's distinguishing axis: Landed is the dark
-   filled pill, Flew past the hollow outlined one), so the marker is the
-   redundant half and the words are the load-bearing half. The full marker is
-   still on the itinerary card, the Details card, the map pin and the schematic
-   node — every surface with room for it. */
-.stopbar-state .state-check,
+   THE 22px DISC IS DROPPED HERE, and only here. The action row also carries the
+   two arrows and Details, so the state and its Undo get 185px of a 380px
+   screen — and "Landed · 3:12 PM" behind a 22px filled disc does not fit in it
+   without ellipsizing the very timestamp the state exists to report. What
+   survives is the ✓ itself, bare, in matcha: it costs a third of the disc and
+   it is still the marker. The full disc is on the itinerary card, the Details
+   card, the map pin and the schematic node — every surface with room for it.
+   Flew past keeps dropping its marker outright, since a bare dash is a hyphen,
+   not a state (its hollow outline is what says "written off"). */
 .stopbar-state .state-dash{display:none}
 .stopbar-state .state-row{
   flex:1 1 auto;min-width:0;
   margin-top:0;height:var(--s8);padding:0 4px 0 9px;gap:6px;
 }
+.stopbar-state .state-lead{gap:5px}
 .stopbar-state .state-text{font-size:var(--t-caption2)}
 .stopbar-state .undo{min-height:var(--s8);padding:0 9px;font-size:var(--t-caption2)}
-/* LANDED wears the dark journal treatment here too (DESIGN §5) — a dark pill
-   inside the light bar, the same object you see on the itinerary card. Flew
-   past keeps the hollow v4.1 outline and is deliberately left alone. */
-.stopbar-state .state-row:not(.is-skip){background:var(--landed-bg)}
-.stopbar-state .state-row:not(.is-skip) .state-text{color:var(--landed-matcha)}
+/* LANDED ON THE BAR IS MAP-SPECIFIC AND LIGHT (v4.3, DESIGN §5). It used to
+   wear the dark journal pill the itinerary card wears; inside a 96px bar
+   floating on the map that read as a hole punched in the view rather than as a
+   card filed away — the inversion needs a card's worth of room to be the
+   gesture it is. So the bar keeps the lightest thing that still says landed: a
+   matcha ✓ and accent-toned text straight on the bar's own ground, no fill, no
+   outline. Measured on --surface: --accent 6.32:1 for the ✓ and the text, past
+   the 4.5:1 both need as text. The dark treatment is untouched where it has the
+   room — the itinerary card and the Details sheet's copy of it, which is the
+   same stopover one tap away. Flew past is untouched full stop: hollow v4.1
+   outline, muted ink, still the most recessive row in the app. */
+.stopbar-state .state-row:not(.is-skip){background:transparent;padding-left:2px}
 .stopbar-state .state-row:not(.is-skip) .state-check{
-  background:var(--landed-matcha);color:var(--landed-bg);
-}
-.stopbar-state .state-row:not(.is-skip) .undo{
-  background:transparent;color:var(--landed-matcha);
-  box-shadow:inset 0 0 0 1.5px var(--landed-matcha);
-}
-.stopbar-state .state-row:not(.is-skip) .undo:active{
-  background:var(--landed-matcha);color:var(--landed-bg);
+  width:auto;height:auto;border-radius:0;
+  background:transparent;color:var(--accent);
+  font-size:var(--t-footnote);
 }
 .stopbar-details{
   flex:0 0 auto;min-height:var(--s8);padding:0 10px;
   font-size:var(--t-caption2);
 }
+/* "No routable stopovers on this day." takes the full-width title row, and the
+   action row below it stays in the layout so the bar keeps its 96px whatever
+   the day holds. The arrows are already disabled and aria-hidden in that state,
+   so they go VISIBILITY-hidden rather than display:none: two dead arrows
+   bracketing an empty row read as a broken control, and hiding them this way
+   costs no reflow. :has() is progressive — where it is missing the bar simply
+   looks the way it did before. */
 .stopbar-empty{
   flex:1 1 auto;display:flex;align-items:center;justify-content:center;
   font-size:var(--t-footnote);color:var(--ink-3);
 }
+.stopbar:has(.stopbar-empty) .cycbtn{visibility:hidden}
 
 /* ─── 21b. GEOGRAPHIC MAP (MapLibre) ──────────────────────────────────────── */
 /* Full bleed: the canvas IS the stage. No card, no radius, no inset — the only

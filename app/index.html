@@ -101,26 +101,37 @@
       <p class="mappill" id="mapPill"></p>
       <p class="geo-note" id="geoNote" hidden>Loading the map…</p>
 
-      <!-- The thin stopover bar. ◀ and ▶ are pinned to the far ends and run the
-           full height of the bar; the name line and the action row live between
-           them. Nothing here grows with content: the name ellipsizes on one
-           line and everything deeper is behind Details. -->
+      <!-- The thin stopover bar, two full-width rows (DESIGN §5, 2026-08-20).
+           The title row owns the whole bar: time, reservation glyph, the
+           one-line name, then the position indicator. ◀ and ▶ used to be
+           full-height columns at the two ends, which cost the name 100px and
+           crowded it; they are now compact 44x44 buttons at the ends of the
+           ACTION row, sharing it with the state buttons and Details. Nothing
+           here grows with content: the name ellipsizes on one line and
+           everything deeper is behind Details.
+
+           #stopBarLine and #stopBarMid are the two JS-filled holes (views/
+           map.js); the arrows stay static markup so a re-render never rebuilds
+           the control the finger is already on. -->
       <div class="stopbar" id="stopBar" aria-live="polite">
-        <button class="cycbtn" type="button" data-cyc="-1" id="cycPrev"
-                aria-label="Previous stopover">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M14.5 5.5L8 12l6.5 6.5"/>
-          </svg>
-        </button>
-        <div class="stopbar-mid" id="stopBarMid"></div>
-        <button class="cycbtn" type="button" data-cyc="1" id="cycNext"
-                aria-label="Next stopover">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M9.5 5.5L16 12l-6.5 6.5"/>
-          </svg>
-        </button>
+        <div class="stopbar-line" id="stopBarLine"></div>
+        <div class="stopbar-acts">
+          <button class="cycbtn" type="button" data-cyc="-1" id="cycPrev"
+                  aria-label="Previous stopover">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14.5 5.5L8 12l6.5 6.5"/>
+            </svg>
+          </button>
+          <div class="stopbar-mid" id="stopBarMid"></div>
+          <button class="cycbtn" type="button" data-cyc="1" id="cycNext"
+                  aria-label="Next stopover">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9.5 5.5L16 12l-6.5 6.5"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   </section>
@@ -257,6 +268,13 @@
   </div>
 </div>
 
+<!-- Bottom tab bar: Stopovers · Route · Trips · Settings (renamed 2026-08-20
+     from Itinerary/Map — DESIGN §5). The rename is DISPLAY COPY ONLY: the view
+     keys, the element ids, data-view, aria-controls and the #map-style deep
+     links are all unchanged, so shared links and saved state keep working. Each
+     tab's visible <b> is also its accessible name — the icon is aria-hidden and
+     the panels name themselves through aria-labelledby — so there is one string
+     per tab to keep honest, not two. -->
 <nav class="tabbar" id="tabbar">
   <div class="tabbar-row" role="tablist" aria-label="Sections">
     <button class="navtab" type="button" role="tab" id="navtab-itinerary"
@@ -268,7 +286,7 @@
         <circle cx="5" cy="17.5" r="1.35" fill="currentColor" stroke="none"/>
         <path d="M9.6 6.5h10.4"/><path d="M9.6 12h10.4"/><path d="M9.6 17.5h7.2"/>
       </svg>
-      <b>Itinerary</b>
+      <b>Stopovers</b>
     </button>
     <button class="navtab" type="button" role="tab" id="navtab-map"
             aria-controls="view-map" aria-selected="false" tabindex="-1" data-view="map">
@@ -277,7 +295,7 @@
         <path d="M9.1 3.9 3.4 6v13.4l5.7-2.1 5.8 2.1 5.7-2.1V3.9l-5.7 2.1L9.1 3.9Z"/>
         <path d="M9.1 3.9v13.4"/><path d="M14.9 6v13.4"/>
       </svg>
-      <b>Map</b>
+      <b>Route</b>
     </button>
     <button class="navtab" type="button" role="tab" id="navtab-trips"
             aria-controls="view-trips" aria-selected="false" tabindex="-1" data-view="trips">

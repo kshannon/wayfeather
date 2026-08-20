@@ -8,7 +8,12 @@
    Bumping: change VERSION. The cache name carries it, install precaches the new
    shell, and activate deletes every other wayfeather-shell-* cache. */
 
-/* v6 (2026-08-20, M2 — the GitHub sync layer): two new shell modules (js/api.js,
+/* v7 (2026-08-20, the v4.3 cosmetic pass): no new modules — index.html, app.css
+   and js/views/map.js only. Every byte of it is a file the shell already
+   precaches under an unchanged name, which is exactly the shape of deploy that
+   goes invisible without a bump (see v5 below).
+
+   v6 (2026-08-20, M2 — the GitHub sync layer): two new shell modules (js/api.js,
    js/sync.js, plus js/version.js), real Settings rows, and the sync indicator.
 
    KEEP IN LOCKSTEP with BUILD in app/js/version.js, which is what Settings ›
@@ -19,7 +24,7 @@
    v5 (the v4.2 wiring pass) shipped new icon BYTES under unchanged names, which
    is the standing reminder that a deploy without a VERSION bump leaves every
    installed copy serving the old shell forever. */
-const VERSION = "v6";
+const VERSION = "v7";
 const CACHE = "wayfeather-shell-" + VERSION;
 const PREFIX = "wayfeather-shell-";
 

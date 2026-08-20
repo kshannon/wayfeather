@@ -202,11 +202,17 @@ function renderNodes(stops) {
   }).join("") || '<li class="empty">No routable stopovers on this day.</li>';
 }
 
-/* The bar's whole job is to be shallow and a fixed height. One line for the
-   time + reservation glyph + name, one 44px row for the state and Details.
-   Nothing in here wraps, clamps or scrolls — if it would not fit, it is not in
-   the bar. */
+/* The bar's whole job is to be shallow and a fixed height. Two rows, both the
+   full width of the bar: the title row (time + reservation glyph + name +
+   position), and a 44px action row that carries the compact ◀ ▶ at its ends
+   with the state and Details between them. Nothing in here wraps, clamps or
+   scrolls — if it would not fit, it is not in the bar.
+
+   Two holes, filled separately, because the arrows now live in the markup
+   BETWEEN them: #stopBarLine is the title row, #stopBarMid is the middle of the
+   action row. Neither innerHTML ever touches a cycling button. */
 function renderStopBar(stops, c) {
+  const line = $("stopBarLine");
   const mid = $("stopBarMid");
   const p = stops[session.route.idx];
   const solo = stops.length < 2;
@@ -220,8 +226,12 @@ function renderStopBar(stops, c) {
     b.tabIndex = solo ? -1 : 0;
   });
 
+  /* The empty message takes the full-width title row rather than the slot
+     between the two arrows: it is a sentence, and it now has a whole row to be
+     read on. The action row stays in the layout so the bar keeps its height. */
   if (!p) {
-    mid.innerHTML = '<p class="stopbar-empty">No routable stopovers on this day.</p>';
+    line.innerHTML = '<p class="stopbar-empty">No routable stopovers on this day.</p>';
+    mid.innerHTML = "";
     return;
   }
 
@@ -231,20 +241,18 @@ function renderStopBar(stops, c) {
   $("cycNext").setAttribute("aria-label",
     "Next stopover (" + (i + 1) + " of " + n + ")");
 
+  line.innerHTML =
+    ((p.time || p.priority === "fixed") ? timeHTML(p) : "") +
+    '<span class="stopbar-name">' + esc(p.name || "") + "</span>" +
+    (n > 1
+      ? '<span class="stopbar-pos">' + (i + 1) + "/" + n + "</span>"
+      : "");
+
   mid.innerHTML =
-    '<div class="stopbar-line">' +
-      ((p.time || p.priority === "fixed") ? timeHTML(p) : "") +
-      '<span class="stopbar-name">' + esc(p.name || "") + "</span>" +
-      (n > 1
-        ? '<span class="stopbar-pos">' + (i + 1) + "/" + n + "</span>"
-        : "") +
-    "</div>" +
-    '<div class="stopbar-acts">' +
-      '<span class="stopbar-state">' + actsHTML(p, c) + "</span>" +
-      '<button class="btn btn-quiet stopbar-details" type="button" ' +
-        'data-details="' + attr(p.id) + '" ' +
-        'aria-label="Details for ' + attr(p.name || "this stopover") + '">Details</button>' +
-    "</div>";
+    '<span class="stopbar-state">' + actsHTML(p, c) + "</span>" +
+    '<button class="btn btn-quiet stopbar-details" type="button" ' +
+      'data-details="' + attr(p.id) + '" ' +
+      'aria-label="Details for ' + attr(p.name || "this stopover") + '">Details</button>';
 }
 
 /* ◀ ▶ wrap instead of disabling: a disabled arrow cannot be dimmed far enough

@@ -18,7 +18,8 @@
    "label": "FRI",
    "color": "#00A1DE",
    "title": "Friday · Jun 4",
-   "subtitle": "Arrive → Loop: Art Institute → deep dish"
+   "subtitle": "Arrive → Loop: Art Institute → deep dish",
+   "plan": "Land midday and drop bags at the Nest, then straight to the Art Institute before it closes — deep dish is the reward. Cultural Center only if the timing is easy."
   },
   {
    "key": "sat",
@@ -52,7 +53,7 @@
   {
    "id": "palmer-house-check-in",
    "day": "fri",
-   "cluster": "Arrival — Loop",
+   "cluster": "Afternoon — arrival & the Loop",
    "time": "3:00 PM",
    "name": "Palmer House — check-in",
    "type": "Stay",
@@ -72,7 +73,7 @@
   {
    "id": "art-institute-of-chicago",
    "day": "fri",
-   "cluster": "Arrival — Loop",
+   "cluster": "Afternoon — arrival & the Loop",
    "time": "3:45 PM",
    "name": "Art Institute of Chicago",
    "type": "Art",
@@ -92,7 +93,7 @@
   {
    "id": "chicago-cultural-center",
    "day": "fri",
-   "cluster": "Arrival — Loop",
+   "cluster": "Afternoon — arrival & the Loop",
    "time": "5:15 PM",
    "name": "Chicago Cultural Center",
    "type": "Sight",
@@ -132,7 +133,7 @@
   {
    "id": "myopic-books",
    "day": "sat",
-   "cluster": "Wicker Park loop",
+   "cluster": "Morning — Wicker Park",
    "time": "11:00 AM",
    "name": "Myopic Books",
    "type": "Books",
@@ -152,7 +153,7 @@
   {
    "id": "reckless-records",
    "day": "sat",
-   "cluster": "Wicker Park loop",
+   "cluster": "Morning — Wicker Park",
    "time": "12:00 PM",
    "name": "Reckless Records",
    "type": "Music",
@@ -172,7 +173,7 @@
   {
    "id": "quimbys-bookstore",
    "day": "sat",
-   "cluster": "Wicker Park loop",
+   "cluster": "Morning — Wicker Park",
    "time": "12:45 PM",
    "name": "Quimby's Bookstore",
    "type": "Books",
@@ -192,7 +193,7 @@
   {
    "id": "big-star-tacos",
    "day": "sat",
-   "cluster": "Lunch — Wicker Park",
+   "cluster": "Afternoon — Wicker Park lunch",
    "time": "1:30 PM",
    "name": "Big Star",
    "type": "Food",
@@ -252,7 +253,7 @@
   {
    "id": "green-mill",
    "day": "sun",
-   "cluster": "Evening — Uptown",
+   "cluster": "Twilight — Uptown jazz",
    "time": "8:00 PM",
    "name": "Green Mill Cocktail Lounge",
    "type": "Music",

@@ -18,7 +18,8 @@
    "label": "FRI",
    "color": "#F9461C",
    "title": "Friday · Oct 8",
-   "subtitle": "Drive out → canyon hike → lodge dinner"
+   "subtitle": "Drive out → canyon hike → lodge dinner",
+   "plan": "Out of the city by nine, the canyon hike before check-in, then a slow lodge evening. No agenda after dinner — porch time."
   },
   {
    "key": "sat",
@@ -34,7 +35,7 @@
   {
    "id": "drive-to-starved-rock",
    "day": "fri",
-   "cluster": "Travel day",
+   "cluster": "Morning — the drive out",
    "time": "9:00 AM",
    "name": "Drive Chicago → Starved Rock",
    "type": "Drive",
@@ -54,7 +55,7 @@
   {
    "id": "starved-rock-lodge-check-in",
    "day": "fri",
-   "cluster": "Travel day",
+   "cluster": "Morning — the drive out",
    "time": "12:00 PM",
    "name": "Starved Rock Lodge — check-in",
    "type": "Stay",
@@ -134,7 +135,7 @@
   {
    "id": "drive-home",
    "day": "sat",
-   "cluster": "Travel home",
+   "cluster": "Afternoon — the drive home",
    "time": "1:00 PM",
    "name": "Drive Starved Rock → Chicago",
    "type": "Drive",

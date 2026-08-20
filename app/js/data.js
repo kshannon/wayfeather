@@ -1,37 +1,56 @@
 /* data.js — the read path (DESIGN §4).
 
-   M1: same-origin static fetch of data/trips/*.json with cache:"no-store",
-   every successful payload mirrored into IndexedDB. On a network failure we
-   render from IndexedDB and the caller shows a stale banner.
+   Two transports, one shape. With Settings unconfigured it is M1 exactly: a
+   same-origin static fetch of data/trips/*.json with cache:"no-store". With an
+   owner and repo configured it is the GitHub Contents API, keyless for a public
+   repo and with the PAT for the private data repo (DESIGN §2). Either way every
+   successful payload is mirrored into IndexedDB; on a network failure we render
+   from IndexedDB and the caller shows a stale banner.
 
-   The URL is resolved from import.meta.url, NOT from the document and NOT from
-   any absolute origin — app/js/data.js → ../../data/trips/ — so the app works
-   unchanged at any host path (GitHub Pages serves this repo under /wayfeather/)
-   and owner/repo are never hardcoded anywhere. */
+   The static URL is resolved from import.meta.url, NOT from the document and
+   NOT from any absolute origin — app/js/data.js → ../../data/trips/ — so the
+   app works unchanged at any host path (GitHub Pages serves this repo under
+   /wayfeather/) and owner/repo are never hardcoded anywhere. */
+
+import { getFile, DATA_PATH } from "./api.js";
+import { store, syncConfig, isConfigured } from "./state.js";
+
+/* "owner/repo" or "this site". Reads store.sync, NOT syncConfig(): naming the
+   source has no business pulling the token out of storage. */
+function sourceName() {
+  const s = store.sync || {};
+  return isConfigured() ? s.owner + "/" + s.repo : "this site";
+}
 
 const DATA_DIR = new URL("../../data/trips/", import.meta.url);
 
 export const INDEX_FILE = "index.json";
 export const SUPPORTED_SCHEMA = 1;
 
-/* ── M2 SEAM ───────────────────────────────────────────────────────────────
-   Everything above the transport is already shaped for the Contents API. When
-   Settings grow an owner/repo + PAT (DESIGN §2, §4), fetchJSON below becomes:
-
-     GET /repos/{owner}/{repo}/contents/data/trips/{file}
-       → { content: base64, sha }        sha = the optimistic-concurrency token
-
-   and `sha` on the cached record stops being null. It is threaded through the
-   record shape and the return value TODAY so that nothing downstream has to
-   change: the refresh stamp reads `sha` when it is non-null and says only
-   "updated <when>" while it is null. There is no git sha available from a
-   static fetch, so the app must not invent one. ─────────────────────────── */
-
+/* ── the transport ────────────────────────────────────────────────────────
+   The API path is what finally makes `sha` real: it is the blob sha, both the
+   optimistic-concurrency token for writes and the short sha the refresh stamp
+   prints. A static fetch has no git sha and must not invent one, so it still
+   returns null there and the stamp still says only "updated <when>". */
 async function fetchJSON(file) {
+  if (isConfigured()) {
+    const cfg = syncConfig();
+    const res = await getFile({
+      owner: cfg.owner, repo: cfg.repo, path: DATA_PATH + file, token: cfg.token
+    });
+    return { payload: res.doc, sha: res.sha };
+  }
   const url = new URL(file, DATA_DIR);
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error("HTTP " + res.status + " for " + file);
   return { payload: await res.json(), sha: null };
+}
+
+/* Cache records are namespaced by source, so this site's fictional fixtures and
+   a configured repo's real trips can never be served for one another offline —
+   same filenames, different data (DESIGN §2 privacy). */
+function cacheKey(file) {
+  return isConfigured() ? sourceName() + ":" + file : file;
 }
 
 /* ── IndexedDB cache ──────────────────────────────────────────────────────── */
@@ -121,13 +140,14 @@ export async function cacheInfo() {
      stale  — served from IndexedDB because the network failed
      empty  — nothing on the network AND nothing cached (first run offline) */
 export async function load(file) {
+  const key = cacheKey(file);
   try {
     const { payload, sha } = await fetchJSON(file);
     const fetchedAt = Date.now();
-    await idbPut({ file, payload, fetchedAt, sha });
+    await idbPut({ file: key, payload, fetchedAt, sha });
     return { payload, fetchedAt, sha, stale: false, empty: false, error: null };
   } catch (error) {
-    const rec = await idbGet(file);
+    const rec = await idbGet(key);
     if (rec && rec.payload) {
       return {
         payload: rec.payload, fetchedAt: rec.fetchedAt || 0, sha: rec.sha || null,
@@ -144,4 +164,69 @@ export function loadTrip(file) { return load(file); }
 /* DESIGN §3: the app refuses schema versions it doesn't know. */
 export function schemaOK(payload) {
   return !!payload && payload.schema === SUPPORTED_SCHEMA;
+}
+
+/* Why a read failed, in words the person can act on.
+
+   "Check your connection" is a lie when the real answer is an expired PAT —
+   and an expired PAT is the failure most likely to happen mid-trip, since the
+   token is meant to be rotated after each one (DESIGN §2). Returns "" for
+   offline and for anything unrecognised, where the generic copy is right. */
+export function readErrorText(error) {
+  const code = (error && error.code) || "";
+  const where = sourceName();
+  switch (code) {
+    case "unauthorized":
+      return "GitHub refused the saved token. Open Settings to enter a current one — " +
+        "or clear it, if that repository is public.";
+    case "forbidden":
+      return "That token has no access to " + where + ". Check its repository " +
+        "permissions, or clear it in Settings.";
+    case "rate-limited":
+      return "GitHub's rate limit is spent. It resets within the hour; a token in " +
+        "Settings raises the limit.";
+    case "not-found":
+      return "No data/trips/ files in " + where + ". Check the owner and repository " +
+        "in Settings — a private repo also needs a token.";
+    case "bad-json":
+      return "The trip files in " + where + " could not be read as JSON.";
+    case "too-large":
+      return "A trip file in " + where + " is too large to read through the API.";
+    default:
+      return "";
+  }
+}
+
+/* The same diagnosis in toast length. The empty state can afford two sentences;
+   a toast that appears over a still-readable cached trip cannot. */
+export function readErrorShort(error) {
+  switch ((error && error.code) || "") {
+    case "unauthorized": return "GitHub refused the saved token";
+    case "forbidden":    return "That token cannot read this repo";
+    case "rate-limited": return "GitHub rate limit reached";
+    case "not-found":    return "Could not find those trip files";
+    case "bad-json":     return "Those trip files are not valid JSON";
+    case "too-large":    return "That trip file is too large to read";
+    default:             return "";
+  }
+}
+
+/* Settings' "Test connection": one GET of the index file from the SAVED config,
+   which is why Settings saves before it tests. Reading syncConfig() here rather
+   than taking a token argument keeps the view layer out of the token's way
+   entirely — it writes the field into storage and never handles it again.
+
+   Returns a code, not a sentence: the toast wording lives in the view. */
+export async function testConnection() {
+  if (!isConfigured()) return { ok: false, code: "unconfigured" };
+  const cfg = syncConfig();
+  try {
+    const res = await getFile({
+      owner: cfg.owner, repo: cfg.repo, path: DATA_PATH + INDEX_FILE, token: cfg.token
+    });
+    const trips = (res.doc && res.doc.trips) || [];
+    return { ok: true, code: "ok", trips: trips.length, sha: res.sha, keyless: !cfg.token };
+  } catch (e) {
+    return { ok: false, code: (e && e.code) || "error", status: (e && e.status) || 0 };
+  }
 }

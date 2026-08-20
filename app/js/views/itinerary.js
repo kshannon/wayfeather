@@ -6,7 +6,8 @@ import { rangeLabel, relTime, fmtClock } from "../time.js";
 import { deriveLoc, appleMapsUrl } from "../links.js";
 import { NEST_SVG, BIRD_SVG, OFFLINE_SVG } from "../icons.js";
 import { store } from "../state.js";
-import { SUPPORTED_SCHEMA } from "../data.js";
+import { SUPPORTED_SCHEMA, readErrorText, readErrorShort } from "../data.js";
+import { shortSha } from "../api.js";
 import {
   placesOfDay, clustersOf, isNote, countText, findPool, eyebrowText, placeById
 } from "../trip.js";
@@ -157,25 +158,43 @@ export function refreshCounts() {
   });
 }
 
-/* ── stamp + offline banner ───────────────────────────────────────────────── */
-/* No sha: a static fetch cannot know the git blob sha, and the app must not
-   invent one (v3's random 7 hex is gone). The Contents API supplies the real
-   sha in M2 — see the seam in data.js — and it lands right here. */
+/* ── stamp + sync indicator + offline banner ──────────────────────────────── */
+/* The sha is the real one now: the Contents API returns the blob sha with every
+   read (M2), so "updated just now · a1b2c3d" finally means something you can
+   check against the other phone. A static fetch still has no sha and the app
+   still refuses to invent one, so that mode prints only the time. */
 export function renderStamp() {
   const meta = store.tripMeta;
   const when = meta.fetchedAt ? fmtClock(new Date(meta.fetchedAt), store.trip && store.trip.tz) : "";
   const rel = meta.fetchedAt ? relTime(meta.fetchedAt) : "never";
+  const sha = shortSha(meta.sha);
   $("stamp").innerHTML = "updated " + esc(rel) +
     (when ? '<span aria-hidden="true">·</span><b>' + esc(when) + "</b>" : "") +
-    (meta.sha ? '<span aria-hidden="true">·</span><b>' + esc(meta.sha) + "</b>" : "");
+    (sha ? '<span aria-hidden="true">·</span><b>' + esc(sha) + "</b>" : "");
 }
 
+/* Fed by sync.js (DESIGN §4). Hidden when there is nothing to report, which is
+   the normal state of a phone that has not touched anything. */
+export function renderSync(s) {
+  const el = $("syncLine");
+  if (!el) return;
+  const text = (s && s.text) || "";
+  el.textContent = text;
+  el.className = "syncline is-" + ((s && s.state) || "idle");
+  el.hidden = !text;
+}
+
+/* DESIGN §4's banner, with one M2 addition: it only claims "offline" when that
+   is actually the diagnosis. A phone with full signal and an expired token was
+   being told to check its connection. */
 export function renderStaleBanner() {
   const meta = store.tripMeta;
   const box = $("staleBanner");
   if (!meta.stale || !store.trip) { box.innerHTML = ""; return; }
+  const why = readErrorShort(store.readError) || "offline";
   box.innerHTML = '<p class="stale">' + OFFLINE_SVG +
-    "<span>offline · data from " + esc(meta.fetchedAt ? relTime(meta.fetchedAt) : "an earlier session") +
+    "<span>" + esc(why) + " · data from " +
+    esc(meta.fetchedAt ? relTime(meta.fetchedAt) : "an earlier session") +
     "</span></p>";
 }
 
@@ -186,6 +205,15 @@ export function emptyStateHTML() {
     return '<div class="bigempty"><h2>This trip needs a newer Wayfeather</h2>' +
       "<p>The file is schema " + esc(store.raw.schema) + " and this app reads schema " +
       esc(SUPPORTED_SCHEMA) + ". Pull the latest app.</p></div>";
+  }
+  /* With Settings configured, "could not reach the trip files" is often the
+     wrong answer — the network is fine and the token has expired. When the read
+     path knows better, it says so, and the retry button stays either way. */
+  const why = readErrorText(store.readError);
+  if (why) {
+    return '<div class="bigempty"><h2>Cannot read the trip files</h2>' +
+      "<p>" + esc(why) + "</p>" +
+      '<button class="btn btn-primary" type="button" data-retry>Try again</button></div>';
   }
   return '<div class="bigempty"><h2>No trip data yet</h2>' +
     "<p>Wayfeather could not reach the trip files and nothing is cached on this " +

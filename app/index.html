@@ -64,6 +64,10 @@
 
     <main class="wrap">
       <p class="stamp" id="stamp"></p>
+      <!-- DESIGN §4: quiet, next to the stamp — "saved on this phone" vs
+           "synced · a1b2c3d", so either person knows when the other can see a
+           change. Hidden entirely when there is nothing to say. -->
+      <p class="syncline" id="syncLine" hidden></p>
       <div id="staleBanner"></div>
       <div id="panels"></div>
     </main>
@@ -137,7 +141,7 @@
     <div class="page">
       <div class="lt-head wrap">
         <h1 class="lt" data-large-title>Settings</h1>
-        <p class="lt-sub">Kept on this device until the GitHub sync lands.</p>
+        <p class="lt-sub">This device, and where its trip data comes from.</p>
       </div>
 
       <!-- the forward glyph is the flying bird from icons.js; these are its
@@ -160,29 +164,69 @@
             </span>
             <span class="chev" data-fly aria-hidden="true"></span>
           </button>
+          <!-- Which shell is actually running. An installed PWA activates a new
+               build on the SECOND cold start, so "did the update land?" is a
+               glance at this row, not guesswork. -->
+          <div class="rowcard is-status">
+            <span class="rowcard-main">
+              <span class="rowcard-name">App version</span>
+              <span class="rowcard-sub" id="buildSub"></span>
+            </span>
+          </div>
         </div>
       </div>
 
+      <!-- SYNC (M2, DESIGN §2 §4 §5). Empty owner/repo keeps the same-origin
+           static mode, which is still the default: this app repo ships its own
+           fictional fixtures and any static host serves them. Filling these in
+           points the app at the private data repo instead.
+
+           The token field is type=password and is WRITE-ONLY from the UI's side
+           — once saved, the row below says "configured ✓" and the value is
+           never read back into the DOM. -->
       <div class="sect wrap">
         <h2 class="sect-h">Sync</h2>
-        <div class="inset">
-          <div class="rowcard is-m2">
-            <span class="rowcard-main">
-              <span class="rowcard-name">GitHub repo</span>
-              <span class="rowcard-sub">Owner and repository that holds the trip files</span>
-            </span>
-            <span class="tag-m2">M2</span>
+        <div class="syncform">
+          <div class="fld-row">
+            <label class="fld"><span>Owner</span>
+              <input id="s-owner" type="text" autocomplete="off" autocapitalize="off"
+                     autocorrect="off" spellcheck="false" placeholder="github-user">
+            </label>
+            <label class="fld"><span>Repository</span>
+              <input id="s-repo" type="text" autocomplete="off" autocapitalize="off"
+                     autocorrect="off" spellcheck="false" placeholder="wayfeather-data">
+            </label>
           </div>
-          <div class="rowcard is-m2">
-            <span class="rowcard-main">
-              <span class="rowcard-name">Personal access token</span>
-              <span class="rowcard-sub">Fine-grained PAT, Contents read and write</span>
-            </span>
-            <span class="tag-m2">M2</span>
+
+          <label class="fld" id="s-tokenField"><span>Personal access token</span>
+            <input id="s-token" type="password" autocomplete="off" autocapitalize="off"
+                   autocorrect="off" spellcheck="false" placeholder="fine-grained PAT">
+          </label>
+          <div class="tokenstate" id="s-tokenState" hidden>
+            <span class="fld-cap">Personal access token</span>
+            <p class="tokenstate-row">
+              <b>configured&nbsp;✓</b>
+              <button class="linkbtn" type="button" id="btnClearToken">clear</button>
+            </p>
+          </div>
+
+          <div class="form-acts">
+            <button class="btn btn-primary" type="button" id="btnSaveSync">Save</button>
+            <button class="btn btn-quiet" type="button" id="btnTestSync">Test connection</button>
           </div>
         </div>
-        <p class="sect-note">Trip files are read straight from the site for now. The
-          Contents API path turns on when these are filled in.</p>
+
+        <p class="sect-note" id="syncNote"></p>
+
+        <div class="inset" id="signOutBox" hidden>
+          <button class="rowcard" type="button" id="btnSignOut">
+            <span class="rowcard-main">
+              <span class="rowcard-name">Sign out of GitHub</span>
+              <span class="rowcard-sub">Clears the owner, repo and token on this device</span>
+            </span>
+            <span class="chev" data-fly aria-hidden="true"></span>
+          </button>
+        </div>
       </div>
 
       <div class="sect wrap">

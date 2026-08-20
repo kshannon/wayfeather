@@ -33,7 +33,7 @@ h1,h2,h3,h4,p{margin:0}
 a{color:inherit}
 button{font:inherit;color:inherit;background:none;border:0;margin:0;padding:0}
 /* no tap-highlight flash anywhere, and controls never select as text */
-button,a,label,.navtab,.dblock,.chip,.ilink,.pin,.tag-m2,.grabber{
+button,a,label,.navtab,.dblock,.chip,.ilink,.pin,.grabber{
   -webkit-tap-highlight-color:transparent;
   -webkit-user-select:none;user-select:none;
   touch-action:manipulation;
@@ -250,6 +250,18 @@ svg{display:block}
   font-size:var(--t-caption2);font-weight:500;color:var(--ink-3);
 }
 .stamp b{font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+/* The sync indicator (DESIGN §4). Deliberately the quietest line on the page:
+   it rides under the stamp, in the stamp's own size, and it is only ever
+   present when it has something to report. "synced · sha" earns the accent
+   because it is the one state that means the other phone can see it. */
+.syncline{
+  display:flex;justify-content:flex-end;align-items:center;gap:6px;
+  padding:2px 2px 0;
+  font-size:var(--t-caption2);font-weight:600;color:var(--ink-3);
+  font-variant-numeric:tabular-nums;letter-spacing:.02em;
+}
+.syncline.is-synced{color:var(--accent)}
+.syncline.is-error{color:var(--warn-ink)}
 .stale{
   display:flex;align-items:center;gap:var(--s2);
   margin-top:var(--s3);padding:10px var(--s3);
@@ -1054,16 +1066,46 @@ svg{display:block}
   font-size:var(--t-caption2);font-weight:700;letter-spacing:.05em;text-transform:uppercase;
 }
 .chev{flex:0 0 auto;color:var(--ink-3);display:flex}
-/* disabled M2 placeholder rows: not buttons, so nothing to focus and nothing to
-   press. They still hold >= 4.5:1 text; "disabled" is carried by the M2 tag. */
-.rowcard.is-m2{background:var(--surface-2);cursor:default}
-.rowcard.is-m2 .rowcard-name{color:var(--ink-2)}
-.tag-m2{
-  flex:0 0 auto;padding:3px 8px;border-radius:6px;
-  background:var(--neutral-bg);color:var(--ink-2);
-  box-shadow:inset 0 0 0 1px var(--hair-2);
-  font-size:var(--t-caption2);font-weight:700;letter-spacing:.06em;
+/* A row that only reports something (App version). Same metrics as a pressable
+   row so the inset list stays on its rhythm, but nothing to press: no cursor,
+   no active state, no focus target. M2 turned the old placeholder rows into
+   real fields, so `.is-m2`/`.tag-m2` are gone with them. */
+.rowcard.is-status{cursor:default}
+.rowcard.is-status:active{background:transparent}
+
+/* ── M2 sync settings ─────────────────────────────────────────────────────
+   A form, not an inset list: these are fields you type into, so they borrow the
+   edit sheet's .fld component wholesale and sit on one Soft Card. */
+.syncform{
+  padding:var(--s4) var(--s4) var(--s4);
+  background:var(--surface);
+  border-radius:var(--r-lg);
+  box-shadow:var(--card-ring),var(--e1);
 }
+.syncform .form-acts{margin-top:var(--s2)}
+.syncform > .fld:last-of-type,.syncform .tokenstate{margin-bottom:var(--s3)}
+/* the .fld label face, for the token row that no longer HAS a field */
+.fld-cap{
+  display:block;margin-bottom:6px;
+  font-size:var(--t-footnote);font-weight:600;letter-spacing:.01em;color:var(--ink-3);
+}
+.tokenstate-row{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
+  min-height:48px;padding:11px 13px;
+  border-radius:var(--r-btn);border:1px solid var(--hair-2);
+  background:var(--surface-2);
+  font-size:var(--t-body);
+}
+.tokenstate-row b{font-weight:600;color:var(--ink-2)}
+/* A text button still has to be a 44pt target on a phone (DESIGN §5): the rule
+   is about the finger, not the ink. Negative margin keeps the row's height. */
+.linkbtn{
+  flex:0 0 auto;background:none;
+  display:inline-flex;align-items:center;
+  min-height:44px;margin:-11px 0;padding:0 2px;
+  color:var(--accent);font-size:var(--t-subhead);font-weight:600;
+}
+.linkbtn:active{opacity:.6}
 .about{
   padding:var(--s4);border-radius:var(--r-lg);
   background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--hair);

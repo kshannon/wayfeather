@@ -1,8 +1,11 @@
 /* forms.js — the edit / add sheet and the "find me something" sheet.
 
-   Both write to the local overlay (state.js). In M2 the exact same field
-   objects become read-modify-write PUTs through the Contents API (DESIGN §4) —
-   same patches, different transport.
+   Both write to the local overlay (state.js), which since M2 also reports every
+   mutation to the pending buffer — the same patch objects, read-modify-written
+   into the trip file by sync.js a few seconds later (DESIGN §4). Nothing here
+   talks to the network, and nothing here changed shape to make that work; the
+   only addition is a `kind` on each write, which is what the generated commit
+   message reads ("move: …" against "edit: …").
 
    Hooks (selectDay / refreshScene) are injected once at boot rather than
    imported, so this module never has to import main.js back. */
@@ -138,8 +141,8 @@ export function saveForm() {
 
   if (form.mode === "add") {
     const id = uniqueId(store.trip, slugify(name));
-    // In M2 this same object is what gets pushed into the trip file and PUT
-    // through the Contents API (DESIGN §4); here it lands in the overlay.
+    // This object lands in the overlay AND in the pending buffer, and is what
+    // gets appended to trip.places on the next flush (DESIGN §4).
     addStopover({
       id, day: fields.day, cluster: fields.cluster, time: fields.time,
       name: fields.name, type: "", address: "", lat: null, lng: null,
@@ -157,7 +160,7 @@ export function saveForm() {
        enough to open another card's sheet before pressing Undo. */
     const id = form.id, from = form.dayKey;
     const prior = snapshotPatch(id);
-    patchPlace(id, fields);
+    patchPlace(id, fields, { kind: moved ? "move" : "edit" });
     closeSheet();
     if (moved) hooks.selectDay(fields.day, { keepScroll: true });
     hooks.refreshScene();
@@ -177,9 +180,9 @@ export function saveForm() {
 }
 
 /* One tap out of the day: "Send to XTRA" in the edit sheet. Same patch shape as
-   every other edit — day (+ cluster) into the overlay — so M2 turns it into the
-   same Contents-API PUT (DESIGN §4). The full mover is the day <select> above
-   it, which lists every day including XTRA. */
+   every other edit — day (+ cluster) into the overlay — so it rides the same
+   Contents-API PUT as everything else (DESIGN §4). The full mover is the day
+   <select> above it, which lists every day including XTRA. */
 export function moveTo(dayKey) {
   const trip = store.trip;
   const p = form.id ? placeById(trip, form.id) : null;
@@ -189,7 +192,7 @@ export function moveTo(dayKey) {
   const prior = snapshotPatch(p.id);
   const cluster = clusterOnMove(trip, dayKey, parseClock(p.time), p.cluster);
 
-  patchPlace(p.id, { day: dayKey, cluster, updatedAt: localISO() });
+  patchPlace(p.id, { day: dayKey, cluster, updatedAt: localISO() }, { kind: "move" });
   closeSheet();
   hooks.selectDay(dayKey, { keepScroll: true });
   hooks.refreshScene();
@@ -248,7 +251,8 @@ export function takeExtra(id) {
   const cluster = clusterForSlot(trip, findDayKey, mins === null ? 0 : mins, p.cluster);
   const prior = snapshotPatch(id);
 
-  patchPlace(id, { day: findDayKey, time: when, cluster, updatedAt: localISO() });
+  patchPlace(id, { day: findDayKey, time: when, cluster, updatedAt: localISO() },
+    { kind: "move" });
   closeSheet();
   hooks.selectDay(findDayKey, { keepScroll: true });
   hooks.refreshScene();

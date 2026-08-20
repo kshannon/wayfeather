@@ -8,9 +8,11 @@
 import { $ } from "./dom.js";
 import {
   store, loadGlobal, saveGlobal, loadOverlay, assemble,
-  setPlaceState, wipeAll, localChangeCount
+  setPlaceState, wipeAll, localChangeCount,
+  loadSyncSettings, syncConfig, setMutationSink, settleOverlay, loadPending, savePending
 } from "./state.js";
-import { load, loadIndex, loadTrip, clearDataCache, schemaOK } from "./data.js";
+import { load, loadIndex, loadTrip, clearDataCache, schemaOK, readErrorShort } from "./data.js";
+import { sync } from "./sync.js";
 import { parseBoot, syncTrip, onHashChange } from "./router.js";
 import { session, resetScope } from "./session.js";
 import { dayByKey, initialDayKey, placeById } from "./trip.js";
@@ -24,14 +26,16 @@ import { initPTR, refreshNow, isBusy } from "./ptr.js";
 import { renderStrips, paintStrips, syncCompletion } from "./views/daystrip.js";
 import {
   ctx, renderHero, renderPanels, paintPanels, repaintCard, refreshTails, refreshCounts,
-  renderStamp, renderStaleBanner
+  renderStamp, renderStaleBanner, renderSync
 } from "./views/itinerary.js";
 import {
   renderMap, routeStops, firstUnhandled, jumpTo, wireConnectivity
 } from "./views/map.js";
 import { cardHTML } from "./views/card.js";
 import { renderTrips } from "./views/trips.js";
-import { renderSettings, renderCacheRow } from "./views/settings.js";
+import {
+  renderSettings, renderCacheRow, saveSyncForm, clearTokenField, signOut, runConnectionTest
+} from "./views/settings.js";
 import { paintFly } from "./icons.js";
 import {
   initForms, openEdit, openAdd, openFind, saveForm, takeExtra, markSkipped, moveToExtras
@@ -148,6 +152,10 @@ async function fetchIndex() {
     store.index = res.payload;
     store.indexMeta = { fetchedAt: res.fetchedAt, stale: res.stale, sha: res.sha };
   }
+  /* Kept whenever the network read failed — even when the cache saved the
+     render — so the empty state and the stale banner can name the actual
+     problem. A refused token reads as "you are offline" otherwise. */
+  store.readError = res.error || null;
   return res;
 }
 
@@ -156,7 +164,12 @@ async function fetchTrip(id) {
   const entry = tripEntry(id);
   if (!entry) return false;
   const res = await loadTrip(entry.file);
+  store.readError = res.error || null;
   if (!res.payload) return false;
+  /* The filename is the PUT target for every mutation of this trip (DESIGN §4),
+     so the write path learns it here rather than re-deriving it from the index
+     at flush time — by then the person may have switched trips. */
+  store.tripFile = entry.file;
   store.raw = res.payload;
   store.tripMeta = { fetchedAt: res.fetchedAt, stale: res.stale, sha: res.sha };
   noteSummary(id, res.payload);
@@ -165,11 +178,31 @@ async function fetchTrip(id) {
   return true;
 }
 
-/* Pull-to-refresh and the ↻ button: re-fetch the index and the active trip. */
+/* Pull-to-refresh and the ↻ button: re-fetch the index and the active trip.
+
+   The pending buffer flushes FIRST (DESIGN §4). Reading before writing would
+   pull down a doc that does not contain the change sitting on this phone, and
+   the very next flush would then have to rebase onto data we just rendered —
+   worse, the refresh would appear to "lose" the edit for a beat. Flushing first
+   also means the re-GET usually returns the commit we just made, so the stamp's
+   sha is the one this phone wrote. */
 async function refreshData() {
+  await sync.flushNow("refresh");
   await fetchIndex();
+  /* A boot that could not read the index leaves no active trip — first run
+     offline, or (new in M2) a token that has since been fixed in Settings.
+     Once the index finally arrives, adopt a trip the way boot does, so "Try
+     again" actually recovers instead of repainting the same empty state. */
+  if (!tripEntry(store.activeTrip)) {
+    const trips = (store.index && store.index.trips) || [];
+    if (trips.length) {
+      store.activeTrip = trips[0].id;
+      saveGlobal();
+      syncTrip(store.activeTrip);
+    }
+  }
   const ok = await fetchTrip(store.activeTrip);
-  if (!ok) toast("Could not reach the trip files");
+  if (!ok) toast(readErrorShort(store.readError) || "Could not reach the trip files");
   if (store.trip && !dayByKey(store.trip, session.dayKey)) session.dayKey = initialDayKey(store.trip);
   refreshScene();
   if (store.trip) { paintStrips(session.dayKey, false); paintPanels(session.dayKey); }
@@ -284,12 +317,31 @@ function wireEvents() {
         : "Nothing has been changed on this device. Clear anyway?";
       if (!window.confirm(msg)) return;
       wipeAll();
+      /* The buffer holds the same changes the overlay does; leaving it behind
+         would push edits that were just discarded. wipeAll() keeps the GitHub
+         settings and the token — those have their own row. */
+      sync.discardAll();
       loadGlobal();
+      loadSyncSettings();
       loadOverlay();
       assemble();
       refreshScene();
       selectDay(initialDayKey(store.trip), {});
       toast("Local changes cleared");
+      return;
+    }
+
+    /* ── sync settings (M2) ─────────────────────────────────────────────── */
+    if (t.closest("#btnSaveSync")) {
+      e.preventDefault();
+      if (saveSyncForm()) refreshData();      // the data source moved: re-read
+      return;
+    }
+    if (t.closest("#btnTestSync")) { e.preventDefault(); runConnectionTest(); return; }
+    if (t.closest("#btnClearToken")) { e.preventDefault(); clearTokenField(); return; }
+    if (t.closest("#btnSignOut")) {
+      e.preventDefault();
+      if (signOut()) refreshData();
       return;
     }
 
@@ -341,6 +393,17 @@ function wireEvents() {
     }
   });
 
+  /* Flush triggers (DESIGN §4). iOS has no Background Sync API, so leaving the
+     screen is the last honest moment to push — `visibilitychange` fires on the
+     app switcher and on lock, `pagehide` covers the cases Safari does not send
+     it for, and both hand api.js a keepalive PUT so the request outlives the
+     suspension. Coming back online retries whatever is still waiting. */
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") sync.flushNow("hidden");
+  });
+  window.addEventListener("pagehide", () => { sync.flushNow("hidden"); });
+  window.addEventListener("online", () => { sync.flushNow("online"); });
+
   wireTabKeys();
   wireConnectivity();          // offline drops the Map tab to the schematic
   wireScrim();
@@ -371,9 +434,26 @@ async function boot() {
 
   if (intent.reset) { wipeAll(); await clearDataCache(); }
   loadGlobal();
+  /* Before any read: data.js asks isConfigured() to choose its transport. */
+  loadSyncSettings();
 
   paintFly();                 // the bird glyph into index.html's static rows
   setStaticTitles();
+
+  /* The write path. state.js reports every mutation to sync.record(); sync
+     hands published values back through settleOverlay() so the local overlay
+     stops shadowing what git now has. Storage and the toast are injected rather
+     than imported, which is what keeps the engine testable headless. */
+  sync.init({
+    getConfig: syncConfig,
+    toast,
+    onIndicator: renderSync,
+    onSettled: (entries, result) => { settleOverlay(entries, result); refreshScene(); },
+    loadBuffer: loadPending,
+    saveBuffer: savePending
+  });
+  setMutationSink(sync.record);
+
   initForms({ selectDay, refreshScene });
   wireEvents();
   initPTR({
@@ -410,7 +490,10 @@ async function boot() {
   if (store.trip) selectDay(session.dayKey, {});
 
   if (intent.reset) toast("Local changes cleared");
-  else if (store.tripMeta.stale && store.trip) toast("Offline — showing saved trip data");
+  else if (store.tripMeta.stale && store.trip) {
+    const why = readErrorShort(store.readError);
+    toast(why ? why + " — showing saved trip data" : "Offline — showing saved trip data");
+  }
 
   registerSW();
   window.setInterval(() => { if (!isBusy()) { renderStamp(); renderStaleBanner(); } }, 30000);

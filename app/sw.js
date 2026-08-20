@@ -8,13 +8,18 @@
    Bumping: change VERSION. The cache name carries it, install precaches the new
    shell, and activate deletes every other wayfeather-shell-* cache. */
 
-/* v5 (2026-08-20, the v4.2 wiring pass): the wallpaper token, the compact map
-   dock, and — the reason a bump is not optional here — new icon BYTES under the
-   unchanged names icon.svg / icon-square.svg / apple-touch-icon.png /
-   icon-192.png / icon-512.png. Same URLs, different pixels: without a new cache
-   name every installed copy would keep serving the old bird off the shell
-   cache. */
-const VERSION = "v5";
+/* v6 (2026-08-20, M2 — the GitHub sync layer): two new shell modules (js/api.js,
+   js/sync.js, plus js/version.js), real Settings rows, and the sync indicator.
+
+   KEEP IN LOCKSTEP with BUILD in app/js/version.js, which is what Settings ›
+   About prints as "App version" — a classic worker script cannot import an ES
+   module, so the string lives in both files and tests/build.test.js fails if
+   they ever disagree.
+
+   v5 (the v4.2 wiring pass) shipped new icon BYTES under unchanged names, which
+   is the standing reminder that a deploy without a VERSION bump leaves every
+   installed copy serving the old shell forever. */
+const VERSION = "v6";
 const CACHE = "wayfeather-shell-" + VERSION;
 const PREFIX = "wayfeather-shell-";
 
@@ -33,6 +38,9 @@ const SHELL = [
   "./js/links.js",
   "./js/trip.js",
   "./js/data.js",
+  "./js/api.js",
+  "./js/sync.js",
+  "./js/version.js",
   "./js/state.js",
   "./js/session.js",
   "./js/router.js",
@@ -100,11 +108,18 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(req.url);
   /* Cross-origin means map tiles, the TileJSON and glyph ranges from
-     tiles.openfreemap.org. They are passed straight through and NEVER written
-     to a cache: a shell cache is not a tile store, and a half-filled one would
-     make the map look available offline while showing whatever squares of the
-     world happened to be in it. Offline is the schematic's job (DESIGN §5);
-     a real offline map is the Protomaps PMTiles extract, later. */
+     tiles.openfreemap.org — and, from M2, api.github.com. All of it is passed
+     straight through and NEVER written to a cache.
+
+     For the tiles: a shell cache is not a tile store, and a half-filled one
+     would make the map look available offline while showing whatever squares of
+     the world happened to be in it. Offline is the schematic's job (DESIGN §5);
+     a real offline map is the Protomaps PMTiles extract, later.
+
+     For the API: a cached trip read is a refresh button that lies (DESIGN §4),
+     which is the whole reason this app does not use raw.githubusercontent.com.
+     Trip data is cached in IndexedDB by js/data.js, where it carries its sha and
+     its fetch time. Writes are PUTs and never reach this handler at all. */
   if (url.origin !== self.location.origin) return;
   if (url.pathname.indexOf("/data/") !== -1) return;    // network-only, always
 

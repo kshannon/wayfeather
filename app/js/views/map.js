@@ -16,7 +16,7 @@ import { walkDirUrl } from "../links.js";
 import { store } from "../state.js";
 import { session } from "../session.js";
 import { placesOfDay, dayByKey, isNote, isVisited, isSkipped, isHandled } from "../trip.js";
-import { timeHTML, chipHTML, hoursHTML, warnHTML, linksHTML, actsHTML } from "./card.js";
+import { timeHTML, chipHTML, hoursHTML, warnHTML, linksHTML, actsHTML, editBtn } from "./card.js";
 import { ctx } from "./itinerary.js";
 import { setTitle, getView } from "../chrome.js";
 
@@ -195,9 +195,15 @@ function renderDock(stops, c) {
   const p2 = stops[session.route.idx];
   if (!p2) { $("dockBody").innerHTML = ""; $("dockCount").textContent = "No stopovers"; return; }
   $("dockCount").textContent = "Stopover " + (session.route.idx + 1) + " of " + stops.length;
+  /* The dock carries the pencil for the same reason the Itinerary card does:
+     it is the one and only way into the edit sheet, and the dock body itself
+     never navigates (DESIGN §5). Editing from here keeps you on the Map tab —
+     saveForm only re-renders the scene, it never switches views. */
   $("dockBody").innerHTML =
     '<div class="dock-pad">' +
-      '<div class="dock-top">' + timeHTML(p2) + chipHTML(p2) + "</div>" +
+      '<div class="dock-top">' + timeHTML(p2) +
+        '<span class="card-tools">' + chipHTML(p2) + editBtn(p2) + "</span>" +
+      "</div>" +
       '<h3 class="dock-name">' + esc(p2.name || "") + "</h3>" +
       hoursHTML(p2) + warnHTML(p2) +
       (p2.notes ? '<p class="dock-note">' + esc(p2.notes) + "</p>" : "") +

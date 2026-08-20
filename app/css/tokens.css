@@ -18,6 +18,13 @@
                      on --surface      6.32      --warn-ink on --warn-bg        5.41
      "accent as text on a surface >= 4.5" and "white on an accent fill >= 4.5"
      are the same inequality, so one tuned hex satisfies both directions.
+
+   The v4.1 handled states add two more grounds. Every visible string on each:
+
+     LANDED   on --tint       ink 14.49  brown 6.33  ink-2 7.14  ink-3 5.82
+              on --soft       accent (state text) 4.84   #FFF on --accent 6.48
+     FLEW     on --recess     ink-2 5.94  ink-3 4.84   (tightest pair in the app)
+     PAST     Undo/hours/tiles keep their own grounds: 8.24 / 7.03 / 7.03
    ========================================================================= */
 
 :root{
@@ -29,6 +36,12 @@
   --hair:#E5DECD;
   --hair-2:#D3C9B2;
   --rail:#8B8271;
+  /* The written-off fill (v4.1). Deliberately the deepest ground in the app and
+     the lowest-chroma one (9.5% vs --neutral-bg's 10.6%): "Flew past" has to be
+     the most muted thing on screen, and --neutral-bg sat only 1.13:1 off the
+     ground, close enough to Landed that the two states blurred at a glance.
+     1.27:1 off the ground, and it still carries the cream's warmth. */
+  --recess:#DED8C9;
   --ink:#1F1B15;        /* 16.7:1 on --surface                              */
   --ink-2:#544C41;      /*  8.2:1 on --surface                              */
   --ink-3:#62594C;      /*  6.7:1 on --surface                              */

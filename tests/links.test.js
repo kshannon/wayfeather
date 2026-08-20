@@ -356,14 +356,27 @@ describe("badHours — the 'is this place closed' sniff", () => {
     expect(badHours(undefined)).toBe(false);
   });
 
-  it("MISSES a mid-string Thu/Fri/Sat closure (known gap — see the report)", () => {
-    /* The alternation covers mon/tue/wed/sun but not thu/fri/sat, and these
-       strings neither start with CLOSED nor end in "closed", so they slip
-       through. Pinned as-is so the gap is visible rather than surprising.
-       Suggested fix: /closed\s+(mon|tue|wed|thu|fri|sat|sun)/i. */
-    expect(badHours("Daily 11–5; CLOSED Thu")).toBe(false);
-    expect(badHours("Open 10–6, closed Fridays")).toBe(false);
-    expect(badHours("Open 10–6, closed Saturdays")).toBe(false);
+  it("flags a mid-string Thu/Fri/Sat closure (was a known gap — fixed in v4.1)", () => {
+    /* The alternation used to cover mon/tue/wed/sun only, and these strings
+       neither start with CLOSED nor end in "closed", so they slipped through
+       unflagged. badHours now sniffs every weekday anywhere in the string. */
+    expect(badHours("Daily 11–5; CLOSED Thu")).toBe(true);
+    expect(badHours("Open 10–6, closed Fridays")).toBe(true);
+    expect(badHours("Open 10–6, closed Saturdays")).toBe(true);
+  });
+
+  it("flags every weekday, with or without the 'on', anywhere in the string", () => {
+    ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].forEach((d) => {
+      expect(badHours("Open 9–5 · closed " + d)).toBe(true);
+      expect(badHours("Open 9–5 · closed on " + d + "days")).toBe(true);
+      expect(badHours("Open 9–5 · CLOSED " + d.toUpperCase())).toBe(true);
+    });
+  });
+
+  it("still passes ordinary hours that merely name a weekday", () => {
+    expect(badHours("Thu–Sun 11–7")).toBe(false);
+    expect(badHours("Fri & Sat until 10 PM")).toBe(false);
+    expect(badHours("Sat 9–1, Sun brunch only")).toBe(false);
   });
 
   it("agrees with the real fixtures", () => {

@@ -17,9 +17,19 @@ export function deriveLoc(trip) {
   return (trip && trip.name) || "";
 }
 
+/* "closed Thu", "CLOSED Tue/Wed", "closed on Fridays", "closed Saturdays" —
+   every weekday, anywhere in the string. The alternation used to cover only
+   mon/tue/wed/sun, so a Thu/Fri/Sat closure sailed through unflagged unless the
+   string happened to start with CLOSED or end in "closed" (v4.1 fix). */
+const CLOSED_DAY = /closed\s*(?:on\s+)?(?:mon|tue|wed|thu|fri|sat|sun)/i;
+
 export function badHours(h) {
-  return /closed mon|closed tue|closed sun|closed wed|unverified|closed weekends|closed$/i.test(h || "")
-      || /^CLOSED/i.test(h || "");
+  const s = String(h == null ? "" : h);
+  return CLOSED_DAY.test(s)
+      || /closed\s+weekends?/i.test(s)
+      || /unverified/i.test(s)
+      || /^closed/i.test(s)                    /* "Closed for the season" */
+      || /closed\s*$/i.test(s);                /* "Sunday: closed"        */
 }
 
 function query(p, loc) {

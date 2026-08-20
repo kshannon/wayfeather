@@ -50,7 +50,13 @@ export function chipHTML(p) {
 
 /* Landed / Flew past are one row: a state label plus an explicit Undo control,
    so undo is a labelled button rather than "tap the status again".
-   (DESIGN §5, avian voice: Did it! → Landed!, Skip it → Flew past.) */
+   (DESIGN §5, avian voice: Did it! → Landed!, Skip it → Flew past.)
+
+   The two states carry DIFFERENT MARKUP, not just different colours (DESIGN §5,
+   "Handled-state contrast"): Landed gets .state-check, a filled accent disc with
+   a ✓; Flew past gets .state-dash, the same 22px box with no fill at all and a
+   bare dash in it. Filled-vs-hollow survives a glance, a squint, and a
+   grayscale screenshot in a way that two similar tints do not. */
 export function actsHTML(p, ctx) {
   const st = stateOf(p), id = attr(p.id), nm = attr(p.name || "this stopover");
   if (st.visited) {
@@ -69,7 +75,7 @@ export function actsHTML(p, ctx) {
   if (st.skipped) {
     return '<div class="state-row is-skip">' +
       '<span class="state-lead">' +
-        '<span class="state-check" aria-hidden="true">–</span>' +
+        '<span class="state-dash" aria-hidden="true">–</span>' +
         '<span class="state-text">Flew past</span>' +
       "</span>" +
       '<button type="button" class="undo" data-act="clear" data-id="' + id + '" ' +
@@ -84,9 +90,11 @@ export function actsHTML(p, ctx) {
   "</div>";
 }
 
-/* Whole-card tap opens the editor, but a card cannot be role=button while it
-   contains buttons and links — so every card also carries a real 44px pencil
-   control, which is what keyboard and screen-reader users get. */
+/* The ONLY way into the edit sheet (DESIGN §5). A card cannot be role=button
+   while it contains buttons and links, and the whole-card tap it used to carry
+   instead put an invisible edit target under the state text and the meta — so
+   editing is a real 44px control, present on every card and on the map dock,
+   and nothing else on a card navigates. */
 export function editBtn(p) {
   return '<button type="button" class="editbtn" data-edit="' + attr(p.id) + '" ' +
     'aria-label="Edit ' + attr(p.name || "this stopover") + '">' +
@@ -97,7 +105,7 @@ export function editBtn(p) {
 }
 
 function noteHTML(p) {
-  return '<div class="noterow" data-card="' + attr(p.id) + '" data-open="' + attr(p.id) + '">' +
+  return '<div class="noterow" data-card="' + attr(p.id) + '">' +
     '<div class="noterow-top">' +
       (p.time ? '<span class="noterow-time u-tab-num">' + esc(p.time) + "</span>" : "") +
       (p.name ? '<span class="noterow-name">' + esc(p.name) + "</span>" : "") +
@@ -121,7 +129,7 @@ export function cardHTML(p, ctx) {
     ? '<p class="meta">' + metaBits.join('<span class="dot" aria-hidden="true">·</span>') + "</p>"
     : "";
 
-  return '<article class="' + cls + '" data-card="' + attr(p.id) + '" data-open="' + attr(p.id) + '">' +
+  return '<article class="' + cls + '" data-card="' + attr(p.id) + '">' +
       '<div class="card-top">' + timeHTML(p) +
         '<span class="card-tools">' + chipHTML(p) + editBtn(p) + "</span>" +
       "</div>" +

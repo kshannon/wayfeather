@@ -263,11 +263,12 @@ function wireEvents() {
     }
     if (t.closest("#f-skip")) { e.preventDefault(); markSkipped(); return; }
 
-    // tapping a card body (never its buttons or links) opens the editor
-    const open = t.closest("[data-open]");
-    if (open && !t.closest("button") && !t.closest("a")) {
-      openEdit(open.getAttribute("data-open"), null);
-    }
+    /* NOTHING else on a card navigates (DESIGN §5, decided 2026-08-20 after a
+       real mis-tap on device: the "Flew past" state text was reachable through
+       the old body-tap-to-edit delegate, so writing a stopover off and then
+       reading the row that said so opened the edit sheet). The pencil
+       ([data-edit], handled above) is the only way into the editor; state text,
+       labels and meta are inert, and buttons/links keep their own actions. */
   });
 
   $("formBody").addEventListener("submit", (e) => { e.preventDefault(); saveForm(); });

@@ -336,13 +336,14 @@ svg{display:block}
 .stops{display:flex;flex-direction:column;gap:var(--s3)}
 
 /* ─── 11. STOPOVER CARD ───────────────────────────────────────────────────── */
+/* Not a control: no cursor:pointer, no tap target. The pencil is the only way
+   into the editor (DESIGN §5) — the card body is something you read. */
 .card{
   position:relative;
   background:var(--surface);
   border-radius:var(--r-card);
   padding:var(--s4);
   box-shadow:var(--card-ring),var(--e2);
-  cursor:pointer;
 }
 @media (min-width:640px){ .card{padding:var(--s5)} }
 .card-top{
@@ -426,14 +427,29 @@ svg{display:block}
         box-shadow:inset 0 0 0 1px var(--hair-2)}
 .act-do:active{filter:brightness(.9)}
 .act-no:active{background:var(--neutral-bg)}
-/* Done and Skipped are one row: a state label plus an explicit Undo control,
-   so undo is a labelled button rather than "tap the status again". */
+/* Landed and Flew past are one row: a state label plus an explicit Undo control,
+   so undo is a labelled button rather than "tap the status again".
+
+   HANDLED-STATE CONTRAST (v4.1, DESIGN §5). The two states used to differ by a
+   shade of warm grey and read as the same thing at arm's length. They now
+   differ on three axes at once, so no single one has to carry it:
+
+     axis        Landed                        Flew past
+     fill        --tint card, --soft row       --recess card, HOLLOW row
+     marker      filled accent disc + ✓        no fill at all, a bare dash
+     text        accent, 700, name stays --ink muted ink, 600, name dims to 500
+     elevation   a gentle lift (--e1)          pressed in — inset shadow, no lift
+
+   Every visible string on both was measured: the tightest is --ink-3 on
+   --recess at 4.84:1. The table lives in tokens.css. */
 .state-row{
   display:flex;align-items:center;gap:var(--s3);margin-top:var(--s4);
   padding:7px 8px 7px 12px;border-radius:var(--r-btn);
-  background:var(--tint);
+  background:var(--soft);
 }
-.state-row.is-skip{background:var(--neutral-bg)}
+/* hollow, not filled: the written-off row is an outline around nothing. Works
+   on the recessed card AND on the Map dock's white surface. */
+.state-row.is-skip{background:transparent;box-shadow:inset 0 0 0 1px var(--hair-2)}
 .state-lead{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto}
 .state-check{
   width:22px;height:22px;flex:0 0 auto;border-radius:var(--r-pill);
@@ -441,10 +457,15 @@ svg{display:block}
   display:flex;align-items:center;justify-content:center;
   font-size:var(--t-caption);font-weight:700;line-height:1;
 }
-.state-row.is-skip .state-check{background:var(--done);color:var(--on-done)}
+/* the same 22px box, so the two rows line up — but nothing drawn in it */
+.state-dash{
+  width:22px;height:22px;flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--ink-3);font-size:var(--t-footnote);font-weight:700;line-height:1;
+}
 .state-text{font-size:var(--t-footnote);font-weight:700;color:var(--accent);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.state-row.is-skip .state-text{color:var(--ink-2)}
+.state-row.is-skip .state-text{color:var(--ink-2);font-weight:600}
 .state-text .when{font-weight:600;font-variant-numeric:tabular-nums}
 .undo{
   flex:0 0 auto;min-height:var(--s8);padding:0 14px;border-radius:var(--r-sm);
@@ -453,15 +474,30 @@ svg{display:block}
   box-shadow:var(--card-ring),var(--e1);
   font-size:var(--t-footnote);font-weight:700;
 }
-.state-row.is-skip .undo{color:var(--ink-2)}
+/* flat and ringed rather than lifted: still an obvious 44px control on both the
+   recessed card and the white dock, but it does not celebrate anything */
+.state-row.is-skip .undo{
+  color:var(--ink-2);font-weight:600;
+  box-shadow:inset 0 0 0 1px var(--hair-2);
+}
 .undo:active{background:var(--surface-2)}
 
-/* handled card states */
-.card.is-visited{background:var(--surface-2);box-shadow:var(--card-ring)}
-.card.is-visited h3{color:var(--ink-2)}
-/* skipped recesses to flat grey — no lift at all */
-.card.is-skipped{background:var(--neutral-bg);box-shadow:none;
-  border:1px solid var(--hair);padding:calc(var(--s4) - 1px)}
+/* ── handled card states ──────────────────────────────────────────────────── */
+/* LANDED — quietly celebratory: a warm tint fill, an accent spine down the
+   left edge, and the name at full strength. It still looks like somewhere you
+   were glad to go. */
+.card.is-visited{
+  background:var(--tint);
+  box-shadow:inset 3px 0 0 0 var(--accent),var(--card-ring),var(--e1);
+}
+/* FLEW PAST — the most muted thing on screen: the app's deepest, least
+   saturated ground, no lift whatsoever, and an inset shadow so the card reads
+   as pressed into the page rather than sitting on it. */
+.card.is-skipped{
+  background:var(--recess);
+  box-shadow:inset 0 1px 3px rgba(31,27,21,.07);
+  border:1px solid var(--hair-2);padding:calc(var(--s4) - 1px);
+}
 .card.is-skipped h3{color:var(--ink-2);font-weight:500}
 .card.is-skipped .time{color:var(--ink-3);font-weight:500}
 .card.is-skipped .resv{color:var(--ink-3)}
@@ -469,7 +505,6 @@ svg{display:block}
 .card.is-skipped .hours{background:var(--surface-2);color:var(--ink-2)}
 .card.is-skipped .chip-must{background:var(--surface-2);color:var(--ink-2)}
 .card.is-skipped .ilink{background:var(--surface-2)}
-.card.is-skipped .state-row{background:var(--surface-2)}
 
 /* ─── 14. LINK TILES ──────────────────────────────────────────────────────── */
 /* one stroke width (1.7), every glyph drawn to the same ~16px optical box */
@@ -497,7 +532,7 @@ svg{display:block}
   padding:var(--s3) var(--s4);
   border-radius:var(--r-lg);
   border:1px dashed var(--hair-2);
-  background:var(--ground);cursor:pointer;
+  background:var(--ground);
 }
 .noterow-top{display:flex;align-items:baseline;gap:var(--s2);flex-wrap:wrap}
 .noterow-time{font-size:var(--t-footnote);font-weight:600;color:var(--brown)}

@@ -238,16 +238,16 @@ describe("browser-only helpers — what node can and cannot reach", () => {
     });
   });
 
-  it("reduced() THROWS with no window global — a known coupling, see the report", () => {
-    /* Unlike cssVar, reduced() has no try/catch, so the bare `window` is a hard
-       ReferenceError outside a browser. Pinned so the asymmetry is visible.
-       Suggested seam: guard with `typeof window !== "undefined"`, or read
-       globalThis.matchMedia. */
+  it("reduced() reports false with no window global — was a ReferenceError (v4.1)", () => {
+    /* Unlike cssVar, reduced() has no try/catch, so the bare `window` used to
+       be a hard ReferenceError outside a browser. It is guarded with
+       `typeof window !== "undefined"` now, so it answers false — motion is
+       allowed by default, and nothing that calls it has to defend itself. */
     const had = "window" in globalThis;
     const saved = globalThis.window;
     delete globalThis.window;
     try {
-      expect(() => reduced()).toThrow(ReferenceError);
+      expect(reduced()).toBe(false);
     } finally {
       if (had) globalThis.window = saved;
     }

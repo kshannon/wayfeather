@@ -5,7 +5,7 @@
    and a named import is immune to exports added beside it. Do not `import * as`
    and assert on the export list. */
 
-import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import {
   PRIOS, CHIP,
@@ -18,13 +18,11 @@ import {
   slugify, uniqueId, eyebrowText
 } from "../app/js/trip.js";
 
-/* trip.js → time.js → todayIn() reaches for `window.Intl`. See the long note in
-   tests/time.test.js: this is a test-environment shim, not a module edit, and
-   without it every tz-aware assertion below would silently answer from the
-   host clock instead of the trip's timezone. */
-beforeAll(() => { globalThis.window = globalThis; });
-afterAll(() => { delete globalThis.window; });
-
+/* No `window` shim (v4.1). trip.js → time.js → todayIn() used to reach for
+   `window.Intl`, so this file needed `globalThis.window = globalThis` or every
+   tz-aware assertion below would silently answer from the host clock instead of
+   the trip's timezone. time.js reads `globalThis.Intl` now — see "host
+   independence" in tests/time.test.js. */
 afterEach(() => { vi.useRealTimers(); });
 
 /* Inject "now". Nothing in this file may read the wall clock. */

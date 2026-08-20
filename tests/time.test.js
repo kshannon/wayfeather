@@ -6,23 +6,20 @@
    assert on the export list here — that would turn every new export into a
    failure. */
 
-import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   MON, WD,
   parseISO, localISO, todayIn, shortDate, dayNum, dayGap, rangeLabel,
   normSpace, fmtClock, clockOf, parseClock, relTime
 } from "../app/js/time.js";
 
-/* time.js reaches for `window.Intl` (guarded only by try/catch) on its two
-   timezone-aware paths. Under node the bare `window` throws a ReferenceError
-   that the catch swallows, which silently drops the tz argument and answers
-   from the host clock instead. Shimming `window` here is a TEST-ENVIRONMENT
-   fix, not a module edit: it lets these tests exercise the real Intl path the
-   browser takes. The degraded no-window behaviour is pinned explicitly in
-   "environment coupling" at the bottom of this file so the seam stays visible.
-   Suggested seam for a future agent: use `globalThis.Intl` in time.js. */
-beforeAll(() => { globalThis.window = globalThis; });
-afterAll(() => { delete globalThis.window; });
+/* NO `window` shim here, deliberately (v4.1). time.js used to reach for
+   `window.Intl` on its two timezone-aware paths, so under node the bare
+   `window` threw a ReferenceError that the try/catch swallowed — silently
+   dropping the tz argument and answering from the host clock. These tests
+   needed `globalThis.window = globalThis` just to reach the real Intl path.
+   time.js now reads `globalThis.Intl`, so the module is host-agnostic and the
+   shim is gone; "host independence" at the bottom of this file pins that. */
 
 /* Never read the wall clock: every date-sensitive test fixes `now` first. */
 afterEach(() => { vi.useRealTimers(); });
@@ -350,22 +347,21 @@ describe("relTime", () => {
   });
 });
 
-describe("environment coupling (documents a known seam — see the note at the top)", () => {
-  it("silently ignores the timezone when no `window` global exists", () => {
-    /* NOT a desired behaviour, just the current one. time.js guards its Intl
-       calls with `window.Intl` inside a try/catch, so in any non-browser host
-       the ReferenceError is swallowed and the tz argument is dropped. In the
-       browser this path never runs; a future fix is `globalThis.Intl`, and
-       this test should then be updated to expect the tz to be honoured. */
-    const saved = globalThis.window;
-    delete globalThis.window;
-    try {
-      at("2027-06-05T04:30:00Z");
-      expect(todayIn("America/Chicago")).toBe("2027-06-05");   // should be 2027-06-04
-      expect(todayIn("America/Chicago")).toBe(localISO());     // fell back to device date
-      expect(fmtClock(new Date("2027-06-05T04:30:00Z"), "America/Chicago")).toBe("4:30 AM");
-    } finally {
-      globalThis.window = saved;
-    }
+describe("host independence (the seam the note at the top used to document)", () => {
+  it("honours the timezone with no `window` global at all", () => {
+    /* Was: "silently ignores the timezone when no `window` global exists" —
+       the degraded fallback that `window.Intl` forced on every non-browser
+       host. time.js reads `globalThis.Intl` now, so both tz-aware paths work
+       here exactly as they do in Safari, with nothing shimmed. */
+    expect("window" in globalThis).toBe(false);
+    at("2027-06-05T04:30:00Z");
+    expect(todayIn("America/Chicago")).toBe("2027-06-04");   // 11:30 PM the day before
+    expect(fmtClock(new Date("2027-06-05T04:30:00Z"), "America/Chicago")).toBe("11:30 PM");
+  });
+
+  it("still falls back to the device date for an unknown timezone", () => {
+    at("2027-06-05T04:30:00Z");
+    expect(todayIn("Mars/Olympus_Mons")).toBe(localISO());
+    expect(todayIn("")).toBe(localISO());
   });
 });

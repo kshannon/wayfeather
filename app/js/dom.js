@@ -19,9 +19,13 @@ export const enc = encodeURIComponent;
 export function $(id) { return document.getElementById(id); }
 
 /* Read the media query fresh every time: the setting can change while the app
-   is open, and nothing should cache a decision about motion. */
+   is open, and nothing should cache a decision about motion. The `typeof` guard
+   keeps this host-agnostic — a bare `window` is a hard ReferenceError outside a
+   browser, and there is no try/catch here to swallow it (v4.1 fix). */
 export function reduced() {
-  return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  return typeof window !== "undefined" && window.matchMedia
+    ? !!window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    : false;
 }
 
 export function copy(o) {

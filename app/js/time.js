@@ -20,8 +20,8 @@ export function localISO(d) {
 /* "Today" in a given timezone — completeness and past/upcoming compare here. */
 export function todayIn(tz) {
   try {
-    if (tz && window.Intl && Intl.DateTimeFormat) {
-      const s = new Intl.DateTimeFormat("en-CA", {
+    if (tz && globalThis.Intl && globalThis.Intl.DateTimeFormat) {
+      const s = new globalThis.Intl.DateTimeFormat("en-CA", {
         timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit"
       }).format(new Date());
       if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
@@ -58,8 +58,8 @@ export function normSpace(s) { return String(s).replace(/[\u202F\u00A0]/g, " ");
 
 export function fmtClock(d, tz) {
   try {
-    if (tz && window.Intl && Intl.DateTimeFormat) {
-      return normSpace(new Intl.DateTimeFormat("en-US", {
+    if (tz && globalThis.Intl && globalThis.Intl.DateTimeFormat) {
+      return normSpace(new globalThis.Intl.DateTimeFormat("en-US", {
         timeZone: tz, hour: "numeric", minute: "2-digit", hour12: true
       }).format(d));
     }

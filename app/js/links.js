@@ -36,9 +36,28 @@ function query(p, loc) {
   return enc((p.name || "") + (p.address ? ", " + p.address : " " + loc));
 }
 
+/* `phone` is human-entered and arrives in whatever shape someone typed —
+   "(312) 555-0100", "312.555.0100", "+44 20 7946 0958". tel: wants digits, so
+   every separator goes and a LEADING "+" is the one non-digit kept: dropping it
+   turns an international number into a wrong local one. No country code is ever
+   added — inventing +1 for a number that might not be American is exactly the
+   kind of guess that dials a stranger. Returns "" when nothing dialable is
+   left, so the caller can simply not render the tile. */
+export function telUrl(phone) {
+  const s = String(phone == null ? "" : phone).trim();
+  const digits = s.replace(/\D+/g, "");
+  if (!digits) return "";
+  return "tel:" + (s.charAt(0) === "+" ? "+" : "") + digits;
+}
+
 export function linkList(p, loc) {
   if (!p.name || p.priority === "note") return [];
   const L = [];
+  /* Call leads the row. It is the only tile that does something in the world
+     rather than opening a page, and it is the one you want under your thumb
+     when the card is telling you to call ahead. */
+  const tel = telUrl(p.phone);
+  if (tel) L.push({ k: "call", t: "Call", u: tel, a: "Call " + p.name });
   if (p.website) L.push({ k: "site", t: "Site", u: p.website, a: "Open the website for " + p.name });
   L.push({ k: "yelp", t: "Yelp",
     u: p.yelp || "https://www.yelp.com/search?find_desc=" + enc(p.name) + "&find_loc=" + enc(p.address || loc),

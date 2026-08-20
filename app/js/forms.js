@@ -17,7 +17,7 @@ import {
 } from "./state.js";
 import {
   PRIOS, placeById, dayByKey, allClusters, findPool, clusterForSlot, clusterOnMove,
-  slugify, uniqueId
+  slugify, uniqueId, formatCost, parseCost, isReserved
 } from "./trip.js";
 import { openSheet, closeSheet } from "./sheets.js";
 import { toast } from "./toast.js";
@@ -60,9 +60,14 @@ function setFields(p) {
   $("f-time").value = (p && p.time) || "";
   $("f-cluster").value = (p && p.cluster) || "";
   $("f-hours").value = (p && p.hours) || "";
-  $("f-cost").value = (p && p.cost) || "";
+  /* NOT `|| ""` — a cost of 0 is falsy and would blank the field, quietly
+     turning "this is free" back into "nobody has priced this" on every save. */
+  $("f-cost").value = (p && typeof p.cost === "number") ? String(p.cost) : "";
   $("f-notes").value = (p && p.notes) || "";
   $("f-priority").value = (p && p.priority) || "yes";
+  $("f-reserved").checked = !!(p && p.reserved === true);
+  $("f-callahead").checked = !!(p && p.callAhead === true);
+  $("f-phone").value = (p && p.phone) || "";
 }
 
 /* The day <select> is the mover, so it is labelled for the job it is doing:
@@ -76,10 +81,65 @@ function paintMoveUI(mode, dayKey) {
   $("f-movebar").hidden = !(mode === "edit" && xtra && !inXtra);
 }
 
+/* ── the Reserved guard, in-sheet (DESIGN §5) ─────────────────────────────────
+   `reserved` stopovers are protected, not locked: one confirmation stands
+   between you and a move or a skip, and nothing stands between you and a notes,
+   hours, cost, link or Landed! edit. The guard is a speed bump that says "this
+   one costs money", not a wall.
+
+   It is drawn INSIDE the sheet rather than raised as a second sheet because
+   sheets.js tracks exactly one open sheet at a time — a confirm sheet stacked
+   over the editor would tear the editor's scrim, body lock and `inert` down
+   behind it when it closed. So the sheet's own footer swaps: the actions and
+   the danger zone step aside, the question takes their place, and answering
+   puts everything back. One sheet, two footers.
+
+   The pending action is a closure, so the same confirm serves the save, the
+   XTRA shortcut and the soft delete without knowing what any of them do. */
+let pendingConfirm = null;
+
+function askConfirm(verb, fn) {
+  pendingConfirm = fn;
+  $("f-confirmYes").textContent = verb;
+  $("f-confirm").hidden = false;
+  $("f-acts").hidden = true;
+  $("f-danger").hidden = true;
+  $("f-confirmNo").focus();
+}
+
+function hideConfirm() {
+  pendingConfirm = null;
+  $("f-confirm").hidden = true;
+  $("f-acts").hidden = false;
+  $("f-danger").hidden = form.mode !== "edit";
+}
+
+/* Answering the question. main.js routes both footer buttons here. */
+export function resolveConfirm(yes) {
+  const fn = pendingConfirm;
+  hideConfirm();
+  if (yes && fn) fn();
+}
+
+/* A save is a MOVE when it changes where or when the stopover sits. Compared
+   against the stored place, not against the field's initial text, so retyping
+   the same time is not a move and does not ask.
+
+   The STORED priority/reserved flag is what arms the guard — not the toggle's
+   current position. Un-ticking Reserved and moving it in one save is still
+   moving something that is booked right now, and that is the save most worth
+   one question. */
+function isMove(p, fields) {
+  return !!p && (fields.time !== (p.time || "") ||
+                 fields.day !== p.day ||
+                 fields.cluster !== (p.cluster || ""));
+}
+
 export function openEdit(id, opener) {
   const p = placeById(store.trip, id);
   if (!p) return;
   form = { mode: "edit", id, dayKey: p.day, cluster0: p.cluster || "" };
+  hideConfirm();
   $("formTitle").textContent = "Edit stopover";
   $("formSub").textContent = p.name || "";
   fillSelects(p.day);
@@ -93,6 +153,7 @@ export function openEdit(id, opener) {
 
 export function openAdd(dayKey, opener) {
   form = { mode: "add", id: null, dayKey, cluster0: "" };
+  hideConfirm();
   const d = dayByKey(store.trip, dayKey);
   $("formTitle").textContent = "Add a stopover";
   $("formSub").textContent = d ? (d.title || d.label || d.key) : "";
@@ -103,18 +164,36 @@ export function openAdd(dayKey, opener) {
   openSheet($("formSheet"), opener, $("f-name"));
 }
 
-export function markSkipped() {
+/* The sheet's soft delete. Guarded exactly like the card's Flew past, and
+   guarded HERE rather than inside saveForm, so the save it delegates to does
+   not ask a second question about the same tap. */
+export function markSkipped(opts) {
   if (!form.id) return;
+  const p = placeById(store.trip, form.id);
+  if (!(opts && opts.confirmed) && isReserved(p)) {
+    askConfirm("Skip it", () => markSkipped({ confirmed: true }));
+    return;
+  }
   $("f-priority").value = "skip";
-  saveForm();
+  saveForm({ confirmed: true });
 }
 
 /* "FRI" / "XTRA" — the compact name, for a toast. */
 function dayName(d) { return d ? (d.label || d.title || d.key) : ""; }
 
-export function saveForm() {
+export function saveForm(opts) {
   const name = $("f-name").value.trim();
   if (!name) { $("f-name").focus(); toast("A stopover needs a name"); return; }
+
+  /* NaN means "they typed something that is not a number". Refusing beats
+     coercing: silently storing null would throw away a price someone just
+     entered, and storing 0 would claim it was free. */
+  const cost = parseCost($("f-cost").value);
+  if (Number.isNaN(cost)) {
+    $("f-cost").focus();
+    toast("Cost must be a number — leave it blank if it varies");
+    return;
+  }
 
   const day = $("f-day").value;
   const time = $("f-time").value.trim();
@@ -132,12 +211,24 @@ export function saveForm() {
     time,
     day,
     cluster: cluster || "Inbox",
-    cost: $("f-cost").value,           /* never run through .replace — "$$" */
+    cost,                              /* a number or null — schema 2 */
     hours: $("f-hours").value.trim(),
     notes: $("f-notes").value.trim(),
     priority: $("f-priority").value,
+    reserved: $("f-reserved").checked,
+    callAhead: $("f-callahead").checked,
+    phone: $("f-phone").value.trim(),
     updatedAt: localISO()
   };
+
+  /* The guard. Everything above has already been read off the form, so the
+     confirm can simply re-enter this function — the fields are still on screen
+     and still say the same thing. */
+  const before = form.mode === "edit" ? placeById(store.trip, form.id) : null;
+  if (!(opts && opts.confirmed) && isReserved(before) && isMove(before, fields)) {
+    askConfirm("Change anyway", () => saveForm({ confirmed: true }));
+    return;
+  }
 
   if (form.mode === "add") {
     const id = uniqueId(store.trip, slugify(name));
@@ -147,6 +238,7 @@ export function saveForm() {
       id, day: fields.day, cluster: fields.cluster, time: fields.time,
       name: fields.name, type: "", address: "", lat: null, lng: null,
       hours: fields.hours, cost: fields.cost, priority: fields.priority,
+      reserved: fields.reserved, callAhead: fields.callAhead, phone: fields.phone,
       notes: fields.notes, website: "", yelp: "", gmaps: "", warn: "",
       visited: null, skipped: null, updatedAt: fields.updatedAt
     });
@@ -183,11 +275,18 @@ export function saveForm() {
    every other edit — day (+ cluster) into the overlay — so it rides the same
    Contents-API PUT as everything else (DESIGN §4). The full mover is the day
    <select> above it, which lists every day including XTRA. */
-export function moveTo(dayKey) {
+export function moveTo(dayKey, opts) {
   const trip = store.trip;
   const p = form.id ? placeById(trip, form.id) : null;
   const d = dayByKey(trip, dayKey);
   if (!p || !d || p.day === dayKey) return;
+  /* "Send to XTRA" is a one-tap day change, which is exactly the move the guard
+     is for — it must not be the back door around the confirm the day <select>
+     above it goes through. */
+  if (!(opts && opts.confirmed) && isReserved(p)) {
+    askConfirm("Move anyway", () => moveTo(dayKey, { confirmed: true }));
+    return;
+  }
   const from = p.day;
   const prior = snapshotPatch(p.id);
   const cluster = clusterOnMove(trip, dayKey, parseClock(p.time), p.cluster);
@@ -225,7 +324,10 @@ export function openFind(dayKey, opener) {
         const bits = [];
         if (p.type) bits.push(esc(p.type));
         if (p.hours) bits.push(esc(p.hours));
-        if (p.cost) bits.push(esc(p.cost));
+        /* formatCost's "" is the only "no cost to show" signal — a truthiness
+           test on p.cost would drop a genuine 0 and hide "Free". */
+        const money = formatCost(p.cost);
+        if (money) bits.push(esc(money));
         return '<div class="findrow">' +
           '<span class="findrow-main">' +
             '<span class="findrow-name">' + esc(p.name || "") + "</span>" +

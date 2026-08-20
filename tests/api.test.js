@@ -135,10 +135,13 @@ describe("serializeLike — a write keeps the file's own shape", () => {
        diff, once. The alternative is splicing strings, which eats "$$". */
     expect(serializeLike('{\n "lng": -87.626950\n}\n', { lng: -87.626950 }))
       .toBe('{\n "lng": -87.62695\n}\n');
-    expect(CHICAGO_TEXT).toContain("-87.626950");        // the fixture really has one
-    const diff = CHICAGO_TEXT.split("\n").filter((line, i) =>
-      line !== serializeLike(CHICAGO_TEXT, CHICAGO).split("\n")[i]);
-    expect(diff.every((l) => /^\s*"(lat|lng)":/.test(l))).toBe(true);
+    /* Asserted on its OWN literals, above, so it stays true whatever the
+       fixtures hold. The fixtures used to carry a hand-written -87.626950 and
+       this test read it from there; the schema-2 migration re-serialized both
+       files, which is precisely the "once" the comment promises. Having spent
+       it, re-serializing is now a byte-for-byte no-op — the settled state every
+       trip file reaches after its first write through this path. */
+    expect(serializeLike(CHICAGO_TEXT, CHICAGO)).toBe(CHICAGO_TEXT);
   });
 
   it("keeps the trailing newline exactly as it found it", () => {

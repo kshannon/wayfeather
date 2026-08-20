@@ -24,7 +24,7 @@
    v5 (the v4.2 wiring pass) shipped new icon BYTES under unchanged names, which
    is the standing reminder that a deploy without a VERSION bump leaves every
    installed copy serving the old shell forever. */
-const VERSION = "v7";
+const VERSION = "v8";
 const CACHE = "wayfeather-shell-" + VERSION;
 const PREFIX = "wayfeather-shell-";
 

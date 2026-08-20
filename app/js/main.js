@@ -15,7 +15,7 @@ import { load, loadIndex, loadTrip, clearDataCache, schemaOK, readErrorShort } f
 import { sync } from "./sync.js";
 import { parseBoot, syncTrip, onHashChange } from "./router.js";
 import { session, resetScope } from "./session.js";
-import { dayByKey, initialDayKey, placeById } from "./trip.js";
+import { dayByKey, initialDayKey, placeById, isReserved } from "./trip.js";
 import { setView, getView, onViewChange, wireTabKeys, setStaticTitles } from "./chrome.js";
 import { toast, takeUndo } from "./toast.js";
 import { burstAt } from "./confetti.js";
@@ -31,14 +31,15 @@ import {
 import {
   renderMap, routeStops, firstUnhandled, jumpTo, wireConnectivity
 } from "./views/map.js";
-import { cardHTML } from "./views/card.js";
+import { cardHTML, setSkipAsk, skipAsk } from "./views/card.js";
 import { renderTrips } from "./views/trips.js";
 import {
   renderSettings, renderCacheRow, saveSyncForm, clearTokenField, signOut, runConnectionTest
 } from "./views/settings.js";
 import { paintFly } from "./icons.js";
 import {
-  initForms, openEdit, openAdd, openFind, saveForm, takeExtra, markSkipped, moveToExtras
+  initForms, openEdit, openAdd, openFind, saveForm, takeExtra, markSkipped, moveToExtras,
+  resolveConfirm
 } from "./forms.js";
 
 /* ══ SCENE ═════════════════════════════════════════════════════════════════ */
@@ -58,6 +59,11 @@ function selectDay(key, opts) {
 
 /* Full scene repaint that keeps where you were standing. */
 function refreshScene() {
+  /* A pending Reserved question does not survive a whole-scene repaint: it was
+     asked about a screen that is being replaced, and a confirm left standing
+     over freshly-rendered content is a confirm you can answer without having
+     read what you are answering about. */
+  setSkipAsk(null);
   const y = window.pageYOffset || document.documentElement.scrollTop || 0;
   renderHero();
   renderPanels();
@@ -72,6 +78,26 @@ function refreshScene() {
   renderStamp();
   renderStaleBanner();
   window.scrollTo(0, y);
+}
+
+/* One stopover is drawn by three surfaces at once — the itinerary card, the
+   Details sheet's copy of that same card, and the map bar. Anything that
+   changes what a stopover LOOKS like has to touch all three or they disagree,
+   which is what this exists to make impossible to forget. */
+function repaintStopover(id) {
+  repaintCard(id);
+  renderMap();
+  if (detailsId === id && openSheetEl() === $("cardSheet")) paintDetails();
+}
+
+/* Raise the Reserved question on one stopover. Any question already up is
+   dropped first — two cards asking at once would leave whichever one you did
+   not answer stuck mid-question after the repaint. */
+function askSkip(id) {
+  const prev = skipAsk();
+  setSkipAsk(id);
+  if (prev && prev !== id) repaintStopover(prev);
+  repaintStopover(id);
 }
 
 function applyAct(act, id) {
@@ -252,12 +278,34 @@ function wireEvents() {
     if (act) {
       e.preventDefault();
       const a = act.getAttribute("data-act");
+      const id = act.getAttribute("data-id");
+      /* THE RESERVED GUARD on the card's own Flew past (DESIGN §5). Only skip
+         asks — Landed! and Undo stay one-tap, because you DO land at
+         reservations and undoing has nothing to protect. */
+      if (a === "skip" && isReserved(placeById(store.trip, id))) { askSkip(id); return; }
       // capture geometry BEFORE the repaint destroys the button
       const rect = a === "visit" ? act.getBoundingClientRect() : null;
-      applyAct(a, act.getAttribute("data-id"));
+      applyAct(a, id);
       if (rect) burstAt(rect);
       return;
     }
+
+    /* Answering the card/bar confirm. "no" just repaints the row back to its
+       two buttons; "yes" performs the skip that was held back. */
+    const ask = t.closest("[data-ask]");
+    if (ask) {
+      e.preventDefault();
+      const id = ask.getAttribute("data-id");
+      const yes = ask.getAttribute("data-ask") === "yes";
+      setSkipAsk(null);
+      if (yes) applyAct("skip", id);
+      else repaintStopover(id);
+      return;
+    }
+
+    /* The in-sheet confirm's two buttons (forms.js owns what they resolve to). */
+    if (t.closest("#f-confirmYes")) { e.preventDefault(); resolveConfirm(true); return; }
+    if (t.closest("#f-confirmNo")) { e.preventDefault(); resolveConfirm(false); return; }
 
     const take = t.closest("[data-take]");
     if (take) { e.preventDefault(); takeExtra(take.getAttribute("data-take")); return; }

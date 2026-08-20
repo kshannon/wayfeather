@@ -8,7 +8,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
 import {
-  PRIOS, CHIP,
+  PRIOS, CHIP, RESERVED_CHIP, chipOf, isReserved, needsCall, formatCost, parseCost,
   withExtras, tripToday, placeById, dayByKey, isNote,
   orderDay, placesOfDay, actionableOfDay,
   clustersOf, allClusters,
@@ -37,7 +37,8 @@ const RIVER = load("river-road-test.json");     // has none — XTRA must be syn
 /* Minimal trip builder; `days` and `places` are partials merged over defaults. */
 const place = (o) => ({
   id: "p", day: "d1", cluster: "C", time: "", name: "P", type: "", address: "",
-  lat: null, lng: null, hours: "", cost: "", priority: "yes", notes: "",
+  lat: null, lng: null, hours: "", cost: null, priority: "yes",
+  reserved: false, callAhead: false, phone: "", notes: "",
   website: "", yelp: "", gmaps: "", warn: "", updatedAt: "2026-08-19", ...o
 });
 const day = (o) => ({
@@ -397,6 +398,30 @@ describe("findPool — what 'Find me something' may offer", () => {
     expect(pool(t)).toEqual(["open"]);
   });
 
+  it("EXCLUDES reserved ideas — every row here is a one-tap relocation", () => {
+    /* DESIGN §5: Find-me-something never relocates a reserved stopover. Its
+       rows move things instantly, which would route straight around the guard
+       that protects a booking. */
+    const t = trip({
+      days: [day({ key: "bonus", date: null })],
+      places: [
+        place({ id: "open", day: "bonus" }),
+        place({ id: "booked", day: "bonus", reserved: true }),
+        place({ id: "booked-must", day: "bonus", priority: "must", reserved: true })
+      ]
+    });
+    expect(pool(t)).toEqual(["open"]);
+  });
+
+  it("still offers an unreserved idea of every want-level", () => {
+    const t = trip({
+      days: [day({ key: "bonus", date: null })],
+      places: ["must", "yes", "maybe", "skip"].map((prio) =>
+        place({ id: prio, day: "bonus", priority: prio }))
+    });
+    expect(pool(t)).toEqual(["must", "yes", "maybe", "skip"]);
+  });
+
   it("ignores places whose day key does not exist", () => {
     const t = trip({ days: [day({ key: "bonus", date: null })],
                      places: [place({ id: "orphan", day: "ghost" })] });
@@ -710,33 +735,163 @@ describe("lookups", () => {
   });
 });
 
-describe("priority tables", () => {
+describe("priority tables (schema 2 — one axis, not three)", () => {
   it("PRIOS lists every priority once, as [value, label] pairs", () => {
     const keys = PRIOS.map((p) => p[0]);
     expect(new Set(keys).size).toBe(keys.length);
-    expect(keys).toEqual([
-      "fixed", "must", "yes", "maybe", "maybe-not", "if-close",
-      "optional", "check", "skip", "note"
-    ]);
+    expect(keys).toEqual(["must", "yes", "maybe", "skip", "note"]);
     expect(PRIOS.every((p) => p.length === 2 && typeof p[1] === "string" && p[1])).toBe(true);
   });
 
-  it("CHIP collapses the soft priorities onto one quiet Maybe", () => {
-    expect(CHIP.must).toEqual(["must", "★ Must"]);
-    for (const k of ["maybe", "maybe-not", "if-close", "optional"]) {
-      expect(CHIP[k][0]).toBe("maybe");
-      expect(CHIP[k][1]).toBe("Maybe");
+  it("has retired the five values whose meaning moved to another axis", () => {
+    /* fixed → reserved:true · maybe-not/if-close/optional → maybe ·
+       check → callAhead:true. If one of these ever comes back, it means the
+       two axes have started leaking into each other again. */
+    const keys = new Set(PRIOS.map((p) => p[0]));
+    for (const gone of ["fixed", "maybe-not", "if-close", "optional", "check"]) {
+      expect(keys.has(gone), gone + " is back in PRIOS").toBe(false);
     }
   });
 
-  it("gives fixed / yes / check / skip / note no chip at all", () => {
-    for (const k of ["fixed", "yes", "check", "skip", "note"]) {
-      expect(CHIP[k]).toBeUndefined();
-    }
+  it("CHIP marks must and maybe, and leaves yes unmarked", () => {
+    expect(CHIP.must).toEqual(["must", "★ Must"]);
+    expect(CHIP.maybe).toEqual(["maybe", "Maybe"]);
+  });
+
+  it("gives yes / skip / note no chip at all", () => {
+    for (const k of ["yes", "skip", "note"]) expect(CHIP[k]).toBeUndefined();
   });
 
   it("every CHIP key is a real priority", () => {
     const keys = new Set(PRIOS.map((p) => p[0]));
     for (const k of Object.keys(CHIP)) expect(keys.has(k)).toBe(true);
+  });
+
+  it("keeps ★★ Reserved OUT of CHIP — it is a boolean, not a want-level", () => {
+    expect(CHIP.reserved).toBeUndefined();
+    expect(RESERVED_CHIP).toEqual(["reserved", "★★ Reserved"]);
+  });
+});
+
+describe("chipOf — which single mark a card's corner shows", () => {
+  it("shows ★★ Reserved for a reserved stopover, whatever its priority", () => {
+    for (const prio of ["must", "yes", "maybe", "skip"]) {
+      expect(chipOf(place({ priority: prio, reserved: true }))).toEqual(RESERVED_CHIP);
+    }
+  });
+
+  it("★★ WINS THE CORNER over ★ Must — paid for outranks wanted", () => {
+    const p = place({ priority: "must", reserved: true });
+    expect(chipOf(p)).toEqual(["reserved", "★★ Reserved"]);
+    expect(chipOf(place({ priority: "must" }))).toEqual(["must", "★ Must"]);
+  });
+
+  it("falls back to the want-level chip when nothing is reserved", () => {
+    expect(chipOf(place({ priority: "must" }))).toEqual(["must", "★ Must"]);
+    expect(chipOf(place({ priority: "maybe" }))).toEqual(["maybe", "Maybe"]);
+    expect(chipOf(place({ priority: "yes" }))).toBeNull();
+    expect(chipOf(place({ priority: "skip" }))).toBeNull();
+  });
+
+  it("shows no chip once a stopover is handled — the state row says it instead", () => {
+    const at = "2027-06-04T18:00:00Z";
+    expect(chipOf(place({ priority: "must", reserved: true, visited: at }))).toBeNull();
+    expect(chipOf(place({ priority: "must", reserved: true, skipped: at }))).toBeNull();
+  });
+
+  it("treats a missing reserved flag as false, so pre-migration data still renders", () => {
+    const legacy = place({ priority: "must" });
+    delete legacy.reserved;
+    expect(isReserved(legacy)).toBe(false);
+    expect(chipOf(legacy)).toEqual(["must", "★ Must"]);
+  });
+});
+
+describe("the status booleans", () => {
+  it("isReserved / needsCall are strict — only true is true", () => {
+    for (const v of [undefined, null, false, 0, "", "true", 1]) {
+      expect(isReserved(place({ reserved: v }))).toBe(false);
+      expect(needsCall(place({ callAhead: v }))).toBe(false);
+    }
+    expect(isReserved(place({ reserved: true }))).toBe(true);
+    expect(needsCall(place({ callAhead: true }))).toBe(true);
+  });
+
+  it("survives being handed nothing at all", () => {
+    for (const v of [null, undefined]) {
+      expect(isReserved(v)).toBe(false);
+      expect(needsCall(v)).toBe(false);
+    }
+    expect(chipOf(null)).toBeNull();
+  });
+
+  it("composes both axes independently — a reserved call-ahead must is legal", () => {
+    const p = place({ priority: "must", reserved: true, callAhead: true });
+    expect(isReserved(p)).toBe(true);
+    expect(needsCall(p)).toBe(true);
+    expect(p.priority).toBe("must");
+  });
+});
+
+describe("formatCost — the cost pill (DESIGN §3)", () => {
+  it("prints whole dollars without the cents", () => {
+    expect(formatCost(32)).toBe("$32");
+    expect(formatCost(20)).toBe("$20");
+    expect(formatCost(1234)).toBe("$1,234");
+  });
+
+  it("prints 0 as Free — the one case that is a KNOWN price", () => {
+    expect(formatCost(0)).toBe("Free");
+  });
+
+  it("prints NOTHING for null, and never invents Free", () => {
+    /* The whole point of the null case: an unpriced stopover must not claim to
+       be free. "" is the signal every caller checks to skip the pill. */
+    expect(formatCost(null)).toBe("");
+    expect(formatCost(undefined)).toBe("");
+    expect(formatCost(NaN)).toBe("");
+    expect(formatCost(Infinity)).toBe("");
+  });
+
+  it("keeps exactly two decimals for anything that is not a whole dollar", () => {
+    expect(formatCost(12.5)).toBe("$12.50");      // not "$12.5"
+    expect(formatCost(7.05)).toBe("$7.05");
+    expect(formatCost(12.345)).toBe("$12.35");    // rounded to the cent
+  });
+
+  it("refuses a string, so a half-migrated file cannot render as money", () => {
+    for (const v of ["32", "$32", "Free", "$$", ""]) expect(formatCost(v)).toBe("");
+  });
+});
+
+describe("parseCost — what the edit sheet stores", () => {
+  it("stores blank as null, not 0", () => {
+    /* "nobody priced this" and "this is free" are different facts. */
+    expect(parseCost("")).toBeNull();
+    expect(parseCost("   ")).toBeNull();
+    expect(parseCost(null)).toBeNull();
+    expect(parseCost(undefined)).toBeNull();
+  });
+
+  it("reads the numbers people actually type", () => {
+    expect(parseCost("32")).toBe(32);
+    expect(parseCost("$32")).toBe(32);
+    expect(parseCost(" 12.50 ")).toBe(12.5);
+    expect(parseCost("1,234")).toBe(1234);
+    expect(parseCost("0")).toBe(0);
+  });
+
+  it("returns NaN for anything unparseable, so the save can be refused", () => {
+    /* Not null: coercing a typo to "unknown" would throw away what was typed. */
+    for (const v of ["free", "abc", "12.5.6", "-5", "1e3", "$$"]) {
+      expect(Number.isNaN(parseCost(v)), JSON.stringify(v)).toBe(true);
+    }
+  });
+
+  it("round-trips through formatCost for every value the fixtures hold", () => {
+    for (const p of [...CHICAGO.places, ...RIVER.places]) {
+      if (p.cost === null) continue;
+      expect(parseCost(String(p.cost))).toBe(p.cost);
+    }
   });
 });

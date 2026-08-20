@@ -95,17 +95,47 @@ describe("REGRESSION — the $$ splice bug that has bitten three separate builds
     expect(html).toContain("$$");
   });
 
-  it("preserves the real $$ cost value that ships in river-road-test.json", () => {
-    const dinner = RIVER.places.find((p) => p.id === "lodge-dinner");
-    expect(dinner.cost).toBe("$$");                 // premise: the fixture still has it
-    expect(esc(dinner.cost)).toBe("$$");
-    expect(attr(dinner.cost)).toBe("$$");
-    expect(q(dinner.cost)).toBe("$$");
+  /* THE GUARD OUTLIVES THE DATA. Schema 2 made `cost` a number, so no fixture
+     ships "$$" any more and the hazard cannot reach the app through that field
+     — but it was never really about cost. Any trip string spliced into markup
+     can contain a $-sequence (`notes` is the obvious one: "about $$ for two"),
+     so the mechanism tests above keep their own literals and stay, and these
+     two re-aim at the strings that are still free text. */
+  it("preserves a $$ that arrives through notes, the way a card renders it", () => {
+    const notes = "Cheap — about $$ for two, 50% off before 5";
+    expect(esc(notes)).toBe(notes);
+    expect(attr(notes)).toBe(notes);
+    expect(q(notes)).toBe(notes);
   });
 
-  it("preserves every cost value in both fixtures", () => {
+  it("escapes every free-text string in both fixtures LOSSLESSLY", () => {
+    /* Not "the output equals the input" — a fixture cluster really is called
+       "Afternoon — arrival & the Loop", and escaping that & is the whole job.
+       The property that matters is that escaping is REVERSIBLE: nothing is
+       eaten, doubled or reinterpreted on the way through, which is exactly
+       what a string replacer gets wrong for a $-sequence. */
+    const unesc = (s) => String(s)
+      .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+      .replace(/&amp;/g, "&");                    // last, or it decodes twice
+    const TEXT = ["name", "notes", "hours", "cluster", "time", "type", "address",
+                  "warn", "phone"];
     for (const p of [...CHICAGO.places, ...RIVER.places]) {
-      expect(esc(p.cost)).toBe(p.cost);             // no cost value contains markup
+      for (const k of TEXT) {
+        expect(unesc(esc(p[k])), `${p.id}.${k}`).toBe(p[k]);
+        /* and every run of dollar signs arrives intact and the same length */
+        const runs = (s) => (String(s).match(/\$+/g) || []).join("|");
+        expect(runs(esc(p[k])), `${p.id}.${k} $-runs`).toBe(runs(p[k]));
+      }
+    }
+  });
+
+  it("MIGRATION SANITY: no fixture cost is a string any more", () => {
+    /* If this fails, a fixture regressed to schema-1 cost text — which is also
+       the only way the $$ hazard gets back into this field. */
+    for (const p of [...CHICAGO.places, ...RIVER.places]) {
+      expect(typeof p.cost === "number" || p.cost === null,
+        `${p.id}.cost is ${JSON.stringify(p.cost)}`).toBe(true);
     }
   });
 

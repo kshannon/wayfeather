@@ -117,7 +117,7 @@ function pinEl(p, i, n, current, tap) {
   btn.className = "gpin" +
     (p.__visited ? " is-visited" : "") +
     (p.__skipped ? " is-skipped" : "") +
-    (p.__fixed && !p.__visited && !p.__skipped ? " is-fixed" : "") +
+    (p.__reserved && !p.__visited && !p.__skipped ? " is-reserved-pin" : "") +
     (current ? " is-cur" : "");
 
   const state = p.__visited ? "Landed" : (p.__skipped ? "Flew past" : "");
@@ -420,7 +420,7 @@ async function addLocate() {
 /* ── the one entry point ──────────────────────────────────────────────────── */
 /* payload: { stops, idx, scopeKey, base, tap }
      stops    — the scope's stopovers that carry coordinates, in visit order,
-                each already flagged with __visited / __skipped / __fixed
+                each already flagged with __visited / __skipped / __reserved
      idx      — which one the dock is showing
      scopeKey — changes when the day, cluster or trip changes; that is the ONLY
                 thing that re-fits the viewport

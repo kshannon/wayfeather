@@ -12,7 +12,7 @@ common tasks. The companion files are authoritative for what they cover:
 
 1. **Never invent facts.** Opening hours, addresses, coordinates, phone numbers,
    and confirmation details are verified or absent. If you cannot verify hours,
-   set `"hours": ""`, `"priority": "check"`, and add a `warn` like
+   set `"hours": ""`, `"callAhead": true`, and add a `warn` like
    `"Hours unverified — call ahead"`. An invented opening time can strand two
    people outside a closed shop; an honest blank cannot.
 2. **This repo is public.** Never write real itineraries, confirmation codes,

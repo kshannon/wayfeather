@@ -75,10 +75,29 @@ describe("schema.json itself", () => {
   });
 
   it("mirrors DESIGN §3's priority enum exactly", () => {
-    expect(schema.$defs.place.properties.priority.enum).toEqual([
-      "fixed", "must", "yes", "maybe", "maybe-not", "if-close",
-      "optional", "check", "skip", "note"
-    ]);
+    expect(schema.$defs.place.properties.priority.enum)
+      .toEqual(["must", "yes", "maybe", "skip", "note"]);
+  });
+
+  it("declares trip schema 2 and keeps cost numeric-or-null", () => {
+    expect(schema.$defs.trip.properties.schema.const).toBe(2);
+    expect(schema.$defs.place.properties.cost.oneOf)
+      .toEqual([{ type: "number" }, { type: "null" }]);
+  });
+
+  it("carries the two status booleans and phone, required, with defaults", () => {
+    /* The axes priority no longer conflates (DESIGN §3). Required so a
+       generated itinerary cannot omit them; defaulted so what to put is
+       never a guess. */
+    for (const [k, type, dflt] of [["reserved", "boolean", false],
+                                   ["callAhead", "boolean", false],
+                                   ["phone", "string", ""]]) {
+      const def = schema.$defs.place.properties[k];
+      expect(def, k + " is missing from schema.json").toBeDefined();
+      expect(def.type).toBe(type);
+      expect(def.default).toEqual(dflt);
+      expect(schema.$defs.place.required).toContain(k);
+    }
   });
 
   it("keeps lat and lng nullable — the geocode script backfills them", () => {
@@ -129,8 +148,11 @@ describe("index.json", () => {
     expect(validateTrip(index)).toBe(false);
   });
 
-  it("declares schema version 1", () => {
+  it("declares schema version 1 — the index versions independently of trips", () => {
+    /* Schema 2 broke the shape of a TRIP file and left index.json untouched,
+       so the two numbers are deliberately different now. */
     expect(index.schema).toBe(1);
+    expect(schema.$defs.index.properties.schema.const).toBe(1);
   });
 
   it("lists a file that exists on disk for every entry", () => {
@@ -182,8 +204,8 @@ describe.each(tripFiles)("trip file: %s", (file) => {
     }
   });
 
-  it("declares schema version 1", () => {
-    expect(trip.schema).toBe(1);
+  it("declares schema version 2", () => {
+    expect(trip.schema).toBe(2);
   });
 
   it("has an id matching its filename and its index entry", () => {
@@ -259,6 +281,43 @@ describe.each(tripFiles)("trip file: %s", (file) => {
       expect((p.lat === null) === (p.lng === null),
         `${p.id} has a half-filled coordinate pair`).toBe(true);
     }
+  });
+
+  /* ── the schema-2 migration's own guarantees ────────────────────────────── */
+
+  it("carries cost as a number or null on every place, never a string", () => {
+    for (const p of trip.places) {
+      expect(typeof p.cost === "number" || p.cost === null,
+        `${p.id}.cost is ${JSON.stringify(p.cost)}`).toBe(true);
+      if (typeof p.cost === "number") {
+        expect(Number.isFinite(p.cost)).toBe(true);
+        expect(p.cost).toBeGreaterThanOrEqual(0);
+      }
+    }
+  });
+
+  it("has no retired priority value left anywhere", () => {
+    /* The migration's headline claim. ajv's enum already rejects these, but
+       naming them makes the failure say WHICH old value survived. */
+    const RETIRED = new Set(["fixed", "maybe-not", "if-close", "optional", "check"]);
+    const stragglers = trip.places
+      .filter((p) => RETIRED.has(p.priority))
+      .map((p) => `${p.id} → "${p.priority}"`);
+    expect(stragglers).toEqual([]);
+  });
+
+  it("gives every place both status booleans and a phone string", () => {
+    for (const p of trip.places) {
+      expect(typeof p.reserved, `${p.id}.reserved`).toBe("boolean");
+      expect(typeof p.callAhead, `${p.id}.callAhead`).toBe("boolean");
+      expect(typeof p.phone, `${p.id}.phone`).toBe("string");
+    }
+  });
+
+  it("still exercises the reserved path — a fixture with no reservation tests nothing", () => {
+    /* Both fixtures carried `fixed` rows before the migration; if one comes
+       back with none reserved, the ★★ chip and the guard lost their coverage. */
+    expect(trip.places.some((p) => p.reserved === true)).toBe(true);
   });
 
   it("gives every place a schema-legal slug id", () => {
@@ -338,8 +397,10 @@ describe("the validator actually rejects bad data", () => {
     expect(rejects((t) => { t.days[0].color = "#FFF"; })).toBe(true);
   });
 
-  it("rejects a wrong schema version", () => {
-    expect(rejects((t) => { t.schema = 2; })).toBe(true);
+  it("rejects a wrong schema version in EITHER direction", () => {
+    expect(rejects((t) => { t.schema = 1; })).toBe(true);   // the version we migrated off
+    expect(rejects((t) => { t.schema = 3; })).toBe(true);   // one we do not know yet
+    expect(rejects((t) => { t.schema = "2"; })).toBe(true);
   });
 
   it("rejects an empty days array", () => {

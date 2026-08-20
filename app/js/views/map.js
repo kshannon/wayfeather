@@ -22,8 +22,10 @@ import { $, esc, attr } from "../dom.js";
 import { walkDirUrl } from "../links.js";
 import { store } from "../state.js";
 import { session } from "../session.js";
-import { placesOfDay, dayByKey, isNote, isVisited, isSkipped, isHandled } from "../trip.js";
-import { timeHTML, actsHTML } from "./card.js";
+import {
+  placesOfDay, dayByKey, isNote, isVisited, isSkipped, isHandled, isReserved
+} from "../trip.js";
+import { timeHTML, actsHTML, costHTML, askHTML, skipAsk, ASK_Q } from "./card.js";
 import { ctx } from "./itinerary.js";
 import { getView } from "../chrome.js";
 
@@ -62,7 +64,7 @@ function geoStops() {
     .filter((p) => isNum(p.lat) && isNum(p.lng))
     .map((p) => ({
       id: p.id, name: p.name, time: p.time, lat: p.lat, lng: p.lng,
-      __visited: isVisited(p), __skipped: isSkipped(p), __fixed: p.priority === "fixed"
+      __visited: isVisited(p), __skipped: isSkipped(p), __reserved: isReserved(p)
     }));
 }
 
@@ -241,9 +243,25 @@ function renderStopBar(stops, c) {
   $("cycNext").setAttribute("aria-label",
     "Next stopover (" + (i + 1) + " of " + n + ")");
 
+  /* THE RESERVED GUARD, IN THE BAR'S OWN GRAMMAR. The bar is two fixed rows and
+     the action row is exactly 44px, so the confirm cannot bring its question
+     with it the way the card's does. Instead it borrows the shape the empty
+     state already uses here: the sentence takes the full-width title row, and
+     the action row below holds the two answers. Same guard, same words, same
+     height — and Details steps aside for the moment the question is up, because
+     a confirm is not a good time to offer a third door. */
+  if (skipAsk() === p.id && !isVisited(p) && !isSkipped(p)) {
+    line.innerHTML = '<p class="stopbar-ask">' +
+      '<span class="ask-mark" aria-hidden="true">★★</span>' + esc(ASK_Q) + "</p>";
+    mid.innerHTML = '<span class="stopbar-state">' +
+      askHTML(p, { withQuestion: false }) + "</span>";
+    return;
+  }
+
   line.innerHTML =
-    ((p.time || p.priority === "fixed") ? timeHTML(p) : "") +
+    ((p.time || isReserved(p)) ? timeHTML(p) : "") +
     '<span class="stopbar-name">' + esc(p.name || "") + "</span>" +
+    costHTML(p) +
     (n > 1
       ? '<span class="stopbar-pos">' + (i + 1) + "/" + n + "</span>"
       : "");

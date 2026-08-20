@@ -468,7 +468,7 @@ describe("what a successful push hands back", () => {
 
     const written = h.state.lastPut.content;
     expect(written).toContain('"cost": "$$"');
-    expect(written.startsWith('{\n "schema": 1,')).toBe(true);   // one-space indent kept
+    expect(written.startsWith('{\n "schema": 2,')).toBe(true);   // one-space indent kept
     expect(written.endsWith("\n")).toBe(true);
     expect(JSON.parse(written).places[0].cost).toBe("$$");
   });

@@ -4,23 +4,40 @@
 
 import { parseClock, parseISO, todayIn, MON, dayGap } from "./time.js";
 
+/* ── the status axes (DESIGN §3, schema 2) ────────────────────────────────────
+   The old flat ten-value enum conflated three unrelated questions. Schema 2
+   splits them: `priority` answers only "how badly do I want this", while
+   `reserved` (booked or paid) and `callAhead` (unverified, ring first) are
+   orthogonal booleans that compose with any want-level. A reserved must is now
+   expressible; under the old enum you had to pick one and lose the other. */
 export const PRIOS = [
-  ["fixed", "Fixed — booked, immovable"], ["must", "Must"], ["yes", "Yes"],
-  ["maybe", "Maybe"], ["maybe-not", "Maybe not"], ["if-close", "If close"],
-  ["optional", "Optional"], ["check", "Check — call ahead"], ["skip", "Skip"],
+  ["must", "Must"], ["yes", "Yes"], ["maybe", "Maybe"], ["skip", "Skip"],
   ["note", "Note — text row, no links"]
 ];
 
-/* Chips reduce to ★ Must and a quiet Maybe. Nothing else:
-   fixed → reservation glyph beside the time · yes → unmarked
-   check → "Call ahead" line     · skip / note → row states */
+/* The corner chip, by want-level. `yes` is deliberately absent — the default
+   want-level is unmarked, which is what makes the marked ones read. */
 export const CHIP = {
-  must:        ["must",  "★ Must"],
-  maybe:       ["maybe", "Maybe"],
-  "maybe-not": ["maybe", "Maybe"],
-  "if-close":  ["maybe", "Maybe"],
-  optional:    ["maybe", "Maybe"]
+  must:  ["must",  "★ Must"],
+  maybe: ["maybe", "Maybe"]
 };
+
+/* ★★ Reserved — the loudest mark in the system (DESIGN §5). Not in CHIP because
+   it is not a want-level: it is the `reserved` boolean, and it can sit on top of
+   any priority. */
+export const RESERVED_CHIP = ["reserved", "★★ Reserved"];
+
+export function isReserved(p) { return !!p && p.reserved === true; }
+export function needsCall(p) { return !!p && p.callAhead === true; }
+
+/* The ONE chip a card's corner shows, or null. ★★ wins the corner outright —
+   "you have paid for this" outranks "you want this" — and the reservation glyph
+   beside the time carries the reservation on its own besides. */
+export function chipOf(p) {
+  if (!p || isVisited(p) || isSkipped(p)) return null;
+  if (isReserved(p)) return RESERVED_CHIP;
+  return CHIP[p.priority] || null;
+}
 
 /* ── the XTRA guarantee (DESIGN §5) ───────────────────────────────────────── */
 /* A trip file need not ship a bonus day — river-road-test doesn't — but the UI
@@ -107,11 +124,18 @@ export function dayComplete(trip, day) {
 }
 
 /* The XTRA pool: unscheduled days (date === null), unhandled, not note rows.
-   priority:"skip" stays in — resurfacing written-off ideas is the point. */
+   priority:"skip" stays in — resurfacing written-off ideas is the point.
+
+   RESERVED IS EXCLUDED (DESIGN §5): "Find me something" stamps whatever you
+   pick with the current time and drops it into today, which is precisely the
+   move the Reserved guard exists to slow down. Offering a booked stopover in a
+   list whose every row is a one-tap relocation would route around the guard
+   entirely, so it never appears — a reservation sitting in XTRA is a thing you
+   move deliberately through the edit sheet, where the confirm lives. */
 export function findPool(trip) {
   return trip.places.filter((p) => {
     const d = dayByKey(trip, p.day);
-    return d && d.date == null && !isNote(p) && !isHandled(p);
+    return d && d.date == null && !isNote(p) && !isHandled(p) && !isReserved(p);
   });
 }
 
@@ -176,6 +200,44 @@ export function clusterOnMove(trip, dayKey, mins, current) {
   const existing = clustersOf(placesOfDay(trip, dayKey)).filter(Boolean);
   if (existing.length) return existing[existing.length - 1];
   return current || "Inbox";
+}
+
+/* ── cost (DESIGN §3, schema 2) ───────────────────────────────────────────────
+   A number now, not free text. Three renderings, and the third is the one that
+   matters: `0` is KNOWN free and says so, a real amount prints as money, and
+   `null` — unknown, varies, not applicable — prints NOTHING. Never "Free": the
+   old string schema let "" sit in the cost field for a place nobody had priced,
+   and rendering that as "Free" would invent a fact about someone's money.
+
+   Locale is pinned to en-US rather than left to the device. `cost` is dollars
+   by definition here, and an undefined locale would render "US$32" on a phone
+   set to en-GB — a currency-conversion implication the data does not make.
+
+   Two formatters, not one with a 0–2 digit range: a range would print 12.5 as
+   "$12.5", and half a cent is not a price. Whole dollars drop the ".00" (a card
+   full of "$32.00" reads like a receipt), anything else takes exactly two. */
+const WHOLE = new Intl.NumberFormat("en-US", {
+  style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0
+});
+const CENTS = new Intl.NumberFormat("en-US", {
+  style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2
+});
+
+/* "" means "render no pill at all" — the one sentinel, checked by every caller. */
+export function formatCost(v) {
+  if (typeof v !== "number" || !isFinite(v)) return "";
+  if (v === 0) return "Free";
+  return (Number.isInteger(v) ? WHOLE : CENTS).format(v);
+}
+
+/* The edit sheet's inverse. Blank → null (unknown), which is the honest default
+   for a field nobody filled in. A leading "$" and thousands commas are tolerated
+   because people type them; anything else returns NaN so the caller can refuse
+   the save rather than silently discarding what was typed. */
+export function parseCost(raw) {
+  const s = String(raw == null ? "" : raw).trim().replace(/^\$/, "").replace(/,/g, "").trim();
+  if (!s) return null;
+  return /^\d+(\.\d+)?$/.test(s) ? Number(s) : NaN;
 }
 
 /* ── ids ──────────────────────────────────────────────────────────────────── */

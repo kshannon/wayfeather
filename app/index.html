@@ -370,8 +370,16 @@
     <label class="fld"><span>Hours</span>
       <input id="f-hours" type="text" autocomplete="off" placeholder="Daily 11–5">
     </label>
+    <!-- Cost is a NUMBER as of schema 2 (DESIGN §3). type=text + inputmode
+         gives the decimal keypad on iOS while leaving .value under our own
+         control: type=number reports "" for anything it dislikes, which would
+         silently swallow a typo instead of letting forms.js refuse the save. -->
     <label class="fld"><span>Cost</span>
-      <input id="f-cost" type="text" autocomplete="off" placeholder="Free">
+      <input id="f-cost" type="text" inputmode="decimal" autocomplete="off"
+             placeholder="Blank if it varies · 0 for free">
+    </label>
+    <label class="fld"><span>Phone</span>
+      <input id="f-phone" type="tel" autocomplete="off" placeholder="For the Call button">
     </label>
     <label class="fld"><span>Notes</span>
       <textarea id="f-notes" rows="3"></textarea>
@@ -379,9 +387,42 @@
     <label class="fld"><span>Priority</span>
       <select id="f-priority"></select>
     </label>
-    <div class="form-acts">
+    <!-- The two axes that are no longer priority values (schema 2): booked-ness
+         and call-ahead are orthogonal to how badly you want the place, so they
+         are toggles beside the want-level rather than values inside it. -->
+    <div class="fld-toggles">
+      <label class="toggle">
+        <input id="f-reserved" type="checkbox">
+        <span class="toggle-body">
+          <span class="toggle-name">Reserved</span>
+          <span class="toggle-hint">Booked or paid. Moving or skipping it will ask first.</span>
+        </span>
+      </label>
+      <label class="toggle">
+        <input id="f-callahead" type="checkbox">
+        <span class="toggle-body">
+          <span class="toggle-name">Call ahead</span>
+          <span class="toggle-hint">Hours unverified, or they want a call first.</span>
+        </span>
+      </label>
+    </div>
+    <div class="form-acts" id="f-acts">
       <button type="submit" class="btn btn-primary" id="f-save">Save</button>
       <button type="button" class="btn btn-quiet" id="f-cancel">Cancel</button>
+    </div>
+    <!-- The Reserved guard's in-sheet confirm (DESIGN §5). Takes the footer's
+         place rather than opening a second sheet — sheets.js tracks one sheet
+         at a time, and a stacked confirm would pull the scrim and the body lock
+         out from under the editor when it closed. -->
+    <div class="form-confirm" id="f-confirm" hidden>
+      <p class="confirm-q">
+        <span class="ask-mark" aria-hidden="true">★★</span>Reserved — change anyway?
+      </p>
+      <div class="confirm-acts">
+        <button type="button" class="btn btn-quiet" id="f-confirmNo">Keep it</button>
+        <button type="button" class="btn btn-danger" id="f-confirmYes">Change anyway</button>
+      </div>
+      <p class="hint">This one is booked or paid.</p>
     </div>
     <div class="form-danger" id="f-danger">
       <button type="button" class="btn btn-danger" id="f-skip">Skip this stopover</button>

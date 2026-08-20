@@ -6,7 +6,7 @@ import { rangeLabel, relTime, fmtClock } from "../time.js";
 import { deriveLoc, appleMapsUrl } from "../links.js";
 import { NEST_SVG, BIRD_SVG, OFFLINE_SVG } from "../icons.js";
 import { store } from "../state.js";
-import { SUPPORTED_SCHEMA, readErrorText, readErrorShort } from "../data.js";
+import { TRIP_SCHEMA, schemaMessage, readErrorText, readErrorShort } from "../data.js";
 import { shortSha } from "../api.js";
 import {
   placesOfDay, clustersOf, isNote, countText, findPool, eyebrowText, placeById
@@ -200,11 +200,18 @@ export function renderStaleBanner() {
 
 /* First run with no network and nothing cached, or a schema we don't know. */
 export function emptyStateHTML() {
-  const bad = store.raw && store.raw.schema !== SUPPORTED_SCHEMA;
+  const bad = store.raw && store.raw.schema !== TRIP_SCHEMA;
   if (bad) {
-    return '<div class="bigempty"><h2>This trip needs a newer Wayfeather</h2>' +
-      "<p>The file is schema " + esc(store.raw.schema) + " and this app reads schema " +
-      esc(SUPPORTED_SCHEMA) + ". Pull the latest app.</p></div>";
+    /* Old data gets a retry: refreshing is exactly the fix when the migrated
+       file is already published and this phone is holding a cached copy. Data
+       from the FUTURE gets no button — there is nothing this app can re-fetch
+       that would help, and a dead "Try again" is worse than no button. */
+    const m = schemaMessage(store.raw.schema);
+    const stale = Number(store.raw.schema) < TRIP_SCHEMA;
+    return '<div class="bigempty"><h2>' + esc(m.title) + "</h2>" +
+      "<p>" + esc(m.body) + "</p>" +
+      (stale ? '<button class="btn btn-primary" type="button" data-retry>Try again</button>' : "") +
+      "</div>";
   }
   /* With Settings configured, "could not reach the trip files" is often the
      wrong answer — the network is fine and the token has expired. When the read

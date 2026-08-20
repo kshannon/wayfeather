@@ -8,4 +8,4 @@
    This MUST equal VERSION in app/sw.js. sw.js is a classic worker script and
    cannot import an ES module, so the string is written twice on purpose;
    tests/build.test.js fails the suite the moment the two drift. */
-export const BUILD = "v7";
+export const BUILD = "v8";

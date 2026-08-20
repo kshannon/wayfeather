@@ -368,7 +368,7 @@ svg{display:block}
   font-size:var(--t-body);font-weight:600;letter-spacing:var(--track-body);
   color:var(--brown);white-space:nowrap;line-height:1.2;
 }
-.card.p-fixed .time{color:var(--accent)}
+.card.is-reserved .time{color:var(--accent)}
 .resv{flex:0 0 auto;display:flex;color:var(--accent)}
 .card-tools{display:flex;align-items:center;gap:var(--s1);flex:0 0 auto}
 .editbtn{
@@ -404,16 +404,45 @@ svg{display:block}
 .notes{margin-top:var(--s3);font-family:var(--f-serif);font-size:var(--t-serif-sub);
   letter-spacing:var(--track-serif);color:var(--ink-2);line-height:1.5}
 
-/* ─── 12. CHIPS (★ Must + quiet Maybe only) ───────────────────────────────── */
+/* ─── 12. CHIPS (★★ Reserved · ★ Must · quiet Maybe) ──────────────────────── */
+/* Three weights, and they are meant to be readable as an ORDER at a glance:
+   ★★ Reserved is a solid dark fill, ★ Must a bright gold tint, Maybe a bare
+   outline. Fill > tint > outline survives a squint, a grayscale screenshot and
+   a sunlit phone — which is more than three colours would. */
 .chip{
   flex:0 0 auto;display:inline-flex;align-items:center;
   padding:4px 9px;border-radius:7px;
   font-size:var(--t-caption2);font-weight:700;letter-spacing:.03em;white-space:nowrap;
 }
+/* THE LOUDEST MARK IN THE SYSTEM (DESIGN §5). The only chip that is a solid
+   fill of the accent itself: ★ Must's gold is brighter, but a dark saturated
+   block is heavier than a light one on a cream card, and heaviest is what
+   "you have already paid for this" needs to be. White on --accent is 6.48:1. */
+.chip-reserved{background:var(--accent);color:var(--on-accent);letter-spacing:.02em}
 .chip-must {background:var(--gold-bg);color:var(--gold-ink)}
 .chip-maybe{background:transparent;color:var(--ink-2);
   box-shadow:inset 0 0 0 1px var(--hair-2);font-weight:600}
 .card.p-must{box-shadow:0 0 0 1.5px var(--gold-bg),var(--e2)}
+/* The card ring follows the chip's precedence, so a reserved MUST reads as
+   reserved on both its marks rather than wearing one of each. */
+.card.is-reserved,.card.is-reserved.p-must{box-shadow:0 0 0 1.5px var(--soft),var(--e2)}
+
+/* ─── 12b. COST PILL + THE FACTS ROW ──────────────────────────────────────── */
+/* Hours and cost are both short, both factual, and both used to cost a full
+   line each. One wrapping row holds them side by side; on a narrow phone the
+   cost simply wraps under the hours instead of squeezing it. */
+.factrow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);margin-top:var(--s3)}
+.factrow>*{margin-top:0}
+/* Quieter than the hours chip on purpose. Hours can stop you going at all;
+   a price rarely changes the decision, so it reads as a footnote, not a
+   warning. --ink-2 on --neutral-bg. NOTHING renders when cost is null. */
+.cost{
+  display:inline-flex;align-items:center;
+  padding:5px 10px;border-radius:var(--r-sm);
+  background:var(--neutral-bg);color:var(--ink-2);
+  font-size:var(--t-footnote);font-weight:700;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
 /* priority:"skip" — a dimmed row state, no chip */
 .card.p-skip{
   background:var(--surface-2);
@@ -423,6 +452,7 @@ svg{display:block}
 }
 .card.p-skip h3{color:var(--ink-2);font-weight:500}
 .card.p-skip .hours{background:var(--neutral-bg);color:var(--ink-2)}
+.card.p-skip .cost{background:var(--surface);color:var(--ink-2)}
 
 /* ─── 13. ACTIONS + HANDLED STATES ────────────────────────────────────────── */
 .acts{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s4)}
@@ -437,6 +467,33 @@ svg{display:block}
         box-shadow:inset 0 0 0 1px var(--hair-2)}
 .act-do:active{filter:brightness(.9)}
 .act-no:active{background:var(--neutral-bg)}
+
+/* ── the Reserved guard's inline confirm (DESIGN §5) ──────────────────────────
+   It takes the place of the two action buttons, in the same row, at the same
+   height — the question arrives where the button you just pressed was, so the
+   answer is under the thumb that asked it. Deliberately NOT a state-row: this
+   is a live question, not a settled state, and it must not look like one.
+
+   "Keep it" is the wide, quiet default and "Flew past" the narrow tinted one:
+   the guard exists because the destructive answer was too easy, so the safe
+   answer gets the bigger target and the risky one has to be aimed at. */
+.acts.is-ask{
+  gap:var(--s2);padding:var(--s2);border-radius:var(--r-md);
+  background:var(--warn-bg);
+}
+.ask-q{
+  flex:1 1 100%;
+  display:flex;align-items:center;gap:6px;
+  padding:2px 4px 0;
+  font-size:var(--t-footnote);font-weight:700;color:var(--warn-ink);line-height:1.35;
+}
+.ask-mark{flex:0 0 auto;font-size:var(--t-caption2);letter-spacing:-.04em}
+.act-keep{flex:2 1 55%;background:var(--surface);color:var(--ink);
+  box-shadow:var(--card-ring),var(--e1)}
+.act-keep:active{background:var(--surface-2)}
+.act-confirm{flex:1 1 32%;background:var(--bad-bg);color:var(--bad-ink);
+  box-shadow:inset 0 0 0 1px rgba(163,38,26,.18)}
+.act-confirm:active{filter:brightness(.96)}
 /* Landed and Flew past are one row: a state label plus an explicit Undo control,
    so undo is a labelled button rather than "tap the status again".
 
@@ -524,6 +581,7 @@ svg{display:block}
 .card.is-visited .editbtn:active{background:var(--landed-panel);color:var(--landed-ink)}
 /* the hours chip and the link tiles lift off the ground rather than glowing */
 .card.is-visited .hours{background:var(--landed-panel);color:var(--landed-ink-2)}
+.card.is-visited .cost{background:var(--landed-panel);color:var(--landed-ink-3)}
 .card.is-visited .hours.is-bad{background:var(--bad-bg);color:var(--bad-ink)}
 .card.is-visited .ilink{
   background:var(--landed-panel);color:var(--landed-ink);
@@ -556,6 +614,7 @@ svg{display:block}
 .card.is-skipped .resv{color:var(--ink-3)}
 .card.is-skipped .meta,.card.is-skipped .notes{color:var(--ink-3)}
 .card.is-skipped .hours{background:var(--surface-2);color:var(--ink-2)}
+.card.is-skipped .cost{background:var(--surface-2);color:var(--ink-3)}
 .card.is-skipped .chip-must{background:var(--surface-2);color:var(--ink-2)}
 .card.is-skipped .ilink{background:var(--surface-2)}
 
@@ -936,6 +995,26 @@ svg{display:block}
   font-size:var(--t-footnote);color:var(--ink-3);
 }
 .stopbar:has(.stopbar-empty) .cycbtn{visibility:hidden}
+/* the cost pill, compacted into the title row beside the name */
+.stopbar-line .cost{
+  flex:0 0 auto;padding:3px 7px;
+  font-size:var(--t-caption2);background:var(--surface-2);
+}
+/* THE RESERVED QUESTION IN THE BAR. The sentence takes the full-width title
+   row — the same slot the empty state uses — and the action row below holds the
+   two answers, so the guard fits the bar's 96px without the bar moving. The
+   .acts wrapper drops its own ground here because the question is already
+   carrying the warn tint one row up. */
+.stopbar-ask{
+  flex:1 1 auto;min-width:0;
+  display:flex;align-items:center;gap:6px;
+  font-size:var(--t-footnote);font-weight:700;color:var(--warn-ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.stopbar-state .acts.is-ask{padding:0;background:transparent;border-radius:0}
+.stopbar-state .act-keep,.stopbar-state .act-confirm{
+  min-height:var(--s8);padding:0 var(--s2);font-size:var(--t-caption);
+}
 
 /* ─── 21b. GEOGRAPHIC MAP (MapLibre) ──────────────────────────────────────── */
 /* Full bleed: the canvas IS the stage. No card, no radius, no inset — the only
@@ -974,7 +1053,7 @@ svg{display:block}
   background:var(--accent);color:var(--on-accent);
   box-shadow:0 0 0 2px var(--surface), 0 1px 3px rgba(31,27,21,.34);
 }
-.gpin.is-fixed .gpin-dot{
+.gpin.is-reserved-pin .gpin-dot{
   /* the map's form of the reservation glyph: booked things wear a ring */
   box-shadow:0 0 0 2px var(--surface), 0 0 0 4.5px var(--accent),
              0 1px 3px rgba(31,27,21,.34);
@@ -1240,6 +1319,41 @@ svg{display:block}
 .form-acts{display:flex;gap:var(--s2);margin-top:var(--s5)}
 .form-acts .btn{flex:1 1 0;font-size:var(--t-subhead)}
 .form-acts .btn-primary{flex:2 1 0}
+/* ── the two status toggles (schema 2) ──────────────────────────────────────
+   Reserved and Call ahead are no longer priority values, so they are checkboxes
+   beside the want-level rather than options inside it. Each is a full-width
+   44px-plus row with its consequence spelled out underneath — "Reserved" alone
+   would not tell anyone that ticking it arms a confirm on every future move. */
+.fld-toggles{display:flex;flex-direction:column;gap:var(--s2);margin-top:var(--s4)}
+.toggle{
+  display:flex;align-items:flex-start;gap:var(--s3);
+  min-height:var(--s8);padding:var(--s3);
+  border-radius:var(--r-md);background:var(--surface-2);
+  box-shadow:inset 0 0 0 1px var(--hair-2);cursor:pointer;
+}
+.toggle input{flex:0 0 auto;width:22px;height:22px;margin-top:1px;accent-color:var(--accent)}
+.toggle-body{display:flex;flex-direction:column;gap:2px;min-width:0}
+.toggle-name{font-size:var(--t-subhead);font-weight:700;color:var(--ink)}
+.toggle-hint{font-size:var(--t-footnote);color:var(--ink-3);line-height:1.4}
+.toggle:has(input:checked){background:var(--tint);box-shadow:inset 0 0 0 1px var(--soft)}
+
+/* ── the Reserved guard's in-sheet confirm ───────────────────────────────────
+   Swaps in for .form-acts (DESIGN §5). Same warn tint and same word order as
+   the card's inline version, so answering it in either place is one gesture you
+   only have to learn once. */
+.form-confirm{
+  margin-top:var(--s5);padding:var(--s4);
+  border-radius:var(--r-md);background:var(--warn-bg);
+}
+.confirm-q{
+  display:flex;align-items:center;gap:7px;
+  font-size:var(--t-subhead);font-weight:700;color:var(--warn-ink);line-height:1.35;
+}
+.confirm-acts{display:flex;gap:var(--s2);margin-top:var(--s3)}
+.confirm-acts .btn{flex:1 1 0;font-size:var(--t-subhead)}
+.form-confirm .hint{margin-top:var(--s2);font-size:var(--t-footnote);
+  color:var(--warn-ink);opacity:.9;line-height:1.5;text-align:center}
+
 .form-danger{margin-top:var(--s4);padding-top:var(--s4);border-top:1px solid var(--hair)}
 .form-danger .btn{width:100%;font-size:var(--t-subhead)}
 .form-danger .hint{margin-top:var(--s2);font-size:var(--t-footnote);color:var(--ink-3);

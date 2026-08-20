@@ -14,7 +14,13 @@ const GLYPH = {
           '<circle cx="12" cy="10.1" r="2.3"/>',
   amaps:  '<path d="M9.1 4.2 3.7 6.2v13.6l5.4-2 5.8 2 5.4-2V4.2l-5.4 2-5.8-2Z"/>' +
           '<path d="M9.1 4.2v13.6"/><path d="M14.9 6.2v13.6"/>',
-  search: '<circle cx="10.9" cy="10.9" r="6.1"/><path d="M15.4 15.4 20 20"/>'
+  search: '<circle cx="10.9" cy="10.9" r="6.1"/><path d="M15.4 15.4 20 20"/>',
+  /* a handset, drawn open-stroke like its neighbours rather than as the usual
+     filled glyph — one stroke width across the whole tile row is the point */
+  call:   '<path d="M7.7 4.3H5.3a1.9 1.9 0 0 0-1.9 2.1c.4 3.6 1.9 7 4.3 9.7' +
+          '2.4 2.7 5.6 4.5 9.1 5.1a1.9 1.9 0 0 0 2.1-1.9v-2.4a1.9 1.9 0 0 0-1.6-1.9' +
+          'l-2.3-.4a1.9 1.9 0 0 0-1.9.9l-.6 1a14.6 14.6 0 0 1-5.3-5.3l1-.6' +
+          'a1.9 1.9 0 0 0 .9-1.9l-.4-2.3a1.9 1.9 0 0 0-1.9-1.6Z"/>'
 };
 
 export function icon(k) { return OPEN + (GLYPH[k] || "") + "</svg>"; }

@@ -9,7 +9,9 @@
 
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { deriveLoc, badHours, linkList, walkDirUrl, appleMapsUrl } from "../app/js/links.js";
+import {
+  deriveLoc, badHours, linkList, walkDirUrl, appleMapsUrl, telUrl
+} from "../app/js/links.js";
 
 const load = (f) =>
   JSON.parse(readFileSync(new URL("../data/trips/" + f, import.meta.url), "utf8"));
@@ -241,6 +243,70 @@ describe("linkList — over the real fixtures", () => {
     const L = byKey(linkList(drive, deriveLoc(RIVER)));
     expect(L.search.u).toContain("Oglesby%2C%20IL");
     expect(L.search.u).not.toContain("Chicago%2C%20IL");
+  });
+});
+
+describe("telUrl — the Call tile's destination (schema 2)", () => {
+  it("strips every separator people type", () => {
+    for (const v of ["(312) 555-0100", "312.555.0100", "312 555 0100",
+                     "312-555-0100", "3125550100"]) {
+      expect(telUrl(v), v).toBe("tel:3125550100");
+    }
+  });
+
+  it("KEEPS a leading +, because dropping it dials the wrong country", () => {
+    expect(telUrl("+44 20 7946 0958")).toBe("tel:+442079460958");
+    expect(telUrl("+1 (312) 555-0100")).toBe("tel:+13125550100");
+  });
+
+  it("never invents a country code for a bare local number", () => {
+    /* Guessing +1 on a number that might not be American is how you call a
+       stranger at 3am. */
+    expect(telUrl("312-555-0100")).not.toContain("+");
+  });
+
+  it("returns '' when there is nothing dialable, so no tile renders", () => {
+    for (const v of ["", "   ", "call ahead", "n/a", null, undefined, "+"]) {
+      expect(telUrl(v), JSON.stringify(v)).toBe("");
+    }
+  });
+
+  it("keeps digits found inside text rather than half-dialing it", () => {
+    /* Not a shape we write, but if it ever arrives the answer must be all the
+       digits or none — never a truncated number that dials something real. */
+    expect(telUrl("ext 5 — 312 555 0100")).toBe("tel:53125550100");
+  });
+});
+
+describe("linkList — the Call tile", () => {
+  const withPhone = (phone) => ({
+    id: "x", name: "Green Mill", address: "4802 N Broadway, Chicago, IL 60640",
+    priority: "yes", phone, website: "", yelp: "", gmaps: ""
+  });
+
+  it("adds a Call tile FIRST when a phone is set", () => {
+    const L = linkList(withPhone("(312) 555-0100"), LOC);
+    expect(L[0].k).toBe("call");
+    expect(L[0].t).toBe("Call");
+    expect(L[0].u).toBe("tel:3125550100");
+    expect(L[0].a).toBe("Call Green Mill");
+  });
+
+  it("adds no tile at all when phone is empty or undialable", () => {
+    for (const v of ["", "   ", "no phone", undefined]) {
+      expect(byKey(linkList(withPhone(v), LOC)).call, JSON.stringify(v)).toBeUndefined();
+    }
+  });
+
+  it("leaves every other tile exactly where it was", () => {
+    const without = linkList(withPhone(""), LOC).map((l) => l.k);
+    const with_ = linkList(withPhone("312-555-0100"), LOC).map((l) => l.k);
+    expect(with_).toEqual(["call", ...without]);
+  });
+
+  it("still renders nothing for a note row, phone or not", () => {
+    const note = { ...withPhone("312-555-0100"), priority: "note" };
+    expect(linkList(note, LOC)).toEqual([]);
   });
 });
 

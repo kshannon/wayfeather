@@ -7,7 +7,9 @@ import { esc, attr } from "../dom.js";
 import { clockOf } from "../time.js";
 import { linkList, badHours } from "../links.js";
 import { icon, RESV_SVG } from "../icons.js";
-import { CHIP, isNote, stateOf, isVisited, isSkipped } from "../trip.js";
+import {
+  chipOf, isNote, stateOf, isVisited, isSkipped, isReserved, needsCall, formatCost
+} from "../trip.js";
 
 export function linksHTML(p, ctx) {
   const L = linkList(p, ctx.loc);
@@ -26,11 +28,13 @@ export function hoursHTML(p) {
     "<span>" + esc(p.hours) + "</span></p>";
 }
 
-/* priority:"check" and a `warn` string merge into ONE line, never two. */
+/* The callAhead boolean and a `warn` string merge into ONE line, never two.
+   (Schema 2 moved call-ahead off the priority enum onto its own axis — the line
+   itself is unchanged, and so is the merge.) */
 export function warnHTML(p) {
-  const callAhead = p.priority === "check";
-  if (!callAhead && !p.warn) return "";
-  const body = callAhead
+  const call = needsCall(p);
+  if (!call && !p.warn) return "";
+  const body = call
     ? "<b>Call ahead</b>" + (p.warn ? '<span aria-hidden="true"> · </span>' + esc(p.warn) : "")
     : esc(p.warn);
   return '<p class="warnline"><span aria-hidden="true">⚠</span><span>' + body + "</span></p>";
@@ -39,13 +43,31 @@ export function warnHTML(p) {
 export function timeHTML(p) {
   return '<span class="card-time">' +
     '<span class="time u-tab-num">' + esc(p.time || "") + "</span>" +
-    (p.priority === "fixed" ? RESV_SVG : "") +
+    (isReserved(p) ? RESV_SVG : "") +
   "</span>";
 }
 
+/* One chip, or none. trip.chipOf decides WHICH — ★★ Reserved outranks ★ Must
+   outranks Maybe — so the precedence lives with the model rather than being
+   re-derived by every surface that draws a corner. */
 export function chipHTML(p) {
-  if (isVisited(p) || isSkipped(p) || !CHIP[p.priority]) return "";
-  return '<span class="chip chip-' + CHIP[p.priority][0] + '">' + esc(CHIP[p.priority][1]) + "</span>";
+  const c = chipOf(p);
+  return c ? '<span class="chip chip-' + c[0] + '">' + esc(c[1]) + "</span>" : "";
+}
+
+/* The cost pill (DESIGN §3/§5). Absent entirely when cost is null — an unpriced
+   stopover shows nothing rather than claiming to be free. */
+export function costHTML(p) {
+  const t = formatCost(p.cost);
+  if (!t) return "";
+  return '<p class="cost' + (p.cost === 0 ? " is-free" : "") + '">' + esc(t) + "</p>";
+}
+
+/* Hours chip and cost pill share one wrapping row, so a stopover with both does
+   not spend two full lines of a phone screen on two short chips. */
+export function factsHTML(p) {
+  const inner = hoursHTML(p) + costHTML(p);
+  return inner ? '<div class="factrow">' + inner + "</div>" : "";
 }
 
 /* Landed / Flew past are one row: a state label plus an explicit Undo control,
@@ -57,8 +79,43 @@ export function chipHTML(p) {
    a ✓; Flew past gets .state-dash, the same 22px box with no fill at all and a
    bare dash in it. Filled-vs-hollow survives a glance, a squint, and a
    grayscale screenshot in a way that two similar tints do not. */
+/* ── the Reserved guard's inline confirm (DESIGN §5) ──────────────────────────
+   "Protected, not locked": flying past a booked stopover asks once, in place,
+   and the answer is two real buttons rather than a browser confirm() — which on
+   an installed PWA renders as a system alert wearing the origin's name and
+   breaks the app's spell completely.
+
+   The pending id lives here rather than in the view that raised it because ONE
+   stopover is drawn by three surfaces at once (itinerary card, Details sheet,
+   map bar). Parking the flag beside the fragment they all share means asking on
+   the card and answering on the bar is coherent by construction, instead of
+   three copies of the same boolean drifting apart. */
+let askId = null;
+
+export const ASK_Q = "Reserved — change anyway?";
+
+export function setSkipAsk(id) { askId = id || null; }
+export function skipAsk() { return askId; }
+
+/* `withQuestion:false` is the map bar, which has a title row to put the
+   question in and a fixed 44px action row that cannot grow to hold it. */
+export function askHTML(p, opts) {
+  const id = attr(p.id), nm = attr(p.name || "this stopover");
+  const q = (opts && opts.withQuestion === false)
+    ? ""
+    : '<p class="ask-q"><span class="ask-mark" aria-hidden="true">★★</span>' +
+      esc(ASK_Q) + "</p>";
+  return '<div class="acts is-ask" role="group" aria-label="' + attr(ASK_Q) + '">' + q +
+    '<button type="button" class="act act-keep" data-ask="no" data-id="' + id + '" ' +
+      'aria-label="Keep ' + nm + ' as it is">Keep it</button>' +
+    '<button type="button" class="act act-confirm" data-ask="yes" data-id="' + id + '" ' +
+      'aria-label="Flew past — skip ' + nm + ' anyway">Flew past</button>' +
+  "</div>";
+}
+
 export function actsHTML(p, ctx) {
   const st = stateOf(p), id = attr(p.id), nm = attr(p.name || "this stopover");
+  if (askId === p.id && !st.visited && !st.skipped) return askHTML(p);
   if (st.visited) {
     const w = clockOf(st.visited, ctx.tz);
     return '<div class="state-row">' +
@@ -118,13 +175,18 @@ function noteHTML(p) {
 export function cardHTML(p, ctx) {
   if (isNote(p)) return noteHTML(p);
   const vis = isVisited(p), skp = isSkipped(p);
+  /* `reserved` is a boolean now, so it is a class of its own rather than one of
+     the p-* priority classes — the two axes compose, and a reserved must has to
+     be able to wear both. */
   const cls = "card p-" + esc(p.priority || "none") +
+              (isReserved(p) ? " is-reserved" : "") +
               (vis ? " is-visited" : "") + (skp ? " is-skipped" : "");
 
+  /* Cost left the meta line in schema 2: it is a pill beside the hours chip
+     now, which is also why nothing here has to think about "$$" any more. */
   const metaBits = [];
   if (p.type) metaBits.push(esc(p.type));
   if (p.address) metaBits.push(esc(p.address));
-  if (p.cost) metaBits.push(esc(p.cost));      /* never run through .replace — "$$" */
   const meta = metaBits.length
     ? '<p class="meta">' + metaBits.join('<span class="dot" aria-hidden="true">·</span>') + "</p>"
     : "";
@@ -134,7 +196,7 @@ export function cardHTML(p, ctx) {
         '<span class="card-tools">' + chipHTML(p) + editBtn(p) + "</span>" +
       "</div>" +
       "<h3>" + esc(p.name || "") + "</h3>" +
-      meta + hoursHTML(p) + warnHTML(p) +
+      meta + factsHTML(p) + warnHTML(p) +
       (p.notes ? '<p class="notes">' + esc(p.notes) + "</p>" : "") +
       linksHTML(p, ctx) +
       actsHTML(p, ctx) +

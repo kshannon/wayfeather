@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/kshannon/wayfeather/blob/main/data/schema.json",
   "title": "Wayfeather trip data",
-  "description": "Machine-readable mirror of DESIGN.md §3 (keep in lockstep). A trip file is one self-contained itinerary; index.json lists the trips the loader offers. For an LLM generating an itinerary: copy the shape of a fixture in data/trips/, obey the field notes below, and NEVER invent opening hours, coordinates, addresses, or confirmation details — leave hours as \"\" and set priority to \"check\" when hours are unverified. Real trips must never contain data that can't be public if the repo is public (no confirmation codes, no private stay addresses).",
+  "description": "Machine-readable mirror of DESIGN.md §3 (keep in lockstep). A trip file is one self-contained itinerary; index.json lists the trips the loader offers. For an LLM generating an itinerary: copy the shape of a fixture in data/trips/, obey the field notes below, and NEVER invent opening hours, coordinates, addresses, or confirmation details — leave hours as \"\" and set callAhead to true when hours are unverified. Real trips must never contain data that can't be public if the repo is public (no confirmation codes, no private stay addresses).",
   "oneOf": [
     { "$ref": "#/$defs/trip" },
     { "$ref": "#/$defs/index" }
@@ -13,7 +13,7 @@
       "required": ["schema", "id", "name", "tz", "start", "end", "days", "places"],
       "additionalProperties": false,
       "properties": {
-        "schema": { "const": 1, "description": "Data-format version. The app refuses versions it doesn't know; bump only on breaking changes." },
+        "schema": { "const": 2, "description": "Data-format version. The app refuses versions it doesn't know; bump only on breaking changes. Version 2 (2026-08-20) made `cost` a number." },
         "id": { "$ref": "#/$defs/slug", "description": "Stable trip slug; matches the filename (<id>.json) and the id in index.json. Never regenerated on edit." },
         "name": { "type": "string", "description": "Human trip name shown in the Trips tab." },
         "tz": { "type": "string", "description": "IANA timezone the trip happens in, e.g. America/Chicago. Day-completion and 'today' logic use it." },
@@ -64,7 +64,7 @@
     "place": {
       "type": "object",
       "description": "A stopover (the UI's word for a place).",
-      "required": ["id", "day", "cluster", "time", "name", "type", "address", "lat", "lng", "hours", "cost", "priority", "notes", "website", "yelp", "gmaps", "warn", "updatedAt"],
+      "required": ["id", "day", "cluster", "time", "name", "type", "address", "lat", "lng", "hours", "cost", "priority", "reserved", "callAhead", "phone", "notes", "website", "yelp", "gmaps", "warn", "updatedAt"],
       "additionalProperties": false,
       "properties": {
         "id": { "$ref": "#/$defs/slug", "description": "Stable slug, unique within the trip. Never regenerated on edit." },
@@ -76,11 +76,26 @@
         "address": { "type": "string", "description": "Street address, or \"\" (Drive legs, notes). Used for map/search links." },
         "lat": { "oneOf": [{ "type": "number" }, { "type": "null" }], "description": "Nullable; backfilled by the geocode script. NEVER invented by an LLM." },
         "lng": { "oneOf": [{ "type": "number" }, { "type": "null" }] },
-        "hours": { "type": "string", "description": "Human-entered opening hours, e.g. \"Mon–Sat 10–6\", \"Closed Tue; other days 10:30–5:30\", \"Daily 11–5; CLOSED Tue/Wed\". NEVER invented — \"\" if unverified (pair with priority \"check\")." },
-        "cost": { "type": "string", "description": "Free text: \"$32\", \"$$\", \"Free\", \"\". (Beware JS String.replace: \"$$\" corrupts unless spliced with a function replacer.)" },
+        "hours": { "type": "string", "description": "Human-entered opening hours, e.g. \"Mon–Sat 10–6\", \"Closed Tue; other days 10:30–5:30\", \"Daily 11–5; CLOSED Tue/Wed\". NEVER invented — \"\" if unverified (pair with callAhead: true)." },
+        "cost": { "oneOf": [{ "type": "number" }, { "type": "null" }], "description": "Dollars as a number, as of schema 2. 0 means free; null means unknown, varies, or not applicable. Nuance that used to live in cost text (\"pay-what-you-wish Wed 1:30–5:30\", \"StubHub credit\", \"cover varies\") belongs in `notes`; a range migrates to its upper bound, which keeps the number budget-honest. Never a string — \"$32\" is not a cost, 32 is." },
         "priority": {
-          "enum": ["fixed", "must", "yes", "maybe", "maybe-not", "if-close", "optional", "check", "skip", "note"],
-          "description": "fixed = booked/immovable (UI shows a reservation glyph at the time). must = ★ chip. yes = default, unmarked. maybe / maybe-not / if-close / optional = collapsed into one quiet Maybe chip. check = call ahead (renders a ⚠ line). skip = kept but dimmed (also the soft-delete state). note = renders as a text row, no links."
+          "enum": ["must", "yes", "maybe", "skip", "note"],
+          "description": "How badly you want this, and nothing else — as of schema 2 the booked-ness and call-ahead axes moved to their own booleans. must = ★ Must chip. yes = the default, unmarked. maybe = the quiet Maybe chip. skip = kept but dimmed (also the soft-delete state). note = a row KIND rather than a want-level: renders as a text row with no links. Retired in schema 2: fixed → yes/must + reserved:true; maybe-not / if-close / optional → maybe; check → callAhead:true."
+        },
+        "reserved": {
+          "type": "boolean",
+          "default": false,
+          "description": "Booked or paid. Orthogonal to priority — a reserved stopover can be any want-level. The UI marks it with the ★★ Reserved chip (the loudest mark in the system) plus a reservation glyph beside the time, guards moves and skips behind one confirmation, and keeps it out of the Find-me-something pool."
+        },
+        "callAhead": {
+          "type": "boolean",
+          "default": false,
+          "description": "Hours are unverified, or the place wants a call first. Renders the ⚠ Call ahead line, merged with `warn` when both are set. Pair with hours: \"\" when an LLM could not verify opening times."
+        },
+        "phone": {
+          "type": "string",
+          "default": "",
+          "description": "Human-readable phone number, or \"\". Any format — the app normalises to digits for the tel: URL behind the Call tile. NEVER invented by an LLM."
         },
         "notes": { "type": "string", "description": "One-liner shown on the card." },
         "website": { "type": "string", "description": "Official URL or \"\". Yelp/Maps/Search links are synthesized from name + address when their fields are \"\"." },

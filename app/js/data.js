@@ -25,7 +25,14 @@ function sourceName() {
 const DATA_DIR = new URL("../../data/trips/", import.meta.url);
 
 export const INDEX_FILE = "index.json";
-export const SUPPORTED_SCHEMA = 1;
+
+/* The two files version INDEPENDENTLY (DESIGN §3). Schema 2 broke the shape of
+   a trip file — cost became a number, the priority enum lost five values to two
+   new booleans — and none of that touched index.json, which still just lists
+   trips. Folding them into one constant would have forced a meaningless bump on
+   the index and made "which schema does this app read?" unanswerable. */
+export const TRIP_SCHEMA = 2;
+export const INDEX_SCHEMA = 1;
 
 /* ── the transport ────────────────────────────────────────────────────────
    The API path is what finally makes `sha` real: it is the blob sha, both the
@@ -163,7 +170,37 @@ export function loadTrip(file) { return load(file); }
 
 /* DESIGN §3: the app refuses schema versions it doesn't know. */
 export function schemaOK(payload) {
-  return !!payload && payload.schema === SUPPORTED_SCHEMA;
+  return !!payload && payload.schema === TRIP_SCHEMA;
+}
+
+/* Why a trip file was refused, in the direction it was actually wrong.
+
+   DESIGN §3 only ever described one of these ("pull latest app"), because until
+   schema 2 there was only one version and a mismatch could only mean data from
+   the future. Now that a bump has actually happened, the far likelier mismatch
+   is the opposite one: the phone has the new app and is pointed at a data repo
+   nobody has migrated yet — the exact state this very change puts private/ in
+   until the real trips are converted. Telling that person to "pull the latest
+   app" would send them to update the thing that is already correct.
+
+   So the message names the direction. Returns { title, body }; the view renders
+   it, and the caller decides whether a retry button belongs underneath. */
+export function schemaMessage(found) {
+  const n = Number(found);
+  const seen = Number.isFinite(n) ? "schema " + n : "an unreadable schema version";
+  if (Number.isFinite(n) && n < TRIP_SCHEMA) {
+    return {
+      title: "This trip file is out of date",
+      body: "The file is " + seen + " and this app reads schema " + TRIP_SCHEMA +
+        ". Refresh to pull the migrated trip data — if it keeps saying this, the " +
+        "data itself still needs converting."
+    };
+  }
+  return {
+    title: "This trip needs a newer Wayfeather",
+    body: "The file is " + seen + " and this app reads schema " + TRIP_SCHEMA +
+      ". Pull the latest app."
+  };
 }
 
 /* Why a read failed, in words the person can act on.

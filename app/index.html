@@ -74,52 +74,51 @@
   </section>
 
   <!-- ════ MAP ═════════════════════════════════════════════════════════════ -->
+  <!-- FULL-BLEED (DESIGN §5, 2026-08-20). The map owns the whole tab: no large
+       title and no day switcher here — day switching lives on the Itinerary,
+       and this tab says which day it is with one thin floating pill. The stage
+       is exactly one viewport tall and does not scroll, so every drag belongs
+       to the map rather than to the page. Everything else floats over it. -->
   <section class="view view-map" id="view-map" role="tabpanel" aria-labelledby="navtab-map">
-    <div class="lt-head wrap">
-      <div class="maphead-row">
-        <div>
-          <h1 class="lt" id="mapTitle" data-large-title></h1>
-          <p class="sub" id="mapSub"></p>
-        </div>
-        <div id="mapEscape" style="margin-left:auto"></div>
-      </div>
-    </div>
-    <div class="mapdays wrap">
-      <div class="daystrip" role="group" aria-label="Pick a day to route" id="mapDays"></div>
-    </div>
-    <div class="mapbody wrap">
+    <div class="mapstage" id="mapStage">
       <!-- The geographic map (MapLibre, lazy-loaded) and the schematic node
            line are the same scope drawn two ways; views/map.js shows exactly
            one of them and hides the other. The node line stays the fallback
-           for stopovers with no coordinates and for offline. -->
+           for stopovers with no coordinates and for offline — and it gets the
+           same pill and the same stopover bar, so the two views feel alike. -->
       <div class="geo" id="geoWrap" hidden>
         <div class="geo-canvas" id="geoCanvas"></div>
-        <p class="geo-note" id="geoNote" hidden>Loading the map…</p>
       </div>
-      <ol class="nodes" id="routeNodes"></ol>
-      <div id="routeOut"></div>
-    </div>
-    <div class="dock">
-      <div class="dock-in">
-        <div class="dock-nav">
-          <button class="navbtn" type="button" data-cyc="-1" aria-label="Previous stopover">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M14.5 5.5L8 12l6.5 6.5"/>
-            </svg>
-          </button>
-          <span class="dock-count" id="dockCount"></span>
-          <button class="navbtn" type="button" data-cyc="1" aria-label="Next stopover">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M9.5 5.5L16 12l-6.5 6.5"/>
-            </svg>
-          </button>
-        </div>
-        <div class="dock-body" id="dockBody" aria-live="polite"></div>
+      <div class="mapscroll" id="routeSchematic">
+        <ol class="nodes" id="routeNodes"></ol>
+        <div id="routeOut"></div>
+      </div>
+
+      <p class="mappill" id="mapPill"></p>
+      <p class="geo-note" id="geoNote" hidden>Loading the map…</p>
+
+      <!-- The thin stopover bar. ◀ and ▶ are pinned to the far ends and run the
+           full height of the bar; the name line and the action row live between
+           them. Nothing here grows with content: the name ellipsizes on one
+           line and everything deeper is behind Details. -->
+      <div class="stopbar" id="stopBar" aria-live="polite">
+        <button class="cycbtn" type="button" data-cyc="-1" id="cycPrev"
+                aria-label="Previous stopover">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14.5 5.5L8 12l6.5 6.5"/>
+          </svg>
+        </button>
+        <div class="stopbar-mid" id="stopBarMid"></div>
+        <button class="cycbtn" type="button" data-cyc="1" id="cycNext"
+                aria-label="Next stopover">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9.5 5.5L16 12l-6.5 6.5"/>
+          </svg>
+        </button>
       </div>
     </div>
-    <div class="map-pad" aria-hidden="true"></div>
   </section>
 
   <!-- ════ TRIPS ═══════════════════════════════════════════════════════════ -->
@@ -347,6 +346,32 @@
     </button>
   </div>
   <div class="sheet-scroll" id="findBody"></div>
+</section>
+
+<!-- stopover details, opened from the Map tab's stopover bar (DESIGN §5).
+     Deliberately the SAME sheet machinery as edit/find — grabber, scrim, Esc,
+     focus trap — and deliberately NOT a jump to the Itinerary tab: dismissing
+     it puts you back on the map exactly where you were. #cardBody is filled
+     with the itinerary's own card fragment, pencil and links and actions and
+     all, so there is one stopover card in the app rather than two.
+     .sheet-auto sizes it to the card instead of running full height. -->
+<section class="sheet sheet-auto" id="cardSheet" role="dialog" aria-modal="true"
+         aria-label="Stopover details" hidden>
+  <div class="grabber" id="cardGrab" role="button" tabindex="-1"
+       aria-label="Drag down to close"></div>
+  <div class="sheet-top">
+    <div>
+      <h2 class="sheet-title" id="cardTitle">Stopover</h2>
+      <p class="sheet-sub" id="cardSub"></p>
+    </div>
+    <button class="sheet-x" id="cardClose" type="button" aria-label="Close">
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="M6 6l12 12"/><path d="M18 6L6 18"/>
+      </svg>
+    </button>
+  </div>
+  <div class="sheet-scroll" id="cardBody"></div>
 </section>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>

@@ -41,12 +41,14 @@ export const NEST_SVG =
   '<circle cx="12" cy="12.9" r="2.5"/><path d="M12 15.4v2.9"/></svg>';
 
 /* Forward motion — the tiny flying bird that replaced every forward carat (▸ on
-   Route / Walk it, and the ▸ on list rows). A filled swallow seen from below,
-   flying right: near wing up, forked tail behind. It is scaled 1.18 about the
-   middle of the 24-box because the bird's visual mass is lower than a chevron's
-   and it reads dainty at 1.0 — checked at real size against the old glyph.
-   NB the ◀ ▶ cycling controls in the Map dock stay ARROWS: those move a cursor
-   backwards and forwards, and a bird pointing one way cannot say "previous". */
+   the day card's Route button, and the ▸ on list rows). A filled swallow seen
+   from below, flying right: near wing up, forked tail behind. It is scaled 1.18
+   about the middle of the 24-box because the bird's visual mass is lower than a
+   chevron's and it reads dainty at 1.0 — checked at real size against the old
+   glyph.
+   NB the ◀ ▶ cycling controls in the Map tab's stopover bar stay ARROWS: those
+   move a cursor backwards and forwards, and a bird pointing one way cannot say
+   "previous". */
 export const BIRD_SVG =
   '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" ' +
   'aria-hidden="true" focusable="false">' +

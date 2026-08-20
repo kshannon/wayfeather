@@ -41,7 +41,14 @@ export function openSheet(el, from, focusEl) {
   (focusEl || el.querySelector(".sheet-x")).focus();
 }
 
-export function closeSheet() {
+/* `instant` tears the sheet down synchronously instead of after the close
+   animation. It exists for ONE case: handing off from the Details sheet to the
+   edit sheet (DESIGN §5 — the pencil is the only way into the editor, and it is
+   reachable from the card inside Details). Only one sheet is tracked at a time,
+   so the details sheet has to be fully gone before the editor opens — otherwise
+   its 340ms tail would fire later and hide the scrim, unlock the body and clear
+   `inert` out from under the sheet that replaced it. */
+export function closeSheet(instant) {
   const el = openEl;
   if (!el) return;
   els();
@@ -62,7 +69,7 @@ export function closeSheet() {
 
   el.classList.remove("is-in", "is-dragging");
   scrim.classList.remove("is-in");
-  if (reduced()) done(); else window.setTimeout(done, CLOSE_MS);
+  if (reduced() || instant) done(); else window.setTimeout(done, CLOSE_MS);
 }
 
 export function onClose(fn) { closeHandler = fn; }

@@ -13,20 +13,23 @@ import {
 import { load, loadIndex, loadTrip, clearDataCache, schemaOK } from "./data.js";
 import { parseBoot, syncTrip, onHashChange } from "./router.js";
 import { session, resetScope } from "./session.js";
-import { dayByKey, initialDayKey } from "./trip.js";
+import { dayByKey, initialDayKey, placeById } from "./trip.js";
 import { setView, getView, onViewChange, wireTabKeys, setStaticTitles } from "./chrome.js";
 import { toast, takeUndo } from "./toast.js";
 import { burstAt } from "./confetti.js";
-import { closeSheet, isOpen, handleKeydown, wireGrabber, wireScrim } from "./sheets.js";
+import {
+  openSheet, openSheetEl, closeSheet, isOpen, handleKeydown, wireGrabber, wireScrim
+} from "./sheets.js";
 import { initPTR, refreshNow, isBusy } from "./ptr.js";
 import { renderStrips, paintStrips, syncCompletion } from "./views/daystrip.js";
 import {
-  renderHero, renderPanels, paintPanels, repaintCard, refreshTails, refreshCounts,
+  ctx, renderHero, renderPanels, paintPanels, repaintCard, refreshTails, refreshCounts,
   renderStamp, renderStaleBanner
 } from "./views/itinerary.js";
 import {
-  renderMap, routeStops, firstUnhandled, jumpTo, clearClusterScope, wireConnectivity
+  renderMap, routeStops, firstUnhandled, jumpTo, wireConnectivity
 } from "./views/map.js";
+import { cardHTML } from "./views/card.js";
 import { renderTrips } from "./views/trips.js";
 import { renderSettings, renderCacheRow } from "./views/settings.js";
 import { paintFly } from "./icons.js";
@@ -76,8 +79,17 @@ function applyAct(act, id) {
   // the tail's "Find me something" appears/disappears with the pool, and an
   // extra can be handled straight from the XTRA day
   refreshTails();
+  // Landed! / Flew past are reachable from inside the Details sheet too, and
+  // the card in there has to show the state it just wrote.
+  if (detailsId === id && openSheetEl() === $("cardSheet")) paintDetails();
 }
 
+/* `cluster` is the map's stretch-focus seam and is currently never passed: the
+   cluster-level "Walk it" button was removed (DESIGN §5, 2026-08-20) and the
+   day card's Route ▸ is the single entry point. The SCOPE MODEL is deliberately
+   untouched — DESIGN still lists cluster as one of the three derived viewports,
+   and views/map.js still honours session.scope.cluster — so when the map grows
+   its own stretch focus it calls this, rather than rebuilding the plumbing. */
 function goRoute(dayKey, cluster) {
   if (dayKey && dayKey !== session.dayKey) selectDay(dayKey, { keepScope: true, keepScroll: true });
   session.scope.dayKey = dayKey || session.dayKey;
@@ -85,6 +97,34 @@ function goRoute(dayKey, cluster) {
   session.route.idx = firstUnhandled(routeStops());
   renderMap();
   setView("map");
+}
+
+/* ══ DETAILS SHEET ═════════════════════════════════════════════════════════ */
+/* DESIGN §5: on the full-bleed Map tab, Details opens the app's STANDARD bottom
+   sheet over the map carrying the full stopover card — the itinerary's own
+   fragment, pencil and links and actions and all. Deliberately not a jump to
+   the Itinerary tab: dismissing it puts you back on the map, unmoved.
+
+   The sheet's visible header carries the day and the cluster — context the card
+   itself does not have — so it never just repeats the name printed underneath
+   it. The dialog's accessible name is the stopover, set here. */
+let detailsId = null;
+
+function paintDetails() {
+  const p = detailsId && placeById(store.trip, detailsId);
+  if (!p) { closeSheet(); return; }
+  const d = dayByKey(store.trip, p.day);
+  $("cardTitle").textContent = d ? (d.title || d.label || d.key) : "Stopover";
+  $("cardSub").textContent = p.cluster || "";
+  $("cardSheet").setAttribute("aria-label", p.name || "Stopover details");
+  $("cardBody").innerHTML = cardHTML(p, ctx());
+}
+
+function openDetails(id, from) {
+  if (!placeById(store.trip, id)) return;
+  detailsId = id;
+  paintDetails();
+  openSheet($("cardSheet"), from, $("cardClose"));
 }
 
 /* ══ DATA ══════════════════════════════════════════════════════════════════ */
@@ -190,7 +230,21 @@ function wireEvents() {
     if (take) { e.preventDefault(); takeExtra(take.getAttribute("data-take")); return; }
 
     const ed = t.closest("[data-edit]");
-    if (ed) { e.preventDefault(); openEdit(ed.getAttribute("data-edit"), ed); return; }
+    if (ed) {
+      e.preventDefault();
+      /* The pencil inside the Details sheet is a HANDOFF, not a second sheet:
+         sheets.js tracks one sheet at a time, so Details is torn down
+         synchronously and the editor takes its place. Without the synchronous
+         close, Details' 340ms tail would fire afterwards and pull the scrim,
+         the body lock and `inert` out from under the editor. */
+      const id = ed.getAttribute("data-edit");
+      if (t.closest("#cardSheet")) { closeSheet(true); openEdit(id, null); return; }
+      openEdit(id, ed);
+      return;
+    }
+
+    const det = t.closest("[data-details]");
+    if (det) { e.preventDefault(); openDetails(det.getAttribute("data-details"), det); return; }
 
     const add = t.closest("[data-add]");
     if (add) { e.preventDefault(); openAdd(add.getAttribute("data-add"), add); return; }
@@ -199,13 +253,7 @@ function wireEvents() {
     if (find) { e.preventDefault(); openFind(find.getAttribute("data-find"), find); return; }
 
     const r = t.closest("[data-route]");
-    if (r) {
-      e.preventDefault();
-      goRoute(r.getAttribute("data-route"), r.getAttribute("data-cluster"));
-      return;
-    }
-
-    if (t.closest("#btnWholeDay")) { e.preventDefault(); clearClusterScope(); return; }
+    if (r) { e.preventDefault(); goRoute(r.getAttribute("data-route")); return; }
 
     const n = t.closest("[data-node]");
     if (n) { e.preventDefault(); jumpTo(parseInt(n.getAttribute("data-node"), 10)); return; }
@@ -221,8 +269,6 @@ function wireEvents() {
       selectDay(dtab.getAttribute("data-key"), {});
       return;
     }
-    const mtab = t.closest("[data-mday]");
-    if (mtab) { selectDay(mtab.getAttribute("data-mday"), { keepScroll: true }); return; }
 
     const trip = t.closest("[data-trip]");
     if (trip) { e.preventDefault(); switchTrip(trip.getAttribute("data-trip")); return; }
@@ -258,7 +304,8 @@ function wireEvents() {
     if (t.closest("[data-retry]")) { e.preventDefault(); refreshNow(); return; }
     if (t.closest("#btnRefresh")) { e.preventDefault(); refreshNow(); return; }
 
-    if (t.closest("#formClose") || t.closest("#f-cancel") || t.closest("#findClose")) {
+    if (t.closest("#formClose") || t.closest("#f-cancel") || t.closest("#findClose") ||
+        t.closest("#cardClose")) {
       e.preventDefault(); closeSheet(); return;
     }
     if (t.closest("#f-skip")) { e.preventDefault(); markSkipped(); return; }
@@ -299,6 +346,7 @@ function wireEvents() {
   wireScrim();
   wireGrabber($("formGrab"), $("formSheet"));
   wireGrabber($("findGrab"), $("findSheet"));
+  wireGrabber($("cardGrab"), $("cardSheet"));
   onHashChange((v) => setView(v));
   onViewChange((v) => { if (v === "map") renderMap(); });
 }

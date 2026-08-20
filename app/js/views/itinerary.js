@@ -49,20 +49,17 @@ export function renderHero() {
 }
 
 /* ── panels ───────────────────────────────────────────────────────────────── */
-function clusterHTML(dayKey, name, stops, c) {
-  const routable = stops.filter((s) => !isNote(s));
+/* A cluster header is a LABEL, not a control (DESIGN §5, decided 2026-08-20).
+   The per-cluster "Walk it" button that used to sit here is gone — the owner
+   asked twice what it did, which was the verdict. The day card's Route ▸ is now
+   the single entry to the map, and stretch focus is the map's own job. */
+function clusterHTML(name, stops, c) {
   return '<section class="cluster">' +
     '<div class="cluster-head">' +
       '<h3 class="cluster-name">' +
         '<span class="cluster-dot" aria-hidden="true"></span>' +
         "<span>" + esc(name) + "</span>" +
       "</h3>" +
-      (routable.length >= 2
-        ? '<button class="btn btn-soft" type="button" data-route="' + attr(dayKey) + '" ' +
-          'data-cluster="' + attr(name) + '" ' +
-          'aria-label="Walk it — open the map for ' + attr(name) + '">Walk it' +
-          BIRD_SVG + "</button>"
-        : "") +
     "</div>" +
     '<div class="stops">' + stops.map((p) => cardHTML(p, c)).join("") + "</div>" +
   "</section>";
@@ -87,7 +84,7 @@ function panelHTML(day, c) {
   const cl = clustersOf(stops);
   const body = cl.length
     ? cl.map((name) =>
-        clusterHTML(day.key, name, stops.filter((s) => s.cluster === name), c)
+        clusterHTML(name, stops.filter((s) => s.cluster === name), c)
       ).join("")
     : '<p class="empty">Nothing on the plan for this day yet.</p>';
   const routable = stops.filter((s) => !isNote(s));

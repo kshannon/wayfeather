@@ -100,7 +100,8 @@ svg{display:block}
 /* ─── 3. VIEWS ────────────────────────────────────────────────────────────── */
 .view{display:none}
 .view.is-on{display:block}
-.view-map.is-on{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+/* The Map tab is a single full-bleed stage (§21), not a scrolling column. */
+.view-map.is-on{display:block}
 
 /* ─── 4. NAV BAR (large title condenses into it) ──────────────────────────── */
 /* One bar for the whole app; its title text is swapped per view. At the top of
@@ -310,9 +311,6 @@ svg{display:block}
 .btn-card{background:var(--surface);color:var(--accent);
   box-shadow:var(--card-ring),var(--e1)}
 .btn-card:active{background:var(--accent);color:var(--on-accent)}
-.btn-soft{background:var(--soft);color:var(--accent);min-height:var(--s8);
-  padding:0 var(--s3);font-size:var(--t-caption)}
-.btn-soft:active{background:var(--accent);color:var(--on-accent)}
 .btn-danger{background:var(--bad-bg);color:var(--bad-ink);
   box-shadow:inset 0 0 0 1px rgba(163,38,26,.18)}
 .btn-danger:active{filter:brightness(.96)}
@@ -430,18 +428,21 @@ svg{display:block}
 /* Landed and Flew past are one row: a state label plus an explicit Undo control,
    so undo is a labelled button rather than "tap the status again".
 
-   HANDLED-STATE CONTRAST (v4.1, DESIGN §5). The two states used to differ by a
-   shade of warm grey and read as the same thing at arm's length. They now
-   differ on three axes at once, so no single one has to carry it:
+   HANDLED-STATE CONTRAST (v4.2, DESIGN §5 — supersedes the v4.1 tint). The two
+   states used to differ by a shade of warm grey and read as the same thing at
+   arm's length. v4.1 pulled them apart on three axes; v4.2 pulls them apart on
+   the only axis that survives any glance — the GROUND:
 
      axis        Landed                        Flew past
-     fill        --tint card, --soft row       --recess card, HOLLOW row
-     marker      filled accent disc + ✓        no fill at all, a bare dash
-     text        accent, 700, name stays --ink muted ink, 600, name dims to 500
+     fill        DARK journal card #2A2721     --recess card, HOLLOW row
+     marker      matcha disc + ✓               no fill at all, a bare dash
+     text        cream serif name, matcha state  muted ink, name dims to 500
      elevation   a gentle lift (--e1)          pressed in — inset shadow, no lift
+     extra       a thin olive→matcha rule      nothing; it is written off
 
-   Every visible string on both was measured: the tightest is --ink-3 on
-   --recess at 4.84:1. The table lives in tokens.css. */
+   10.47:1 between the two card grounds. Flew past is deliberately UNCHANGED
+   from v4.1 — the whole point is that the palest thing on screen and the
+   darkest thing on screen are the two handled states. Both keep their Undo. */
 .state-row{
   display:flex;align-items:center;gap:var(--s3);margin-top:var(--s4);
   padding:7px 8px 7px 12px;border-radius:var(--r-btn);
@@ -483,13 +484,53 @@ svg{display:block}
 .undo:active{background:var(--surface-2)}
 
 /* ── handled card states ──────────────────────────────────────────────────── */
-/* LANDED — quietly celebratory: a warm tint fill, an accent spine down the
-   left edge, and the name at full strength. It still looks like somewhere you
-   were glad to go. */
+/* LANDED — the dark journal card (v4.2). The card inverts: deep warm
+   near-black ground, cream serif name, muted sage labels, a matcha check, and
+   a thin olive→matcha rule across the top standing in for the presence bar on
+   the sample-chooser page this palette comes from. A landed stopover should
+   read as richly filed away rather than merely ticked.
+   Every string on it is measured — the table lives with the --landed-* tokens. */
 .card.is-visited{
-  background:var(--tint);
-  box-shadow:inset 3px 0 0 0 var(--accent),var(--card-ring),var(--e1);
+  background:var(--landed-bg);
+  box-shadow:var(--card-ring),var(--e1);
+  padding-top:calc(var(--s4) + 11px);
 }
+@media (min-width:640px){ .card.is-visited{padding-top:calc(var(--s5) + 11px)} }
+/* the accent bar — decorative, so a pseudo-element rather than markup */
+.card.is-visited::before{
+  content:"";position:absolute;left:var(--s4);right:var(--s4);top:12px;height:3px;
+  border-radius:var(--r-pill);
+  background:linear-gradient(90deg,var(--landed-olive),var(--landed-matcha));
+}
+@media (min-width:640px){ .card.is-visited::before{left:var(--s5);right:var(--s5)} }
+.card.is-visited h3{color:var(--landed-name)}
+.card.is-visited .time{color:var(--landed-ink-2)}
+.card.is-visited .resv{color:var(--landed-matcha)}
+.card.is-visited .meta{color:var(--landed-ink-3)}
+.card.is-visited .notes{color:var(--landed-ink-2)}
+.card.is-visited .editbtn{color:var(--landed-label)}
+.card.is-visited .editbtn:active{background:var(--landed-panel);color:var(--landed-ink)}
+/* the hours chip and the link tiles lift off the ground rather than glowing */
+.card.is-visited .hours{background:var(--landed-panel);color:var(--landed-ink-2)}
+.card.is-visited .hours.is-bad{background:var(--bad-bg);color:var(--bad-ink)}
+.card.is-visited .ilink{
+  background:var(--landed-panel);color:var(--landed-ink);
+  box-shadow:inset 0 0 0 1px var(--landed-bg);
+}
+.card.is-visited .ilink b{color:var(--landed-ink-3)}
+.card.is-visited .ilink:active{background:var(--landed-matcha);color:var(--landed-bg)}
+.card.is-visited .ilink:active b{color:var(--landed-bg)}
+/* the state row sits STRAIGHT on the dark ground — no panel under it — and the
+   Undo is outlined in matcha so it is unmistakably the one control up there */
+.card.is-visited .state-row{background:transparent;padding-left:0}
+.card.is-visited .state-check{background:var(--landed-matcha);color:var(--landed-bg)}
+.card.is-visited .state-text{color:var(--landed-matcha)}
+.card.is-visited .undo{
+  background:transparent;color:var(--landed-matcha);
+  box-shadow:inset 0 0 0 1.5px var(--landed-matcha);
+}
+.card.is-visited .undo:active{background:var(--landed-matcha);color:var(--landed-bg)}
+.card.is-visited:focus-within .editbtn:focus-visible{outline-color:var(--landed-matcha)}
 /* FLEW PAST — the most muted thing on screen: the app's deepest, least
    saturated ground, no lift whatsoever, and an inset shadow so the card reads
    as pressed into the page rather than sitting on it. */
@@ -637,20 +678,69 @@ svg{display:block}
   .toast.is-out{opacity:0;transform:translateX(-50%) translateY(8px)}
 }
 
-/* ─── 21. MAP TAB ─────────────────────────────────────────────────────────── */
-.maphead-row{display:flex;align-items:flex-start;gap:var(--s3)}
-.maphead .sub{margin-top:var(--s1);font-size:var(--t-footnote);color:var(--ink-2)}
-.mapdays{padding-bottom:var(--s2)}
-/* A flex column so the geographic map can claim the leftover height, while the
-   schematic node line below keeps its natural, content-sized height.
-   width:100% is load-bearing, not belt-and-braces: .mapbody is a flex ITEM of
-   the column that is .view-map, and .wrap gives it `margin:0 auto`. An auto
-   cross-axis margin beats align-items:stretch, so the item is sized to its
-   content — and the map container has no intrinsic width, which collapsed the
-   whole panel to its 32px of padding. With border-box, 100% still respects
-   .wrap's max-width:640px and stays centred on a wide screen. */
-.mapbody{flex:1 1 auto;width:100%;padding-bottom:var(--s4);display:flex;flex-direction:column}
-.nodes{list-style:none;margin:0;padding:var(--s4) 0 0}
+/* ─── 21. MAP TAB — full bleed ────────────────────────────────────────────── */
+/* DESIGN §5 (2026-08-20): the map fills the tab edge to edge. There is no large
+   title and no day switcher on this tab; a thin floating pill says which day it
+   is, and a thin floating bar at the bottom carries the current stopover.
+   Everything is an overlay on ONE stage.
+
+   The stage is exactly one viewport tall and clips: with nothing to scroll, a
+   drag on the map is always a pan rather than a fight with the page. That also
+   makes the overlays position:absolute against the stage rather than fixed —
+   which matters, because .shell takes a transform during pull-to-refresh and a
+   transformed ancestor would become the containing block of anything fixed. */
+.mapstage{
+  position:relative;
+  height:100vh;height:100dvh;
+  overflow:hidden;
+  --stopbar-h:96px;              /* 6 + 34 + 6 + 44 + 6 — see .stopbar below   */
+  --stopbar-gap:8px;             /* air between the bar and the tab bar        */
+  --pill-top:calc(var(--safe-t) + 8px);
+}
+
+/* ── the context pill ─────────────────────────────────────────────────────── */
+/* Non-interactive on purpose: it says where you are, it is not a control. Day
+   switching is the Itinerary's job. Opaque, because it sits on the map. */
+.mappill{
+  position:absolute;z-index:20;
+  top:var(--pill-top);
+  left:max(12px, env(safe-area-inset-left));
+  max-width:calc(100% - 120px);
+  padding:6px 11px;border-radius:var(--r-sm);
+  background:var(--surface);
+  box-shadow:var(--card-ring),var(--e1);
+  font-size:var(--t-caption);font-weight:700;letter-spacing:.02em;line-height:1.25;
+  color:var(--ink-2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  pointer-events:none;
+}
+.mappill:empty{display:none}
+
+/* "Loading the map…" — same floating treatment, tucked under the pill */
+.geo-note{
+  position:absolute;z-index:20;
+  top:calc(var(--pill-top) + 34px);
+  left:max(12px, env(safe-area-inset-left));
+  margin:0;padding:6px 11px;border-radius:var(--r-sm);
+  background:var(--surface);box-shadow:var(--card-ring),var(--e1);
+  font-size:var(--t-footnote);color:var(--ink-3);
+  pointer-events:none;
+}
+
+/* ── the schematic fallback, as a scroller inside the stage ───────────────── */
+/* The node line is the one thing on this tab that can be longer than the
+   screen, so it gets its own scroll container rather than making the stage
+   scroll. Its padding clears the pill above and the stopover bar below. */
+.mapscroll{
+  position:absolute;inset:0;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  padding:calc(var(--pill-top) + 42px)
+          max(16px, env(safe-area-inset-right))
+          calc(var(--tab-total) + var(--stopbar-gap) + var(--stopbar-h) + var(--s4))
+          max(16px, env(safe-area-inset-left));
+}
+.mapscroll > *{max-width:640px;margin-left:auto;margin-right:auto}
+.nodes{list-style:none;margin:0;padding:0}
 .node{position:relative;margin:0 0 14px}
 .node-btn{
   display:flex;gap:var(--s3);align-items:stretch;width:100%;text-align:left;
@@ -676,7 +766,10 @@ svg{display:block}
   box-shadow:inset 0 0 0 2px var(--rail);
 }
 .node.is-cur .node-dot{box-shadow:0 0 0 4px var(--soft), inset 0 0 0 2px var(--accent)}
-.node.is-visited .node-dot{background:var(--accent);color:var(--on-accent);box-shadow:none}
+/* the schematic's echo of the dark Landed card: a dark disc with a matcha ✓ */
+.node.is-visited .node-dot{
+  background:var(--landed-bg);color:var(--landed-matcha);box-shadow:none;
+}
 .node.is-cur.is-visited .node-dot{box-shadow:0 0 0 4px var(--soft)}
 .node.is-skipped .node-dot{
   background:var(--neutral-bg);color:var(--ink-2);box-shadow:inset 0 0 0 2px var(--hair-2);
@@ -690,6 +783,12 @@ svg{display:block}
   background:var(--surface);border-radius:var(--r-md);
   box-shadow:var(--card-ring),var(--e1);padding:8px 12px 10px;margin-left:-4px;
 }
+/* the current node is the only one with a panel of its own, so it is the only
+   one that can carry the dark Landed ground */
+.node.is-cur.is-visited .node-body{background:var(--landed-bg)}
+.node.is-cur.is-visited .node-name{color:var(--landed-name)}
+.node.is-cur.is-visited .node-time{color:var(--landed-ink-2)}
+.node.is-cur.is-visited .node-state{color:var(--landed-matcha)}
 .node-time{font-size:var(--t-caption2);font-weight:600;color:var(--brown)}
 /* serif: a stopover name */
 .node-name{
@@ -709,69 +808,124 @@ svg{display:block}
   box-shadow:var(--card-ring),var(--e1);
   font-size:var(--t-footnote);font-weight:600;text-decoration:none;
 }
-/* The dock sticks above the tab bar for as long as the node line is longer than
-   the viewport, then comes to rest at the end of the list. */
-.dock{
-  position:sticky;z-index:20;
-  bottom:var(--tab-total);
-  margin-top:var(--s4);
-  background:var(--surface);
-  border-radius:var(--r-xl) var(--r-xl) 0 0;
-  box-shadow:0 -1px 0 var(--hair), 0 -10px 30px rgba(31,27,21,.08);
-}
-.dock-in{
+/* ── the stopover bar ─────────────────────────────────────────────────────── */
+/* Replaces the old growing dock (which content-sized up to 52vh and ate half
+   the map). This one is FIXED at 96px and never grows: the name ellipsizes on
+   one line, the action row is one height in both its states, and everything
+   deeper — hours, notes, the link tiles, the pencil — lives behind Details.
+
+   ◀ and ▶ are pinned to the far ends and run the bar's full height, so the two
+   things you do most on this tab are the two easiest targets on the screen:
+   84x44 each, well past the 44pt minimum. Compact here means FEWER things, not
+   smaller taps — every control in the bar is at least 44px. */
+.stopbar{
+  position:absolute;z-index:20;
+  left:max(10px, env(safe-area-inset-left));
+  right:max(10px, env(safe-area-inset-right));
+  bottom:calc(var(--tab-total) + var(--stopbar-gap));
   max-width:640px;margin:0 auto;
-  padding-left:max(16px, env(safe-area-inset-left));
-  padding-right:max(16px, env(safe-area-inset-right));
+  height:var(--stopbar-h);
+  display:flex;align-items:stretch;gap:6px;
+  padding:6px;
+  background:var(--surface);
+  border-radius:var(--r-lg);
+  box-shadow:var(--card-ring),var(--e-float);
 }
-.dock-nav{
-  display:flex;align-items:center;justify-content:space-between;
-  gap:var(--s2);padding:var(--s2) 0 0;
-}
-.navbtn{
-  flex:0 0 auto;width:46px;height:46px;border-radius:var(--r-btn);
+.stopbar:empty,.stopbar.is-empty{display:none}
+/* full-height cycling arrows at the two ends */
+.cycbtn{
+  flex:0 0 auto;width:44px;align-self:stretch;min-height:var(--s8);
+  border-radius:var(--r-btn);
   display:flex;align-items:center;justify-content:center;
   background:var(--surface-2);color:var(--ink-2);cursor:pointer;
 }
-.navbtn:active{background:var(--accent);color:var(--on-accent)}
-.dock-count{
-  font-size:var(--t-caption2);font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--ink-3);text-align:center;
+.cycbtn:active{background:var(--accent);color:var(--on-accent)}
+.stopbar-mid{
+  flex:1 1 auto;min-width:0;
+  display:flex;flex-direction:column;gap:6px;
 }
-.dock-body{max-height:52vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  padding-top:var(--s2)}
-.dock-pad{padding-bottom:var(--s4)}
-.dock-top{display:flex;align-items:center;justify-content:space-between;gap:var(--s3)}
-/* serif: a stopover name, and its notes prose */
-.dock-name{font-family:var(--f-serif);font-size:var(--t-serif-body);font-weight:600;
-  letter-spacing:var(--track-serif);line-height:1.3;margin-top:2px}
-.dock-note{
-  margin-top:var(--s2);font-family:var(--f-serif);
-  font-size:var(--t-footnote);letter-spacing:var(--track-serif);
-  color:var(--ink-2);line-height:1.5;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+/* the name line: time, reservation glyph, then the name — one line, ellipsized */
+.stopbar-line{
+  height:34px;flex:0 0 auto;
+  display:flex;align-items:center;gap:7px;min-width:0;
 }
-.map-pad{height:var(--tab-total)}
+.stopbar-line .card-time{flex:0 0 auto}
+.stopbar-line .time{font-size:var(--t-subhead)}
+/* serif: a stopover name */
+.stopbar-name{
+  flex:1 1 auto;min-width:0;
+  font-family:var(--f-serif);font-size:var(--t-serif-sub);font-weight:600;
+  letter-spacing:var(--track-serif);line-height:1.2;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.stopbar-pos{
+  flex:0 0 auto;font-size:var(--t-caption2);font-weight:700;
+  font-variant-numeric:tabular-nums;color:var(--ink-3);letter-spacing:.02em;
+}
+/* the action row — 44px tall whether it holds the two buttons or the state */
+.stopbar-acts{height:var(--s8);flex:0 0 auto;display:flex;align-items:stretch;gap:5px}
+.stopbar-state{flex:1 1 auto;min-width:0;display:flex}
+.stopbar-state .acts{flex:1 1 auto;margin-top:0;gap:5px;flex-wrap:nowrap}
+.stopbar-state .act{min-height:var(--s8);padding:0 var(--s2);font-size:var(--t-caption)}
+/* The handled state, compacted into the same 44px slot.
+
+   THE MARKER IS DROPPED HERE, and only here. Two 44px arrows own 100px of a
+   380px bar, leaving 243px to hold the state, its Undo and Details — and
+   "Landed · 3:12 PM" plus the 22px ✓ disc overran that by 46px, ellipsizing the
+   very timestamp the state exists to report. In the compact bar the GROUND
+   already carries the state (v4.2's distinguishing axis: Landed is the dark
+   filled pill, Flew past the hollow outlined one), so the marker is the
+   redundant half and the words are the load-bearing half. The full marker is
+   still on the itinerary card, the Details card, the map pin and the schematic
+   node — every surface with room for it. */
+.stopbar-state .state-check,
+.stopbar-state .state-dash{display:none}
+.stopbar-state .state-row{
+  flex:1 1 auto;min-width:0;
+  margin-top:0;height:var(--s8);padding:0 4px 0 9px;gap:6px;
+}
+.stopbar-state .state-text{font-size:var(--t-caption2)}
+.stopbar-state .undo{min-height:var(--s8);padding:0 9px;font-size:var(--t-caption2)}
+/* LANDED wears the dark journal treatment here too (DESIGN §5) — a dark pill
+   inside the light bar, the same object you see on the itinerary card. Flew
+   past keeps the hollow v4.1 outline and is deliberately left alone. */
+.stopbar-state .state-row:not(.is-skip){background:var(--landed-bg)}
+.stopbar-state .state-row:not(.is-skip) .state-text{color:var(--landed-matcha)}
+.stopbar-state .state-row:not(.is-skip) .state-check{
+  background:var(--landed-matcha);color:var(--landed-bg);
+}
+.stopbar-state .state-row:not(.is-skip) .undo{
+  background:transparent;color:var(--landed-matcha);
+  box-shadow:inset 0 0 0 1.5px var(--landed-matcha);
+}
+.stopbar-state .state-row:not(.is-skip) .undo:active{
+  background:var(--landed-matcha);color:var(--landed-bg);
+}
+.stopbar-details{
+  flex:0 0 auto;min-height:var(--s8);padding:0 10px;
+  font-size:var(--t-caption2);
+}
+.stopbar-empty{
+  flex:1 1 auto;display:flex;align-items:center;justify-content:center;
+  font-size:var(--t-footnote);color:var(--ink-3);
+}
 
 /* ─── 21b. GEOGRAPHIC MAP (MapLibre) ──────────────────────────────────────── */
-/* The canvas sits in a rounded card like everything else in the app, and it is
-   painted the app's cream BEFORE MapLibre ever draws — so a slow style load
-   looks like the map fading in rather than a hole in the page. */
-.geo{
-  flex:1 1 auto;display:flex;flex-direction:column;
-  min-height:min(56dvh, 520px);
-  padding-top:var(--s4);
-}
-.geo-canvas{
-  flex:1 1 auto;min-height:280px;
-  border-radius:var(--r-lg);overflow:hidden;
+/* Full bleed: the canvas IS the stage. No card, no radius, no inset — the only
+   rounded things on this tab are the overlays floating on top of it. It is
+   still painted the app's cream BEFORE MapLibre ever draws, so a slow style
+   load looks like the map fading in rather than a hole in the page. */
+.geo{position:absolute;inset:0}
+/* `.geo > .geo-canvas` rather than `.geo-canvas`, and the extra class is doing
+   real work: MapLibre stamps `maplibregl-map` on this very element and its
+   stylesheet — injected into <head> at RUNTIME, so always after this file —
+   carries `.maplibregl-map{position:relative}`. At equal specificity the later
+   sheet wins, which turned inset:0 into a no-op and collapsed the canvas to
+   0px high. Two classes outrank one, whatever the load order. */
+.geo > .geo-canvas{
+  position:absolute;inset:0;
   background:var(--ground);
-  box-shadow:var(--card-ring),var(--e1);
-  position:relative;
-}
-.geo-note{
-  margin:var(--s2) 2px 0;
-  font-size:var(--t-footnote);color:var(--ink-3);
+  overflow:hidden;
 }
 
 /* ── pins ─────────────────────────────────────────────────────────────────── */
@@ -838,11 +992,25 @@ svg{display:block}
 .geo-canvas .maplibregl-ctrl-icon{transform:scale(1.15)}
 .geo-canvas .maplibregl-ctrl-attrib{
   background:rgba(255,252,245,.86);
-  border-radius:var(--r-sm) 0 0 0;
+  border-radius:var(--r-sm) 0 0 var(--r-sm);
   font-family:var(--f-sans);font-size:var(--t-caption2);
 }
 .geo-canvas .maplibregl-ctrl-attrib a{color:var(--ink-2)}
 .geo-canvas .maplibregl-ctrl-attrib-button{background-color:transparent}
+/* Full bleed means the library's own controls now share edges with our chrome,
+   so both corners it uses are moved out of the way:
+     top-right     the app's floating ↻ lives there — drop below it
+     bottom-right  the stopover bar lives there — lift above it, because ODbL
+                   asks for the credit to be readable, not merely present. */
+.geo-canvas .maplibregl-ctrl-top-right{
+  top:calc(var(--safe-t) + var(--nav-h) + 6px);
+  right:max(4px, env(safe-area-inset-right));
+}
+.geo-canvas .maplibregl-ctrl-bottom-right,
+.geo-canvas .maplibregl-ctrl-bottom-left{
+  bottom:calc(var(--tab-total) + var(--stopbar-gap) + var(--stopbar-h) + 4px);
+}
+.geo-canvas .maplibregl-ctrl-bottom-right{right:max(4px, env(safe-area-inset-right))}
 
 /* ─── 22. PAGES + INSET-GROUPED LISTS (Trips / Settings) ──────────────────── */
 .page{padding-bottom:calc(var(--s7) + var(--tab-total))}
@@ -926,6 +1094,14 @@ svg{display:block}
   display:flex;flex-direction:column;
   overflow:hidden;
   transform:translateY(100%);
+}
+/* Content-sized rather than full height. The Details sheet holds exactly one
+   stopover card, and a card floating at the top of a full-height sheet reads as
+   a bug; this way it rises just far enough to show the card and the map stays
+   visible behind the scrim. Same grabber, same scrim, same Esc. */
+.sheet.sheet-auto{
+  top:auto;
+  max-height:calc(100dvh - var(--safe-t) - var(--s5));
 }
 .sheet.is-in{transform:translateY(var(--drag,0px))}
 @media (prefers-reduced-motion: no-preference){

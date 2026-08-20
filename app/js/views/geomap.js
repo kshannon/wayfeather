@@ -177,6 +177,37 @@ function keepUserDot(b) {
   return b;
 }
 
+/* The map went full bleed (DESIGN §5), so the canvas is no longer the visible
+   frame: the context pill floats over its top and the stopover bar plus the tab
+   bar cover its bottom. A symmetric pad would fit the day's bounds to the whole
+   canvas and quietly park the last pin underneath the bar. So the padding is
+   measured off the chrome that is actually on screen, with FIT_PAD as both the
+   minimum and the fallback when a bar has not been laid out yet. */
+function fitPadding() {
+  const pad = { top: FIT_PAD, bottom: FIT_PAD, left: FIT_PAD, right: FIT_PAD };
+  const host = $("geoCanvas");
+  if (!host) return pad;
+  const box = host.getBoundingClientRect();
+  if (!box.height) return pad;
+  const clear = (el, edge) => {
+    if (!el || el.hidden) return 0;
+    const r = el.getBoundingClientRect();
+    if (!r.height) return 0;
+    return edge === "top" ? Math.max(0, r.bottom - box.top) : Math.max(0, box.bottom - r.top);
+  };
+  pad.top = Math.max(pad.top, clear($("mapPill"), "top") + 12);
+  pad.bottom = Math.max(pad.bottom, clear($("stopBar"), "bottom") + 12);
+  /* MapLibre throws if the padding leaves no room at all — on a short screen
+     the two bars can genuinely exceed the canvas. Cap each axis at 40% so a
+     fit always has a viewport to fit into. */
+  const capV = box.height * 0.4, capH = box.width * 0.4;
+  pad.top = Math.min(pad.top, capV);
+  pad.bottom = Math.min(pad.bottom, capV);
+  pad.left = Math.min(pad.left, capH);
+  pad.right = Math.min(pad.right, capH);
+  return pad;
+}
+
 function applyViewport(pts, force, instant) {
   if (!map || !pts.length) return;
   fitPts = pts;
@@ -190,7 +221,7 @@ function applyViewport(pts, force, instant) {
     return;
   }
   const b = keepUserDot(boundsOf(pts));
-  map.fitBounds(b, { padding: FIT_PAD, maxZoom: FIT_MAX_Z, ...anim });
+  map.fitBounds(b, { padding: fitPadding(), maxZoom: FIT_MAX_Z, ...anim });
 }
 
 /* ── route line + arrows ──────────────────────────────────────────────────── */

@@ -8,7 +8,13 @@
    Bumping: change VERSION. The cache name carries it, install precaches the new
    shell, and activate deletes every other wayfeather-shell-* cache. */
 
-const VERSION = "v4";
+/* v5 (2026-08-20, the v4.2 wiring pass): the wallpaper token, the compact map
+   dock, and — the reason a bump is not optional here — new icon BYTES under the
+   unchanged names icon.svg / icon-square.svg / apple-touch-icon.png /
+   icon-192.png / icon-512.png. Same URLs, different pixels: without a new cache
+   name every installed copy would keep serving the old bird off the shell
+   cache. */
+const VERSION = "v5";
 const CACHE = "wayfeather-shell-" + VERSION;
 const PREFIX = "wayfeather-shell-";
 

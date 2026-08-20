@@ -12,18 +12,18 @@
 
      accent #4B6630  on --soft         4.84      brown #6B4F3A on --neutral-bg  5.96
                      on --neutral-bg   5.16      #FFF on --accent               6.48
-                     on --surface-2    5.39      --rail on --ground             3.40
+                     on --surface-2    5.39      --rail on --ground             3.69
                      on --tint         5.48      --done on --surface-2          5.07
                      on --ground       5.80      --ok-ink on --ok-bg            5.40
                      on --surface      6.32      --warn-ink on --warn-bg        5.41
      "accent as text on a surface >= 4.5" and "white on an accent fill >= 4.5"
      are the same inequality, so one tuned hex satisfies both directions.
 
-   The v4.1 handled states add two more grounds. Every visible string on each:
+   The handled states carry two more grounds. v4.2 inverted LANDED to the dark
+   journal card (its own measured table sits with the --landed-* tokens below);
+   FLEW PAST is unchanged from v4.1 and stays the palest thing in the app:
 
-     LANDED   on --tint       ink 14.49  brown 6.33  ink-2 7.14  ink-3 5.82
-              on --soft       accent (state text) 4.84   #FFF on --accent 6.48
-     FLEW     on --recess     ink-2 5.94  ink-3 4.84   (tightest pair in the app)
+     FLEW     on --recess     ink-2 5.94  ink-3 4.84
      PAST     Undo/hours/tiles keep their own grounds: 8.24 / 7.03 / 7.03
    ========================================================================= */
 
@@ -35,7 +35,13 @@
   --neutral-bg:#ECE5D3;
   --hair:#E5DECD;
   --hair-2:#D3C9B2;
-  --rail:#8B8271;
+  /* Nudged from #8B8271 (2026-08-20, the wp-02 pass). The route rail is the one
+     non-text UI colour in the app that sits straight on the patterned ground,
+     and the denser tile pushed it to 2.85:1 where a bird crosses the line —
+     under the 3:1 a graphic carrying meaning has to hold. Six units darker per
+     channel is invisible beside the old rail and clears it: 3.09:1 on the
+     pattern, 3.69:1 on bare cream (it was 3.40), 4.02:1 on a card. */
+  --rail:#857C6B;
   /* The written-off fill (v4.1). Deliberately the deepest ground in the app and
      the lowest-chroma one (9.5% vs --neutral-bg's 10.6%): "Flew past" has to be
      the most muted thing on screen, and --neutral-bg sat only 1.13:1 off the
@@ -58,6 +64,38 @@
   --soft:#D7E3C5;
   --on-accent:#FFFFFF;
   --brown:#6B4F3A;      /* times, glyphs, quiet emphasis — 7.3:1 on a card  */
+
+  /* ── LANDED, the dark "journal" card (v4.2 — supersedes the v4.1 tint) ──
+     DESIGN §5: a landed stopover inverts to deep warm near-black and reads as
+     richly filed away, while Flew past stays the palest, most written-off
+     thing on screen. Two states that differ by GROUND cannot be confused at
+     arm's length: the Landed card and the Flew-past card are 10.47:1 apart.
+
+     The palette is lifted from app/assets/wallpaper-samples/preview.html — the
+     sample chooser's own dark entry cards, which is the page the owner
+     screenshotted. Its dt/label colour #8C8371 is the one value NOT carried
+     over: it measures 3.97:1 on this ground, so labels use a lifted #A79D8A.
+
+     Every string that can appear on the dark card, measured:
+       --landed-name  13.33   the serif stopover name
+       --landed-ink   11.97   link glyphs, the Undo label on its fill
+       --landed-ink-2  9.62   the time, notes prose
+       --landed-matcha 7.40   "Landed · 3:12 PM", the ✓ disc, the Undo outline
+       --landed-ink-3  7.17   meta — type · address · cost
+       --landed-label  5.55   small labels
+     and on --landed-panel (the hours chip and the link tiles):
+       --landed-ink-2  8.12   --landed-ink 10.11   --landed-ink-3 6.06
+     --landed-olive is decorative only — the dark stop of the accent bar's
+     gradient — and holds 3.82:1, past the 3:1 a non-text graphic needs. */
+  --landed-bg:#2A2721;      /* the card ground — preview.html's page          */
+  --landed-panel:#37332B;   /* hours chip + link tiles, lifted off the ground */
+  --landed-name:#F7F2E6;    /* cream serif name                               */
+  --landed-ink:#EDE6D6;
+  --landed-ink-2:#D8CFBC;   /* the time, notes prose                          */
+  --landed-ink-3:#BDB3A0;   /* meta                                           */
+  --landed-label:#A79D8A;   /* small labels (preview.html's #8C8371, lifted)  */
+  --landed-matcha:#A8C070;  /* the accent ON the dark — check, state, Undo    */
+  --landed-olive:#6E8A46;   /* the accent bar's dark stop (decorative only)   */
 
   /* iOS "material": the bar tint is a translucent ground, not a flat fill */
   --mat-bg:rgba(247,242,230,.82);
@@ -133,16 +171,41 @@
   --ease-out:cubic-bezier(.22,1,.36,1);
 
   /* ── the wallpaper ────────────────────────────────────────────────────── */
-  /* Original artwork, inline as a data: URI — the app still makes ZERO
-     external requests, and there is no extra file for the service worker to
-     precache. A 360x360 tile carrying three hand-drawn swallow silhouettes,
-     each trailing the dashed flight loop it just flew. Bird and trail share a
-     local origin so one transform places the pair; every group sits inside the
-     tile edges, so the repeat is seamless with nothing stitched across a seam.
-     Brown at 7.5% / 5.5% puts the pattern about 1.09:1 off the ground — you
-     see it if you look, and it disappears the moment you squint. Ink still
-     reads 14:1 over the darkest part of the tile.
-     Source + generator: kept out of the app; the tile is authored artwork. */
-  --wallpaper:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360' viewBox='0 0 360 360'%3E%3Cg transform='translate(120 92) rotate(-16) scale(0.95)'%3E%3Cpath d='M-86 40C-66 14-44 12-34 24c7 9-6 16-10 7C-48 21-32 14-22 16c4 1 5-4 6-9' fill='none' stroke='%236B4F3A' stroke-opacity='0.055' stroke-width='1.8' stroke-linecap='round' stroke-dasharray='3 7'/%3E%3Cpath d='M0 -1.4C-3.4-6.2-7.8-8.8-12-9.4c4.4 2.6 7.6 5.6 9.6 9.2C-1.8 0.8-1 1.4 0 1.6c1-.2 1.8-.8 2.4-1.8C4.4 -3.8 7.6 -6.8 12 -9.4C7.8-8.8 3.4-6.2 0-1.4Z' fill='%236B4F3A' fill-opacity='0.075'/%3E%3C/g%3E%3Cg transform='translate(300 190) rotate(24) scale(0.75)'%3E%3Cpath d='M-86 40C-66 14-44 12-34 24c7 9-6 16-10 7C-48 21-32 14-22 16c4 1 5-4 6-9' fill='none' stroke='%236B4F3A' stroke-opacity='0.055' stroke-width='1.8' stroke-linecap='round' stroke-dasharray='3 7'/%3E%3Cpath d='M0 -1.4C-3.4-6.2-7.8-8.8-12-9.4c4.4 2.6 7.6 5.6 9.6 9.2C-1.8 0.8-1 1.4 0 1.6c1-.2 1.8-.8 2.4-1.8C4.4 -3.8 7.6 -6.8 12 -9.4C7.8-8.8 3.4-6.2 0-1.4Z' fill='%236B4F3A' fill-opacity='0.075'/%3E%3C/g%3E%3Cg transform='translate(190 296) rotate(-4) scale(0.85)'%3E%3Cpath d='M-86 40C-66 14-44 12-34 24c7 9-6 16-10 7C-48 21-32 14-22 16c4 1 5-4 6-9' fill='none' stroke='%236B4F3A' stroke-opacity='0.055' stroke-width='1.8' stroke-linecap='round' stroke-dasharray='3 7'/%3E%3Cpath d='M0 -1.4C-3.4-6.2-7.8-8.8-12-9.4c4.4 2.6 7.6 5.6 9.6 9.2C-1.8 0.8-1 1.4 0 1.6c1-.2 1.8-.8 2.4-1.8C4.4 -3.8 7.6 -6.8 12 -9.4C7.8-8.8 3.4-6.2 0-1.4Z' fill='%236B4F3A' fill-opacity='0.075'/%3E%3C/g%3E%3C/svg%3E");
+  /* wp-02 "Covey" — the shipped tile (DESIGN §5, the owner's pick after
+     browsing all ten samples in app/assets/wallpaper-samples/). Original
+     artwork, inline as a data: URI, so the app still makes ZERO external
+     requests and there is no extra file for the service worker to precache.
+
+     A 360x360 tile carrying 27 small birds on a jittered half-drop lattice,
+     every one of them the same silhouette at the same weight (brown at 12%).
+     That uniformity is the point and it is why this tile won: the strips of
+     ground between cards are narrow, and a tile with a few big marks makes
+     one strip loud and the next one empty. A dense even field reads the same
+     in every gap, so the pattern is texture rather than incident.
+
+     Ink weight, against the retired faint tile: 27 birds at 12% where there
+     were 3 birds at 7.5% plus 3 dashed trails at 5.5% — about 8x the ink on
+     the page. The darkest pixel lands at #E6DED1, 1.20:1 off the ground (the
+     old tile managed 1.11:1) — answering "a bit too light, I can't see it"
+     without ever competing with a card.
+
+     Seamless, and checked rather than assumed: exactly four birds have a
+     bounding circle crossing a tile edge, and they form two pairs offset by
+     exactly 360px in x at identical rotation and scale, so each pair draws as
+     one whole bird across the repeat. Nothing else reaches an edge.
+
+     CONTRAST over that darkest tone. Everything in the app that sits on the
+     PATTERNED ground rather than on an opaque surface was re-measured:
+
+       --ink    12.83   large title, stopover + node names
+       --ink-2   6.33   lt-sub, the Nest line, cluster names
+       --brown   5.61   node times, the Nest glyph
+       --ink-3   5.15   stamp, eyebrow, geo-note, trip notes, tab labels
+       --accent  4.85   selected tab label, a visited node's state
+       --done    4.56   completed-day marks
+
+     Cards, chips, day blocks, the map's floating bars and the note/empty rows
+     all paint their own opaque grounds, so no body text depends on the tile. */
+  --wallpaper:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360' viewBox='0 0 360 360'%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(48.04 46.7) rotate(24.15) scale(1)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(104.27 29.73) rotate(-7.47) scale(0.84)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(167.41 26.1) rotate(-25.25) scale(0.81)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(259.11 37.18) rotate(14.25) scale(0.91)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(317.55 25.57) rotate(-12.93) scale(0.8)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(67.32 98.93) rotate(-9.39) scale(0.82)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(151.47 98.42) rotate(14.99) scale(0.81)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(220.76 116.94) rotate(9.54) scale(0.98)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(289.22 96.8) rotate(2.45) scale(0.8)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(2.23 99.64) rotate(4.47) scale(0.82)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(362.23 99.64) rotate(4.47) scale(0.82)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(44.99 175.21) rotate(18.04) scale(0.86)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(111.29 190.72) rotate(6.6) scale(1)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(167.88 191.5) rotate(-24.32) scale(1.01)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(249.99 174.03) rotate(-4.04) scale(0.84)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(322.49 175.47) rotate(-3.03) scale(0.86)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(64.79 244.68) rotate(-14.47) scale(0.83)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(150.58 243.34) rotate(13.19) scale(0.82)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(220.61 263.84) rotate(9.25) scale(1.01)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(281.86 239.52) rotate(-12.32) scale(0.78)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(-5.23 243.44) rotate(-10.49) scale(0.82)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(354.77 243.44) rotate(-10.49) scale(0.82)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(26.26 313.32) rotate(-19.54) scale(0.8)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(120.33 326.4) rotate(24.73) scale(0.92)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(170.25 315.46) rotate(-19.57) scale(0.82)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -1.2C-2.6 -5.6 -6.6 -8.6 -12.2 -10.6C-9.6 -7.2 -6.6 -4.2 -3.6 -1.6C-2.4 -0.6 -1.5 0.3 -1 1.2L-2.2 5 L0 3.2 L2.2 5 L1 1.2C1.5 0.3 2.4 -0.6 3.6 -1.6C6.6 -4.2 9.6 -7.2 12.2 -10.6C6.6 -8.6 2.6 -5.6 0 -1.2Z' transform='translate(251.64 314.49) rotate(-0.72) scale(0.81)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3Cpath d='M0 -2.2C-3 -6.2 -8 -9.2 -14 -10.8C-10 -6.8 -5 -3.4 -1.3 -0.3L0 0.9 L1.3 -0.3C5 -3.4 10 -6.8 14 -10.8C8 -9.2 3 -6.2 0 -2.2Z' transform='translate(329.55 314.18) rotate(11.14) scale(0.81)' fill='%236B4F3A' fill-opacity='0.12'/%3E%3C/svg%3E");
   --wallpaper-size:360px 360px;
 }

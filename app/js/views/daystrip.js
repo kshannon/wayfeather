@@ -1,10 +1,9 @@
-/* views/daystrip.js — the segmented day strip, in both its flavours.
+/* views/daystrip.js — the segmented day strip.
 
-   mode "tab"    → the Itinerary tablist that owns the day panels
-   mode "switch" → the Map tab's own picker. It is a group of toggle buttons,
-                   not a second tablist: only one tablist may own those panels,
-                   and without a picker of its own the Map tab is a dead end
-                   when you open it straight from the tab bar.
+   ONE strip now: the Itinerary tablist that owns the day panels. The Map tab
+   used to carry a second copy of it as a group of toggle buttons; the map went
+   full-bleed (DESIGN §5, 2026-08-20) and day switching lives here alone, so
+   that flavour is gone along with the map's title.
 
    The 1px separators are the container's own background showing through a 1px
    flex gap, so the rules read identically between, around and outside the
@@ -19,7 +18,7 @@ function blockLabel(day, done) {
          (done ? ", complete" : "");
 }
 
-export function dayBlockHTML(trip, day, mode) {
+export function dayBlockHTML(trip, day) {
   const done = dayComplete(trip, day);
   const num = day.date ? dayNum(day.date) : (day.bullet || "");
   const common =
@@ -27,11 +26,6 @@ export function dayBlockHTML(trip, day, mode) {
     '<span class="dblock-num u-tab-num">' + esc(num) + "</span>" +
     (done ? '<span class="dblock-done" aria-hidden="true">✓</span>' : "");
 
-  if (mode === "switch") {
-    return '<button class="dblock' + (done ? " is-done" : "") + '" type="button" ' +
-      'data-mday="' + attr(day.key) + '" aria-pressed="false" ' +
-      'aria-label="' + attr(blockLabel(day, done)) + '">' + common + "</button>";
-  }
   return '<button class="dblock' + (done ? " is-done" : "") + '" type="button" role="tab" ' +
     'id="daytab-' + attr(day.key) + '" aria-controls="panel-' + attr(day.key) + '" ' +
     'aria-selected="false" tabindex="-1" aria-label="' + attr(blockLabel(day, done)) + '" ' +
@@ -39,8 +33,7 @@ export function dayBlockHTML(trip, day, mode) {
 }
 
 export function renderStrips(trip) {
-  $("dayTabs").innerHTML = trip.days.map((d) => dayBlockHTML(trip, d, "tab")).join("");
-  $("mapDays").innerHTML = trip.days.map((d) => dayBlockHTML(trip, d, "switch")).join("");
+  $("dayTabs").innerHTML = trip.days.map((d) => dayBlockHTML(trip, d)).join("");
 }
 
 function ensureVisible(el) {
@@ -60,35 +53,25 @@ export function paintStrips(dayKey, moveFocus) {
     tabs[i].tabIndex = on ? 0 : -1;
     if (on) { if (moveFocus) tabs[i].focus(); ensureVisible(tabs[i]); }
   }
-  const sw = $("mapDays").querySelectorAll(".dblock");
-  for (let j = 0; j < sw.length; j++) {
-    const on = sw[j].getAttribute("data-mday") === dayKey;
-    sw[j].setAttribute("aria-pressed", on ? "true" : "false");
-    sw[j].classList.toggle("is-sel", on);
-    if (on) ensureVisible(sw[j]);
-  }
 }
 
 /* Grey-out + ✓ after a state change, without a full repaint of the strips. */
 export function syncCompletion(trip) {
   trip.days.forEach((d) => {
     const done = dayComplete(trip, d);
-    const label = blockLabel(d, done);
-    [$("dayTabs").querySelector('[data-key="' + d.key + '"]'),
-     $("mapDays").querySelector('[data-mday="' + d.key + '"]')].forEach((el) => {
-      if (!el) return;
-      el.classList.toggle("is-done", done);
-      el.setAttribute("aria-label", label);
-      let mark = el.querySelector(".dblock-done");
-      if (done && !mark) {
-        mark = document.createElement("span");
-        mark.className = "dblock-done";
-        mark.setAttribute("aria-hidden", "true");
-        mark.textContent = "✓";
-        el.appendChild(mark);
-      } else if (!done && mark) {
-        mark.parentNode.removeChild(mark);
-      }
-    });
+    const el = $("dayTabs").querySelector('[data-key="' + d.key + '"]');
+    if (!el) return;
+    el.classList.toggle("is-done", done);
+    el.setAttribute("aria-label", blockLabel(d, done));
+    let mark = el.querySelector(".dblock-done");
+    if (done && !mark) {
+      mark = document.createElement("span");
+      mark.className = "dblock-done";
+      mark.setAttribute("aria-hidden", "true");
+      mark.textContent = "✓";
+      el.appendChild(mark);
+    } else if (!done && mark) {
+      mark.parentNode.removeChild(mark);
+    }
   });
 }

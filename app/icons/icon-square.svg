@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-  <!-- Wayfeather app icon - mid-century travel-poster variant. Avian matcha palette. -->
+  <!-- Wayfeather app icon - poster variant, refinement r4. Combined judgement: r1's bird, r2's fittings, r3's palette held one notch back. -->
+  <!-- Subtle pass over app/icons/variants/icon-poster.svg; composition, palette family and margins unchanged. -->
   <defs>
     <clipPath id="pCase">
       <rect x="180" y="588" width="664" height="256" rx="26"/>
@@ -10,6 +11,9 @@
     <clipPath id="pTail">
       <path d="M418 376L330 230L250 296L400 448Z"/>
     </clipPath>
+    <clipPath id="pTail2">
+      <path d="M418 376C392 330 362 280 330 230L250 296C286 342 340 398 400 448Z"/>
+    </clipPath>
   </defs>
 
   <!-- flat cream ground -->
@@ -18,7 +22,7 @@
   <g transform="translate(-61.4,-76) scale(1.12)">
 
   <!-- pale sage disc: the poster's field -->
-  <circle cx="512" cy="444" r="300" fill="#E1E6C4"/>
+  <circle cx="512" cy="444" r="300" fill="#D8E2B8"/>
 
   <!-- flat cast shadow -->
   <ellipse cx="512" cy="866" rx="292" ry="24" fill="#DBCDA8"/>
@@ -30,62 +34,64 @@
 
     <!-- corner caps -->
     <g fill="#43301F">
-      <path d="M180 688V614A26 26 0 0 1 206 588H280Z"/>
-      <path d="M844 688V614A26 26 0 0 0 818 588H744Z"/>
-      <path d="M180 744V818A26 26 0 0 0 206 844H280Z"/>
-      <path d="M844 744V818A26 26 0 0 1 818 844H744Z"/>
+      <path d="M180 698V614A26 26 0 0 1 206 588H294Z"/>
+      <path d="M844 698V614A26 26 0 0 0 818 588H730Z"/>
+      <path d="M180 740V818A26 26 0 0 0 206 844H294Z"/>
+      <path d="M844 740V818A26 26 0 0 1 818 844H730Z"/>
     </g>
 
     <!-- seam -->
-    <path d="M180 676H844" fill="none" stroke="#43301F" stroke-width="12" clip-path="url(#pCase)"/>
+    <path d="M180 676H844" fill="none" stroke="#43301F" stroke-width="16" clip-path="url(#pCase)"/>
 
     <!-- feet -->
     <g fill="#43301F">
-      <rect x="288" y="842" width="66" height="24" rx="10"/>
-      <rect x="670" y="842" width="66" height="24" rx="10"/>
+      <rect x="284" y="840" width="76" height="28" rx="11"/>
+      <rect x="664" y="840" width="76" height="28" rx="11"/>
     </g>
 
     <!-- straps -->
     <g fill="#43301F">
-      <rect x="296" y="588" width="52" height="256"/>
-      <rect x="676" y="588" width="52" height="256"/>
+      <rect x="290" y="588" width="64" height="256"/>
+      <rect x="670" y="588" width="64" height="256"/>
     </g>
 
     <!-- brass hardware -->
     <g fill="#C99C5E">
-      <rect x="286" y="708" width="72" height="50" rx="6"/>
-      <rect x="666" y="708" width="72" height="50" rx="6"/>
-      <rect x="424" y="652" width="56" height="48" rx="6"/>
-      <rect x="544" y="652" width="56" height="48" rx="6"/>
+      <rect x="284" y="704" width="76" height="58" rx="7"/>
+      <rect x="664" y="704" width="76" height="58" rx="7"/>
+      <rect x="418" y="648" width="64" height="56" rx="7"/>
+      <rect x="542" y="648" width="64" height="56" rx="7"/>
     </g>
     <g fill="#43301F">
-      <rect x="300" y="727" width="44" height="12" rx="6"/>
-      <rect x="680" y="727" width="44" height="12" rx="6"/>
-      <rect x="438" y="670" width="28" height="12" rx="6"/>
-      <rect x="558" y="670" width="28" height="12" rx="6"/>
+      <rect x="300" y="726" width="44" height="14" rx="7"/>
+      <rect x="680" y="726" width="44" height="14" rx="7"/>
+      <rect x="432" y="668" width="36" height="16" rx="8"/>
+      <rect x="556" y="668" width="36" height="16" rx="8"/>
     </g>
 
     <!-- one quiet travel label -->
     <g transform="rotate(-8 430 788)">
-      <circle cx="430" cy="788" r="36" fill="#EFE3C8"/>
-      <circle cx="430" cy="788" r="19" fill="none" stroke="#7E9450" stroke-width="9"/>
+      <circle cx="430" cy="788" r="38" fill="#EFE3C8"/>
+      <circle cx="430" cy="788" r="18" fill="none" stroke="#7E9450" stroke-width="13"/>
     </g>
   </g>
 
   <!-- ============ HANDLE ============ -->
   <path d="M424 590C424 516 458 494 512 494C566 494 600 516 600 590L566 590C566 530 546 524 512 524C478 524 458 530 458 590Z" fill="#43301F"/>
   <g fill="#A47D58">
-    <rect x="410" y="576" width="58" height="26" rx="5"/>
-    <rect x="556" y="576" width="58" height="26" rx="5"/>
+    <rect x="408" y="574" width="62" height="30" rx="6"/>
+    <rect x="554" y="574" width="62" height="30" rx="6"/>
   </g>
 
   <!-- ============ BIRD ============ -->
   <g transform="translate(-51,-71.4) scale(1.1)">
 
-    <!-- tail: a confident fanned wedge -->
-    <path d="M418 376L330 230L250 296L400 448Z" fill="#33471E"/>
-    <g clip-path="url(#pTail)" fill="none" stroke="#E1E6C4" stroke-width="5" opacity="0.22">
-      <path d="M412 400L303 252M406 424L277 274"/>
+    <!-- tail: fanned wedge, cocked up and curved along its outer edge -->
+    <g transform="rotate(-9 416 402)">
+      <path d="M418 376C392 330 362 280 330 230L250 296C286 342 340 398 400 448Z" fill="#283A15"/>
+      <g clip-path="url(#pTail2)" fill="none" stroke="#E1E6C4" stroke-width="5" opacity="0.22">
+        <path d="M412 400L303 252M406 424L277 274"/>
+      </g>
     </g>
 
     <!-- legs -->
@@ -97,23 +103,26 @@
     </g>
 
     <!-- beak -->
-    <path d="M608 270C636 278 660 288 680 298C658 308 632 316 606 318C614 305 615 285 608 270Z" fill="#96704B"/>
+    <path d="M608 270C636 278 660 288 680 298C658 308 632 316 606 318C614 305 615 285 608 270Z" fill="#96704B" transform="rotate(-7 607 294)"/>
 
     <!-- body -->
-    <path d="M616 268C610 236 596 214 570 216C544 218 516 238 504 266C486 300 460 306 436 324C416 348 402 372 402 406C402 436 406 456 420 468C442 486 468 490 490 486C520 480 546 470 562 452C582 430 594 414 598 394C604 366 610 344 612 322C614 302 616 286 616 268Z" fill="#4B6630"/>
+    <path d="M616 268C610 236 596 214 570 216C544 218 516 238 504 266C486 300 460 306 436 324C416 348 402 372 402 406C402 436 406 456 420 468C442 486 468 490 490 486C520 480 546 470 562 452C582 430 594 414 598 394C604 366 610 344 612 322C614 302 616 286 616 268Z" fill="#3E5526"/>
 
     <!-- light underside -->
-    <path d="M420 464C446 486 486 492 518 478C554 462 582 430 596 392C602 368 604 348 602 334C588 372 566 412 534 438C500 466 456 472 420 464Z" fill="#8CA557" clip-path="url(#pBody)"/>
+    <path d="M420 464C446 486 486 492 518 478C554 462 582 430 596 392C602 368 604 348 602 334C588 372 566 412 534 438C500 466 456 472 420 464Z" fill="#8FA95E" clip-path="url(#pBody)"/>
+
+    <!-- crest: a small swept peak, the bird's one piece of character -->
+    <path d="M569 217C556 205 541 199 524 198C533 210 539 223 542 238C549 228 558 220 569 217Z" fill="#283A15"/>
 
     <!-- crown -->
-    <path d="M616 268C610 236 596 214 570 216C544 218 516 238 504 266C530 256 562 250 590 257C604 260 612 264 616 268Z" fill="#33471E" clip-path="url(#pBody)"/>
+    <path d="M616 268C610 236 596 214 570 216C544 218 516 238 504 266C530 256 562 250 590 257C604 260 612 264 616 268Z" fill="#283A15" clip-path="url(#pBody)"/>
 
     <!-- folded wing -->
-    <path d="M528 336C482 350 442 386 416 446C454 438 496 410 520 378C529 364 531 347 528 336Z" fill="#33471E"/>
+    <path d="M528 336C482 350 442 386 416 446C454 438 496 410 520 378C529 364 531 347 528 336Z" fill="#283A15"/>
 
     <!-- eye -->
-    <circle cx="584" cy="278" r="15" fill="#F3E9D4"/>
-    <circle cx="584" cy="278" r="8" fill="#241B12"/>
+    <circle cx="583" cy="274" r="15" fill="#F3E9D4"/>
+    <circle cx="584" cy="273" r="8" fill="#241B12"/>
   </g>
   </g>
 </svg>

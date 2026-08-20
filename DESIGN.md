@@ -68,7 +68,7 @@ Trip data lives under `data/trips/` in whichever repo holds it — test fixtures
 
 ```json
 {
-  "schema": 1,
+  "schema": 2,
   "id": "chicago-test",
   "name": "Chicago Test Trip",
   "tz": "America/Chicago",
@@ -86,7 +86,7 @@ Trip data lives under `data/trips/` in whichever repo holds it — test fixtures
       "time": "3:45 PM", "name": "Art Institute of Chicago", "type": "Art",
       "address": "111 S Michigan Ave, Chicago, IL 60603",
       "lat": null, "lng": null,
-      "hours": "Thu–Mon 11–5; CLOSED Tue/Wed", "cost": "$32",
+      "hours": "Thu–Mon 11–5; CLOSED Tue/Wed", "cost": 32,
       "priority": "must",
       "notes": "The lions.",
       "website": "https://www.artic.edu/", "yelp": "", "gmaps": "",
@@ -96,6 +96,8 @@ Trip data lives under `data/trips/` in whichever repo holds it — test fixtures
 ```
 
 Conventions: `id` is a stable slug, never regenerated on edit. `priority` is an enum — `fixed` (booked/immovable), `must`, `yes`, `maybe`, `maybe-not`, `if-close`, `optional`, `check` (call ahead), `skip`, `note` (renders as a text row, no links). `day` must match a `days[].key`; the special key `bonus` (or any day with `date: null`) renders as an unscheduled section. A reserved cluster name **`Inbox`** holds quick-captured places that haven't been slotted yet (see §6). `lat`/`lng` are nullable; the app works without them (links fall back to address queries) but the solver needs them. Link fields are optional — the renderer already synthesizes Yelp search, Google Maps, Apple Maps, and Google search URLs from name + address, exactly as v0 does (locality derived from `base.address`, never hardcoded). `visited` and `skipped` are nullable ISO timestamps set by the Did it! / Skip it buttons (additive to schema 1; absent means null). A place is *handled* when either is set; `visited` wins for display. The machine-readable version of this section is `data/schema.json` — update both together.
+
+**`cost` is a number as of schema 2 (2026-08-20, the first breaking bump):** dollars as a float — `0` means free, `null` means unknown / varies / not applicable. Nuance that used to live in cost text ("StubHub credit", "pay-what-you-wish Wed 1:30–5:30", "$10–20") moves into `notes`; ranges migrate to their upper bound (budget-honest). The card renders cost as a small pill (`$32`, `Free`; no pill when null); the edit sheet takes a numeric input. Retiring cost strings also retires the chronic `$$`-escaping hazard from live data (the code guards stay). `index.json` keeps its own versioning (still 1).
 
 Schema changes bump `schema` and the app refuses versions it doesn't know, with a "pull latest app" message.
 

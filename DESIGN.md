@@ -43,6 +43,8 @@ Decisions and why:
 
 **Frontend stays vanilla** ES modules, no framework, ideally no build step (Cloudflare Pages can serve `/app` as-is). The v0 page proves the UI fits in one file; v1 just splits it into modules (`data.js`, `render.js`, `router.js`, `solver.js`, `sw.js`). If a build step ever earns its keep, Vite — but don't start there.
 
+**Integration policy: keyless by default.** The core loop uses no API keys and no accounts beyond GitHub: MapLibre + OpenFreeMap/Protomaps (map tiles), Nominatim (geocoding script, 1 req/s + descriptive UA), and deep links out to Apple/Google Maps and Yelp. Key-bearing services are deliberate, post-trip additions (M4): Google Places Details for the fetch-hours button, Yelp Fusion for ratings, and the Anthropic key behind the §8 Worker — any key lives server-side in a Worker, never in this public repo, never in the client bundle.
+
 ## 3. Data model
 
 Trip data lives under `data/trips/` in whichever repo holds it — test fixtures in this one, real trips in gitignored `private/trips/` until the data-home decision in §2. Git supplies history, backup, blame, and a conflict audit trail for free.
@@ -116,7 +118,7 @@ Schema changes bump `schema` and the app refuses versions it doesn't know, with 
 **App chrome — bottom tab bar** (dissolves the old menu sheet): **Itinerary · Map · Trips · Settings**.
 
 - *Itinerary* — the day view. Segmented day strip at top: adjoined blocks (not pills), large press areas, one finger-sweep spans the trip, completed days greyed (complete = every actionable stopover handled, or the date has passed). Pull-to-refresh (slide down + release) with "updated just now" (+ short sha once the API path exists); the header **Nest** line (birdhouse icon) deep-links to Apple Maps. The day card shows bullet + title, the one-line `subtitle`, an optional longer **`plan`** paragraph (new optional day field, §3), and "N stopovers".
-- *Map* — the schematic route view as a resident tab: the current day as a node line with direction arrows; docked bottom card shows the next unhandled stopover with ◀ ▶ cycling; tapping a node jumps the card; Did it!/Skip it work from the dock. "Route"/"Walk it" buttons jump here. Geographic tiles (Leaflet + coordinates) stay on the roadmap.
+- *Map* — the schematic route view as a resident tab: the current day as a node line with direction arrows; docked bottom card shows the next unhandled stopover with ◀ ▶ cycling; tapping a node jumps the card; the landed/flew-past actions work from the dock. "Route"/"Walk it" buttons jump here. **The geographic map (decided 2026-08-20): MapLibre GL, vendored, + keyless vector tiles** (OpenFreeMap hosted; later a Protomaps PMTiles extract of the trip area shipped as a static file = offline map), **custom-styled to the avian-matcha palette** so the map reads as this app, not an embed. The day's stopovers render as state-colored pins joined by a direction-arrowed travel line in visit order (straight segments first; road-following walking routes are a separate later decision — they'd need a routing service). Requires the Nominatim geocode backfill. The schematic node view remains the fallback for no-coords and offline-without-extract.
 - *Trips* — the loader: trips from `index.json` grouped past/upcoming, with generous air between trip cards; picking one switches the itinerary + map scene.
 - *Settings* — reset local changes; M2 adds PAT + repo owner/name, clear cache, About.
 

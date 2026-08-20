@@ -10,3 +10,6 @@ node_modules/
 # real trip data — never committed; the repo carries test data only (see README)
 private/
 archive/
+
+# geocode cache — may contain real addresses after private-trip runs; never commit
+scripts/.geocode-cache.json

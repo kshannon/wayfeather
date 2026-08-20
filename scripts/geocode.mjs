@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /* geocode.mjs — the one-time (and re-runnable) lat/lng backfill.  DESIGN §6
 
-   Reads every data/trips/<id>.json, and for each addressed thing whose
-   coordinates are still null asks Nominatim for them:
+   Reads every <trips-dir>/<id>.json (default data/trips/, see --dir), and for
+   each addressed thing whose coordinates are still null asks Nominatim for them:
 
      trip.base   → gains lat/lng (nullable) so the map can drop a Nest marker
      places[]    → the stopovers; places with address "" (Drive legs, note
@@ -24,6 +24,7 @@
      node scripts/geocode.mjs --dry-run     report only, write nothing
      node scripts/geocode.mjs --force       ignore the cache, refetch every query
      node scripts/geocode.mjs --file chicago-test.json    just the one trip
+     node scripts/geocode.mjs --dir private/trips         a different trip dir
 
    ── THE $$ GOTCHA (CLAUDE.md / LLMS.md rule 5) ────────────────────────────
    Trip data contains "cost": "$$", and String.replace treats $$ in a
@@ -40,7 +41,6 @@ import path from "node:path";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
-const TRIPS = path.join(ROOT, "data", "trips");
 const CACHE_FILE = path.join(HERE, ".geocode-cache.json");
 
 const ENDPOINT = "https://nominatim.openstreetmap.org/search";
@@ -55,6 +55,12 @@ const ONLY = (() => {
   const i = argv.indexOf("--file");
   return i >= 0 ? argv[i + 1] : null;
 })();
+/* Which directory of trip files to walk. Real trips live outside this repo's
+   data/ (DESIGN §2), so the location is a parameter — default unchanged. */
+const TRIPS = path.resolve(ROOT, (() => {
+  const i = argv.indexOf("--dir");
+  return i >= 0 ? argv[i + 1] : "data/trips";
+})());
 
 /* ── tiny console helpers ─────────────────────────────────────────────────── */
 const isTTY = process.stdout.isTTY;
@@ -472,6 +478,7 @@ async function main() {
     process.exit(1);
   }
   console.log(bold("wayfeather geocode") + dim("  — Nominatim, 1 req/s, cached"));
+  console.log(dim("  trips: " + (path.relative(ROOT, TRIPS) || ".")));
   console.log(dim("  cache: scripts/.geocode-cache.json" + (FORCE ? "  (--force: ignored)" : "")));
   if (DRY) console.log(yellow("  --dry-run: no file will be written"));
 

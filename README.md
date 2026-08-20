@@ -7,6 +7,7 @@ with a Git repo as the database. Trips are data; the app is the shell.
 
 - **DESIGN.md** — read this first; it is the spec (architecture, schema, milestones).
 - **CLAUDE.md** — working conventions for Claude Code sessions.
+- **LLMS.md** — task playbook for AI assistants (create cards, import CSVs, new trips, stuck-app fixes).
 - **app/** — the app shell. UI redesign in progress: competing candidates live in `app/candidates/`. The retired v0 page (it embeds a real itinerary) lives in gitignored `private/reference/`.
 - **data/trips/** — `index.json` (trip loader) + one JSON per trip. **Fictional test fixtures only** (`chicago-test`, `river-road-test`).
 - **private/**, **archive/** — real trip data and source spreadsheets. Gitignored, never committed.

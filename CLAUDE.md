@@ -10,6 +10,8 @@ Read DESIGN.md before writing code; it is the spec. Current milestone: M1 (DESIG
   constants. UI copy calls places "stopovers".
 - Data schema is DESIGN §3 and is authoritative; data/schema.json mirrors it — update both together.
   Trip files live in data/trips/; bump `schema` on breaking changes.
+- LLMS.md (root) is the task playbook for AI assistants — card creation, CSV import, new trips,
+  stuck-app recovery. Keep it current when schema, sync, or the service worker change.
 - This repo is PUBLIC. Committed data/trips/ holds fictional test fixtures only; real trips live in
   gitignored private/trips/. Never commit real itineraries, confirmation codes, stay addresses, or tokens.
 - All GitHub reads/writes go through the Contents API with the user-supplied PAT (localStorage).

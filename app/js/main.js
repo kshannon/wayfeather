@@ -7,7 +7,7 @@
 
 import { $ } from "./dom.js";
 import {
-  store, loadGlobal, saveGlobal, applyAccent, setAccent, loadOverlay, assemble,
+  store, loadGlobal, saveGlobal, loadOverlay, assemble,
   setPlaceState, wipeAll, localChangeCount
 } from "./state.js";
 import { load, loadIndex, loadTrip, clearDataCache, schemaOK } from "./data.js";
@@ -26,9 +26,10 @@ import {
 } from "./views/itinerary.js";
 import { renderMap, routeStops, firstUnhandled, jumpTo, clearClusterScope } from "./views/map.js";
 import { renderTrips } from "./views/trips.js";
-import { renderSettings, renderAccentPicker, renderCacheRow } from "./views/settings.js";
+import { renderSettings, renderCacheRow } from "./views/settings.js";
+import { paintFly } from "./icons.js";
 import {
-  initForms, openEdit, openAdd, openFind, saveForm, takeExtra, markSkipped
+  initForms, openEdit, openAdd, openFind, saveForm, takeExtra, markSkipped, moveToExtras
 } from "./forms.js";
 
 /* ══ SCENE ═════════════════════════════════════════════════════════════════ */
@@ -224,13 +225,7 @@ function wireEvents() {
     const trip = t.closest("[data-trip]");
     if (trip) { e.preventDefault(); switchTrip(trip.getAttribute("data-trip")); return; }
 
-    const sw = t.closest("[data-pick-accent]");
-    if (sw) {
-      e.preventDefault();
-      setAccent(sw.getAttribute("data-pick-accent"));
-      renderAccentPicker();
-      return;
-    }
+    if (t.closest("#f-xtra")) { e.preventDefault(); moveToExtras(); return; }
 
     if (t.closest("#btnReset")) {
       e.preventDefault();
@@ -324,8 +319,8 @@ async function boot() {
 
   if (intent.reset) { wipeAll(); await clearDataCache(); }
   loadGlobal();
-  applyAccent();
 
+  paintFly();                 // the bird glyph into index.html's static rows
   setStaticTitles();
   initForms({ selectDay, refreshScene });
   wireEvents();

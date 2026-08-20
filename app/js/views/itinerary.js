@@ -4,7 +4,7 @@
 import { $, esc, attr, q, frag, replaceWith } from "../dom.js";
 import { rangeLabel, relTime, fmtClock } from "../time.js";
 import { deriveLoc, appleMapsUrl } from "../links.js";
-import { PIN_SVG, OFFLINE_SVG } from "../icons.js";
+import { NEST_SVG, BIRD_SVG, OFFLINE_SVG } from "../icons.js";
 import { store } from "../state.js";
 import { SUPPORTED_SCHEMA } from "../data.js";
 import {
@@ -34,12 +34,13 @@ export function renderHero() {
   $("heroTitle").textContent = trip.name || "Trip";
   $("heroSub").textContent = rangeLabel(trip.start, trip.end);
 
+  /* the Nest: the trip's base, still the Apple Maps deep link (DESIGN §5) */
   const b = trip.base;
   $("heroBase").innerHTML = (b && b.name)
     ? '<a class="lt-base" href="' + attr(appleMapsUrl(b.name, b.address)) + '" ' +
         'target="_blank" rel="noopener noreferrer" ' +
-        'aria-label="Open ' + attr(b.name) + ' in Apple Maps">' +
-        '<span class="lbl">Base · ' + esc(b.name) + "</span>" + PIN_SVG + "</a>"
+        'aria-label="Open the Nest, ' + attr(b.name) + ', in Apple Maps">' +
+        NEST_SVG + '<span class="lbl">Nest · ' + esc(b.name) + "</span></a>"
     : "";
 
   $("tripNotes").textContent = trip.notes || "";
@@ -60,7 +61,7 @@ function clusterHTML(dayKey, name, stops, c) {
         ? '<button class="btn btn-soft" type="button" data-route="' + attr(dayKey) + '" ' +
           'data-cluster="' + attr(name) + '" ' +
           'aria-label="Walk it — open the map for ' + attr(name) + '">Walk it' +
-          '<span aria-hidden="true">▸</span></button>'
+          BIRD_SVG + "</button>"
         : "") +
     "</div>" +
     '<div class="stops">' + stops.map((p) => cardHTML(p, c)).join("") + "</div>" +
@@ -99,13 +100,16 @@ function panelHTML(day, c) {
           "<div><h2>" + esc(day.title || day.label || day.key) + "</h2>" +
           (day.subtitle ? "<p>" + esc(day.subtitle) + "</p>" : "") + "</div>" +
         "</div>" +
+        /* days[].plan — the optional longer paragraph, in the serif (DESIGN §5).
+           Full width under the title block, not indented past the bullet. */
+        (day.plan ? '<p class="dayplan">' + esc(day.plan) + "</p>" : "") +
         '<div class="dayhead-foot">' +
           '<span class="dayhead-count" data-count="' + attr(day.key) + '">' +
             esc(countText(trip, day)) + "</span>" +
           (routable.length >= 2
             ? '<button class="btn btn-card" type="button" data-route="' + attr(day.key) + '" ' +
               'aria-label="Open the map for ' + attr(day.title || day.label || day.key) + '">Route' +
-              '<span aria-hidden="true">▸</span></button>'
+              BIRD_SVG + "</button>"
             : "") +
         "</div>" +
       "</div>" +

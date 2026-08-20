@@ -1,8 +1,13 @@
 /* ============================================================================
    Wayfeather — app stylesheet                                   DESIGN.md §5
-   Soft Cards v3 components, given iOS bones: large-title header that condenses
-   into a compact centered nav bar, translucent 49pt tab bar, inset-grouped
-   lists, bottom sheets with a grabber, 44pt minimum targets.
+   Soft Cards components in the avian-matcha theme, on iOS bones: large-title
+   header that condenses into a compact centered nav bar, translucent 49pt tab
+   bar, inset-grouped lists, bottom sheets with a grabber, 44pt targets.
+
+   TYPE (DESIGN §5): the serif SPEAKS and the sans LABELS. Serif — the trip
+   name, day titles, stopover names, the day plan, notes prose. Sans — times
+   (tabular), meta, hours chips, buttons, tabs, captions, toasts. Every serif
+   rule below is marked `serif:` so the split stays auditable.
    ========================================================================= */
 
 /* ─── 1. BASE ─────────────────────────────────────────────────────────────── */
@@ -11,10 +16,12 @@
 html{-webkit-text-size-adjust:100%;scrollbar-gutter:stable}
 body{
   margin:0;
-  background:var(--ground);
+  /* the cream ground carries the wallpaper; .shell repaints both (see §2) */
+  background-color:var(--ground);
+  background-image:var(--wallpaper);
+  background-size:var(--wallpaper-size);
   color:var(--ink);
-  font-family:-apple-system,BlinkMacSystemFont,system-ui,"Segoe UI",Roboto,
-              "Helvetica Neue",Arial,sans-serif;
+  font-family:var(--f-sans);
   font-size:var(--t-body);
   line-height:1.45;
   letter-spacing:var(--track-body);
@@ -40,6 +47,9 @@ svg{display:block}
   padding-right:max(16px, env(safe-area-inset-right));
 }
 .u-tab-num{font-variant-numeric:tabular-nums}
+/* serif: opt-in for a name rendered by a shared component (a trip name in the
+   inset list is a name; "Reset local changes" in the same component is not) */
+.u-serif{font-family:var(--f-serif);letter-spacing:var(--track-serif)}
 .u-sr{
   position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
   clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0;
@@ -49,7 +59,12 @@ svg{display:block}
 /* .shell paints the ground so the fixed indicator behind it is only visible in
    the gap opened by the pull. Nothing position:fixed may live inside it — a
    transformed ancestor would become its containing block. */
-.shell{position:relative;z-index:1;background:var(--ground);min-height:100vh}
+.shell{
+  position:relative;z-index:1;min-height:100vh;
+  background-color:var(--ground);
+  background-image:var(--wallpaper);
+  background-size:var(--wallpaper-size);
+}
 .shell.is-pulling{transform:translate3d(0,var(--pull,0px),0)}
 @media (prefers-reduced-motion: no-preference){
   .shell.is-settling{transition:transform .34s var(--ease-out)}
@@ -103,7 +118,7 @@ svg{display:block}
   background:var(--mat-bg);
   -webkit-backdrop-filter:saturate(180%) blur(20px);
   backdrop-filter:saturate(180%) blur(20px);
-  box-shadow:inset 0 calc(var(--hairline) * -1) 0 rgba(23,23,26,.14);
+  box-shadow:inset 0 calc(var(--hairline) * -1) 0 rgba(31,27,21,.14);
   opacity:0;
 }
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
@@ -116,10 +131,12 @@ svg{display:block}
   padding-right:max(16px, env(safe-area-inset-right));
   display:flex;align-items:center;justify-content:flex-end;
 }
+/* serif: the condensed form of the large title, so it wears the same face */
 .navbar-title{
   position:absolute;left:56px;right:56px;top:0;height:var(--nav-h);
   display:flex;align-items:center;justify-content:center;
-  font-size:var(--t-body);font-weight:600;letter-spacing:var(--track-body);
+  font-family:var(--f-serif);
+  font-size:var(--t-serif-body);font-weight:600;letter-spacing:var(--track-serif);
   color:var(--ink);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   opacity:0;transform:translateY(7px);
@@ -148,20 +165,24 @@ svg{display:block}
   text-transform:uppercase;color:var(--ink-3);
   min-height:22px;display:flex;align-items:center;
 }
+/* serif: the display slot for every view — the trip name, the routed day title,
+   and the two page names. The serif is drawn wider than SF, so it takes a step
+   up in size and gives most of the optical tightening back. */
 .lt{
-  font-size:clamp(var(--t-title1),8.6vw,var(--t-large));
-  font-weight:700;letter-spacing:var(--track-large);line-height:1.08;
+  font-family:var(--f-serif);
+  font-size:clamp(var(--t-title1),8.9vw,36px);
+  font-weight:700;letter-spacing:var(--track-serif);line-height:1.1;
 }
 .lt-sub{margin-top:var(--s2);font-size:var(--t-subhead);color:var(--ink-2);line-height:1.4}
-/* the base line is a real Apple Maps deep link — 44px tall, its own row */
+/* the Nest line is a real Apple Maps deep link — 44px tall, its own row */
 .lt-base{
-  display:inline-flex;align-items:center;gap:6px;
+  display:inline-flex;align-items:center;gap:7px;
   min-height:var(--s8);padding-right:10px;
   font-size:var(--t-footnote);color:var(--ink-2);text-decoration:none;
 }
 .lt-base .lbl{text-decoration:underline;text-decoration-color:var(--hair-2);
   text-underline-offset:3px}
-.lt-base svg{color:var(--accent)}
+.lt-base svg{color:var(--brown)}
 .lt-base:active .lbl{text-decoration-color:var(--accent)}
 
 /* ─── 6. DAY STRIP — adjoined equal blocks ────────────────────────────────── */
@@ -253,9 +274,18 @@ svg{display:block}
   display:flex;align-items:center;justify-content:center;
   font-size:var(--t-body);font-weight:700;line-height:1;
 }
-.dayhead h2{font-size:var(--t-title2);font-weight:700;letter-spacing:var(--track-title);
-  line-height:1.2}
+/* serif: the day title */
+.dayhead h2{font-family:var(--f-serif);font-size:24px;font-weight:700;
+  letter-spacing:var(--track-serif);line-height:1.2}
 .dayhead p{margin-top:var(--s1);font-size:var(--t-subhead);color:var(--ink-2);line-height:1.4}
+/* serif: days[].plan — the paragraph that says how the day is meant to go.
+   It reads as prose under the one-line subtitle, not as another meta row. */
+.dayplan{
+  margin-top:var(--s3);
+  font-family:var(--f-serif);
+  font-size:var(--t-serif-sub);letter-spacing:var(--track-serif);
+  color:var(--ink-2);line-height:1.55;
+}
 .dayhead-foot{
   display:flex;align-items:center;justify-content:space-between;
   gap:var(--s3);margin-top:var(--s3);
@@ -320,10 +350,12 @@ svg{display:block}
   gap:var(--s2);min-height:26px;margin-bottom:var(--s2);
 }
 .card-time{display:flex;align-items:center;gap:7px;min-width:0}
-/* the time is the loudest thing in the row — you read it standing on a corner */
+/* the time is the loudest thing in the row — you read it standing on a corner.
+   Sans and tabular, in the warm brown secondary; a `fixed` time steps up to the
+   accent because being there at that minute is the whole point of it. */
 .time{
   font-size:var(--t-body);font-weight:600;letter-spacing:var(--track-body);
-  color:var(--ink-2);white-space:nowrap;line-height:1.2;
+  color:var(--brown);white-space:nowrap;line-height:1.2;
 }
 .card.p-fixed .time{color:var(--accent)}
 .resv{flex:0 0 auto;display:flex;color:var(--accent)}
@@ -335,8 +367,9 @@ svg{display:block}
   border-radius:var(--r-btn);color:var(--ink-3);cursor:pointer;
 }
 .editbtn:active{background:var(--surface-2);color:var(--ink)}
-.card h3{font-size:var(--t-body);font-weight:600;letter-spacing:var(--track-body);
-  line-height:1.3}
+/* serif: the stopover name */
+.card h3{font-family:var(--f-serif);font-size:var(--t-serif-body);font-weight:600;
+  letter-spacing:var(--track-serif);line-height:1.3}
 .meta{margin-top:var(--s1);font-size:var(--t-subhead);color:var(--ink-3);line-height:1.4;
   overflow-wrap:anywhere}
 /* separators inherit the meta color: a dimmer middot would be a visible glyph
@@ -356,7 +389,9 @@ svg{display:block}
   font-size:var(--t-footnote);font-weight:600;line-height:1.35;
 }
 .warnline b{font-weight:800}
-.notes{margin-top:var(--s3);font-size:var(--t-subhead);color:var(--ink-2);line-height:1.5}
+/* serif: notes prose */
+.notes{margin-top:var(--s3);font-family:var(--f-serif);font-size:var(--t-serif-sub);
+  letter-spacing:var(--track-serif);color:var(--ink-2);line-height:1.5}
 
 /* ─── 12. CHIPS (★ Must + quiet Maybe only) ───────────────────────────────── */
 .chip{
@@ -383,7 +418,7 @@ svg{display:block}
 .act{
   min-height:46px;border-radius:var(--r-btn);cursor:pointer;
   display:inline-flex;align-items:center;justify-content:center;gap:7px;
-  padding:0 var(--s3);
+  padding:0 var(--s3);white-space:nowrap;
   font-size:var(--t-footnote);font-weight:700;letter-spacing:.01em;
 }
 .act-do{flex:2 1 55%;background:var(--accent);color:var(--on-accent)}
@@ -455,17 +490,23 @@ svg{display:block}
 }
 
 /* ─── 15. NOTE ROW (priority: note — quiet text, no chrome) ───────────────── */
+/* Opaque cream rather than transparent: it sits straight on the ground, and no
+   body text in this app is allowed to have the wallpaper running under it. On
+   the ground the fill is invisible, so the row keeps its chromeless character. */
 .noterow{
   padding:var(--s3) var(--s4);
   border-radius:var(--r-lg);
   border:1px dashed var(--hair-2);
-  background:transparent;cursor:pointer;
+  background:var(--ground);cursor:pointer;
 }
 .noterow-top{display:flex;align-items:baseline;gap:var(--s2);flex-wrap:wrap}
-.noterow-time{font-size:var(--t-footnote);font-weight:600;color:var(--ink-3)}
-.noterow-name{font-size:var(--t-subhead);font-weight:600;color:var(--ink-2)}
-.noterow-text{margin-top:var(--s1);font-size:var(--t-footnote);color:var(--ink-3);
-  line-height:1.5}
+.noterow-time{font-size:var(--t-footnote);font-weight:600;color:var(--brown)}
+/* serif: a stopover name, and the note prose under it */
+.noterow-name{font-family:var(--f-serif);font-size:var(--t-serif-sub);font-weight:600;
+  letter-spacing:var(--track-serif);color:var(--ink-2)}
+.noterow-text{margin-top:var(--s1);font-family:var(--f-serif);
+  font-size:var(--t-footnote);letter-spacing:var(--track-serif);
+  color:var(--ink-3);line-height:1.55}
 
 /* ─── 16. LIST TAIL ───────────────────────────────────────────────────────── */
 .tail{display:flex;flex-direction:column;gap:var(--s2);margin-top:var(--s5)}
@@ -474,8 +515,10 @@ svg{display:block}
 .tail .btn .g{font-size:var(--t-body);line-height:1;width:18px;text-align:center}
 
 /* ─── 17. EMPTY + FOOTER ──────────────────────────────────────────────────── */
+/* opaque, for the same reason as .noterow */
 .empty{
   padding:var(--s6);border-radius:var(--r-lg);border:1px dashed var(--hair-2);
+  background:var(--ground);
   font-size:var(--t-footnote);color:var(--ink-3);text-align:center;
 }
 .bigempty{
@@ -483,7 +526,9 @@ svg{display:block}
   border-radius:var(--r-lg);background:var(--surface);
   box-shadow:var(--card-ring),var(--e1);text-align:center;
 }
-.bigempty h2{font-size:var(--t-title3);font-weight:700;letter-spacing:var(--track-title)}
+/* serif: a display title */
+.bigempty h2{font-family:var(--f-serif);font-size:var(--t-title3);font-weight:700;
+  letter-spacing:var(--track-serif)}
 .bigempty p{margin-top:var(--s2);font-size:var(--t-subhead);color:var(--ink-2);
   line-height:1.5}
 .bigempty .btn{margin-top:var(--s4)}
@@ -492,7 +537,9 @@ svg{display:block}
   padding-bottom:calc(var(--s7) + var(--tab-total));
   border-top:1px solid var(--hair);margin-top:var(--s5);
 }
-.foot p{font-size:var(--t-footnote);color:var(--ink-3);line-height:1.55;text-align:center}
+/* serif: the trip's own notes — prose, not a caption */
+.foot p{font-family:var(--f-serif);font-size:var(--t-footnote);
+  letter-spacing:var(--track-serif);color:var(--ink-3);line-height:1.6;text-align:center}
 
 /* ─── 18. BOTTOM TAB BAR (translucent material, 49pt + safe area) ─────────── */
 .tabbar{
@@ -500,7 +547,7 @@ svg{display:block}
   background:var(--mat-bg);
   -webkit-backdrop-filter:saturate(180%) blur(20px);
   backdrop-filter:saturate(180%) blur(20px);
-  box-shadow:inset 0 var(--hairline) 0 rgba(23,23,26,.14);
+  box-shadow:inset 0 var(--hairline) 0 rgba(31,27,21,.14);
   padding-bottom:var(--safe-b);
 }
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
@@ -600,9 +647,12 @@ svg{display:block}
   background:var(--surface);border-radius:var(--r-md);
   box-shadow:var(--card-ring),var(--e1);padding:8px 12px 10px;margin-left:-4px;
 }
-.node-time{font-size:var(--t-caption2);font-weight:600;color:var(--ink-3)}
+.node-time{font-size:var(--t-caption2);font-weight:600;color:var(--brown)}
+/* serif: a stopover name */
 .node-name{
-  font-size:var(--t-subhead);font-weight:600;color:var(--ink);line-height:1.25;
+  font-family:var(--f-serif);
+  font-size:var(--t-serif-sub);font-weight:600;letter-spacing:var(--track-serif);
+  color:var(--ink);line-height:1.3;
   overflow-wrap:anywhere;
 }
 .node.is-skipped .node-name{color:var(--ink-2);font-weight:500}
@@ -624,7 +674,7 @@ svg{display:block}
   margin-top:var(--s4);
   background:var(--surface);
   border-radius:var(--r-xl) var(--r-xl) 0 0;
-  box-shadow:0 -1px 0 var(--hair), 0 -10px 30px rgba(23,23,26,.08);
+  box-shadow:0 -1px 0 var(--hair), 0 -10px 30px rgba(31,27,21,.08);
 }
 .dock-in{
   max-width:640px;margin:0 auto;
@@ -649,10 +699,13 @@ svg{display:block}
   padding-top:var(--s2)}
 .dock-pad{padding-bottom:var(--s4)}
 .dock-top{display:flex;align-items:center;justify-content:space-between;gap:var(--s3)}
-.dock-name{font-size:var(--t-body);font-weight:600;letter-spacing:var(--track-body);
-  line-height:1.25;margin-top:2px}
+/* serif: a stopover name, and its notes prose */
+.dock-name{font-family:var(--f-serif);font-size:var(--t-serif-body);font-weight:600;
+  letter-spacing:var(--track-serif);line-height:1.3;margin-top:2px}
 .dock-note{
-  margin-top:var(--s2);font-size:var(--t-footnote);color:var(--ink-2);line-height:1.45;
+  margin-top:var(--s2);font-family:var(--f-serif);
+  font-size:var(--t-footnote);letter-spacing:var(--track-serif);
+  color:var(--ink-2);line-height:1.5;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
 .map-pad{height:var(--tab-total)}
@@ -678,10 +731,17 @@ svg{display:block}
   background:transparent;
   padding:var(--s3) var(--s4);min-height:56px;cursor:pointer;
 }
+/* Trips get one spacing step more air than a settings row — DESIGN §5 asks for
+   generous space between trip cards, and a step of the scale is the whole
+   change (--s3 -> --s4, both edges). */
+.rowcard.is-trip{padding-top:var(--s4);padding-bottom:var(--s4);min-height:64px}
 .rowcard:active{background:var(--surface-2)}
 .rowcard-main{flex:1 1 auto;min-width:0}
 .rowcard-name{display:block;font-size:var(--t-body);font-weight:500;
   letter-spacing:var(--track-body);line-height:1.3}
+/* serif: a trip name is a name; "Reset local changes" in the same component
+   is a label, which is why the face is opted into rather than set here */
+.rowcard-name.u-serif{font-size:var(--t-serif-body);font-weight:600}
 .rowcard-sub{display:block;margin-top:2px;font-size:var(--t-footnote);color:var(--ink-3);
   line-height:1.35}
 .rowcard.is-active .rowcard-name{color:var(--accent);font-weight:600}
@@ -702,19 +762,6 @@ svg{display:block}
   box-shadow:inset 0 0 0 1px var(--hair-2);
   font-size:var(--t-caption2);font-weight:700;letter-spacing:.06em;
 }
-.swatches{display:flex;gap:var(--s2)}
-.swatch{
-  flex:1 1 0;display:flex;align-items:center;gap:var(--s3);
-  padding:var(--s3) var(--s4);min-height:60px;border-radius:var(--r-lg);
-  background:var(--surface);box-shadow:var(--card-ring),var(--e1);cursor:pointer;
-}
-.swatch-chip{
-  width:28px;height:28px;flex:0 0 auto;border-radius:var(--r-sm);
-  box-shadow:inset 0 0 0 1px rgba(23,23,26,.12);
-}
-.swatch-name{font-size:var(--t-subhead);font-weight:600}
-.swatch[aria-pressed="true"]{box-shadow:0 0 0 1.5px var(--accent),var(--e1)}
-.swatch[aria-pressed="true"] .swatch-name{color:var(--accent)}
 .about{
   padding:var(--s4);border-radius:var(--r-lg);
   background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--hair);
@@ -769,9 +816,13 @@ svg{display:block}
   padding:var(--s2) max(16px, env(safe-area-inset-right)) var(--s4)
           max(16px, env(safe-area-inset-left));
 }
-.sheet-title{font-size:var(--t-title3);font-weight:700;letter-spacing:var(--track-title);
-  line-height:1.2}
+/* serif: the sheet's display title, and #formSub — which is always a stopover
+   name or a day title. #findSub is a count line, so it stays sans. */
+.sheet-title{font-family:var(--f-serif);font-size:22px;font-weight:700;
+  letter-spacing:var(--track-serif);line-height:1.2}
 .sheet-sub{margin-top:2px;font-size:var(--t-footnote);color:var(--ink-2)}
+#formSub{font-family:var(--f-serif);font-size:var(--t-subhead);
+  letter-spacing:var(--track-serif)}
 .sheet-x{
   flex:0 0 auto;margin-left:auto;width:var(--s8);height:var(--s8);
   border-radius:var(--r-md);
@@ -799,14 +850,26 @@ svg{display:block}
   -webkit-appearance:none;appearance:none;
 }
 .fld textarea{min-height:84px;resize:vertical}
+/* the disclosure caret is a DOWN caret, not a forward one — it stays an arrow */
 .fld select{
-  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2356565C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9.5l6 6 6-6'/%3E%3C/svg%3E");
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23544C41' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9.5l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 11px center;background-size:18px;
   padding-right:38px;
 }
 .fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--accent)}
 .fld-row{display:flex;gap:var(--s3)}
 .fld-row .fld{flex:1 1 0;min-width:0}
+/* ── Move to… (DESIGN §5) ───────────────────────────────────────────────────
+   The day <select> just above IS the mover: it lists every day plus XTRA,
+   which the trip model now guarantees exists. This strip is the one-tap
+   shortcut for the case that actually happens on the pavement — not today,
+   put it back in the pool — so it is tucked up against the select it belongs
+   to rather than floating as a field of its own. */
+.movebar{margin:calc(var(--s2) - var(--s4)) 0 var(--s4)}
+.movebar .btn{width:100%;min-height:var(--s8);font-size:var(--t-subhead)}
+.movebar .g{font-size:var(--t-body);line-height:1;width:18px;text-align:center}
+.movebar .hint{margin-top:var(--s2);font-size:var(--t-footnote);color:var(--ink-3);
+  line-height:1.5}
 .form-acts{display:flex;gap:var(--s2);margin-top:var(--s5)}
 .form-acts .btn{flex:1 1 0;font-size:var(--t-subhead)}
 .form-acts .btn-primary{flex:2 1 0}
@@ -821,7 +884,9 @@ svg{display:block}
   padding:var(--s3) var(--s3) var(--s3) var(--s4);margin-bottom:var(--s2);
 }
 .findrow-main{flex:1 1 auto;min-width:0}
-.findrow-name{display:block;font-size:var(--t-subhead);font-weight:600;line-height:1.3}
+/* serif: a stopover name */
+.findrow-name{display:block;font-family:var(--f-serif);font-size:var(--t-serif-sub);
+  font-weight:600;letter-spacing:var(--track-serif);line-height:1.3}
 .findrow-sub{display:block;margin-top:2px;font-size:var(--t-footnote);color:var(--ink-3);
   line-height:1.45}
 .findrow .btn{flex:0 0 auto;min-height:var(--s8);padding:0 var(--s4)}

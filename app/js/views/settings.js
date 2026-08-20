@@ -1,23 +1,13 @@
-/* views/settings.js — accent picker, the two device rows, and About.
-   The M2 rows (repo + PAT) are inert markup in index.html; nothing here
-   touches them. */
+/* views/settings.js — the two device rows and About.
 
-import { $, esc, attr } from "../dom.js";
+   v4 removed the accent picker: there is one theme now (DESIGN §5), so Settings
+   is reset local changes · clear offline cache · the M2 rows · About. The M2
+   rows (repo + PAT) are inert markup in index.html; nothing here touches them. */
+
+import { $, esc } from "../dom.js";
 import { relTime } from "../time.js";
-import { ACCENTS, store, localChangeCount } from "../state.js";
+import { store, localChangeCount } from "../state.js";
 import { cacheInfo } from "../data.js";
-
-export function renderAccentPicker() {
-  // NB: the attribute is data-pick-accent, not data-accent — data-accent is the
-  // theme hook on <html>, so a [data-accent] delegate would match every click
-  // in the document and swallow every branch below it.
-  $("accentPick").innerHTML = ACCENTS.map((a) =>
-    '<button class="swatch" type="button" data-pick-accent="' + attr(a.id) + '" ' +
-    'aria-pressed="' + (a.id === store.accent ? "true" : "false") + '">' +
-    '<span class="swatch-chip" style="background:' + attr(a.hex) + '" aria-hidden="true"></span>' +
-    '<span class="swatch-name">' + esc(a.name) + "</span></button>"
-  ).join("");
-}
 
 export function renderResetRow() {
   const n = localChangeCount();
@@ -42,7 +32,6 @@ export function renderAbout() {
 }
 
 export function renderSettings() {
-  renderAccentPicker();
   renderResetRow();
   renderAbout();
   renderCacheRow();

@@ -29,16 +29,42 @@ export const RESV_SVG =
       '<path d="M8.7 14.6l2.4 2.4 4.3-4.4"/>' +
     "</svg></span>";
 
-export const PIN_SVG =
-  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" ' +
-  'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ' +
-  'focusable="false"><path d="M12 21s6.4-5.7 6.4-10.6a6.4 6.4 0 1 0-12.8 0C5.6 15.3 12 21 12 21Z"/>' +
-  '<circle cx="12" cy="10.3" r="2.4"/></svg>';
+/* The Nest — the trip's base, still the Apple Maps deep link (DESIGN §5).
+   A birdhouse: peaked roof, box, entry hole, perch. Drawn a touch larger than
+   the old map pin because it carries more detail in the same optical box. */
+export const NEST_SVG =
+  '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" ' +
+  'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ' +
+  'focusable="false">' +
+  '<path d="M3.4 9.6 12 3.1l8.6 6.5"/>' +
+  '<path d="M5.4 9.6v9.2a1.8 1.8 0 0 0 1.8 1.8h9.6a1.8 1.8 0 0 0 1.8-1.8V9.6"/>' +
+  '<circle cx="12" cy="12.9" r="2.5"/><path d="M12 15.4v2.9"/></svg>';
 
-export const CHEV_SVG =
-  '<span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" ' +
-  'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
-  'stroke-linejoin="round"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></span>';
+/* Forward motion — the tiny flying bird that replaced every forward carat (▸ on
+   Route / Walk it, and the ▸ on list rows). A filled swallow seen from below,
+   flying right: near wing up, forked tail behind. It is scaled 1.18 about the
+   middle of the 24-box because the bird's visual mass is lower than a chevron's
+   and it reads dainty at 1.0 — checked at real size against the old glyph.
+   NB the ◀ ▶ cycling controls in the Map dock stay ARROWS: those move a cursor
+   backwards and forwards, and a bird pointing one way cannot say "previous". */
+export const BIRD_SVG =
+  '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" ' +
+  'aria-hidden="true" focusable="false">' +
+  '<g transform="translate(12 12) scale(1.18) translate(-12.5 -11.85)">' +
+  '<path d="M20.8 10.6c-2.6-.5-5.2-.4-7.8.3L9.6 5.4c.3 2.5.9 4.3 1.8 5.9' +
+  '-2.4 1-4.8 2.3-7.2 3.9l4.2-.5-1.2 3.6c2.4-2 4.9-3.6 7.5-4.8' +
+  '2.4-1.1 4.6-1.8 6.1-2.9Z"/></g></svg>';
+
+/* The list-row form of the same bird (what CHEV_SVG used to be). */
+export const FLY_SVG = '<span class="chev" aria-hidden="true">' + BIRD_SVG + "</span>";
+
+/* index.html cannot import, so its static list rows carry an empty
+   <span class="chev" data-fly> placeholder and this fills them once at boot —
+   the bird path stays defined in exactly one place. */
+export function paintFly(root) {
+  const holes = (root || document).querySelectorAll("[data-fly]");
+  for (let i = 0; i < holes.length; i++) holes[i].innerHTML = BIRD_SVG;
+}
 
 export const OFFLINE_SVG =
   '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" ' +

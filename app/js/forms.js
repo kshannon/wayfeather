@@ -13,7 +13,8 @@ import {
   store, patchPlace, addStopover, snapshotPatch, restorePatch, saveOverlay
 } from "./state.js";
 import {
-  PRIOS, placeById, dayByKey, allClusters, findPool, clusterForSlot, slugify, uniqueId
+  PRIOS, placeById, dayByKey, allClusters, findPool, clusterForSlot, clusterOnMove,
+  slugify, uniqueId
 } from "./trip.js";
 import { openSheet, closeSheet } from "./sheets.js";
 import { toast } from "./toast.js";
@@ -22,7 +23,17 @@ let hooks = { selectDay() {}, refreshScene() {} };
 export function initForms(h) { hooks = Object.assign(hooks, h); }
 
 /* ── edit / add ───────────────────────────────────────────────────────────── */
-let form = { mode: "edit", id: null, dayKey: null };
+/* cluster0 is the cluster the sheet was OPENED with: if the day changes and the
+   user never touched the cluster field, the stopover adopts a cluster from the
+   day it lands in rather than dragging "Afternoon — canyons" into Sunday. */
+let form = { mode: "edit", id: null, dayKey: null, cluster0: "" };
+
+/* The date-null day — XTRA. The trip model guarantees one exists (trip.js
+   withExtras), so this never returns null for an assembled trip. */
+function extrasDay() {
+  const days = (store.trip && store.trip.days) || [];
+  return days.find((d) => d.date == null) || null;
+}
 
 function fillSelects(dayKey) {
   const trip = store.trip;
@@ -51,14 +62,26 @@ function setFields(p) {
   $("f-priority").value = (p && p.priority) || "yes";
 }
 
+/* The day <select> is the mover, so it is labelled for the job it is doing:
+   "Move to" when editing something that already lives somewhere, "Day" when
+   placing something new. The XTRA shortcut only shows when there is somewhere
+   else to go. */
+function paintMoveUI(mode, dayKey) {
+  const xtra = extrasDay();
+  const inXtra = !!xtra && xtra.key === dayKey;
+  $("f-dayLabel").textContent = mode === "edit" ? "Move to" : "Day";
+  $("f-movebar").hidden = !(mode === "edit" && xtra && !inXtra);
+}
+
 export function openEdit(id, opener) {
   const p = placeById(store.trip, id);
   if (!p) return;
-  form = { mode: "edit", id, dayKey: p.day };
+  form = { mode: "edit", id, dayKey: p.day, cluster0: p.cluster || "" };
   $("formTitle").textContent = "Edit stopover";
   $("formSub").textContent = p.name || "";
   fillSelects(p.day);
   setFields(p);
+  paintMoveUI("edit", p.day);
   $("f-danger").hidden = false;
   $("f-skip").textContent = p.priority === "skip" ? "Already skipped" : "Skip this stopover";
   $("f-skip").disabled = p.priority === "skip";
@@ -66,12 +89,13 @@ export function openEdit(id, opener) {
 }
 
 export function openAdd(dayKey, opener) {
-  form = { mode: "add", id: null, dayKey };
+  form = { mode: "add", id: null, dayKey, cluster0: "" };
   const d = dayByKey(store.trip, dayKey);
   $("formTitle").textContent = "Add a stopover";
   $("formSub").textContent = d ? (d.title || d.label || d.key) : "";
   fillSelects(dayKey);
   setFields(null);
+  paintMoveUI("add", dayKey);
   $("f-danger").hidden = true;
   openSheet($("formSheet"), opener, $("f-name"));
 }
@@ -82,14 +106,29 @@ export function markSkipped() {
   saveForm();
 }
 
+/* "FRI" / "XTRA" — the compact name, for a toast. */
+function dayName(d) { return d ? (d.label || d.title || d.key) : ""; }
+
 export function saveForm() {
   const name = $("f-name").value.trim();
   if (!name) { $("f-name").focus(); toast("A stopover needs a name"); return; }
+
+  const day = $("f-day").value;
+  const time = $("f-time").value.trim();
+  const moved = form.mode === "edit" && day !== form.dayKey;
+  let cluster = $("f-cluster").value.trim();
+  /* Moving day with the cluster field untouched: adopt a cluster from the day
+     it lands in. Type something in the field and that wins — the automatic
+     choice never overwrites a deliberate one. */
+  if (moved && cluster === form.cluster0) {
+    cluster = clusterOnMove(store.trip, day, parseClock(time), cluster);
+  }
+
   const fields = {
     name,
-    time: $("f-time").value.trim(),
-    day: $("f-day").value,
-    cluster: $("f-cluster").value.trim() || "Inbox",
+    time,
+    day,
+    cluster: cluster || "Inbox",
     cost: $("f-cost").value,           /* never run through .replace — "$$" */
     hours: $("f-hours").value.trim(),
     notes: $("f-notes").value.trim(),
@@ -113,12 +152,59 @@ export function saveForm() {
     hooks.refreshScene();
     toast("Added " + name);
   } else {
-    patchPlace(form.id, fields);
+    /* Everything the undo closure needs is captured NOW: `form` is reassigned
+       by the next openEdit/openAdd, and the toast lives for six seconds — long
+       enough to open another card's sheet before pressing Undo. */
+    const id = form.id, from = form.dayKey;
+    const prior = snapshotPatch(id);
+    patchPlace(id, fields);
     closeSheet();
-    if (fields.day !== form.dayKey) hooks.selectDay(fields.day, { keepScroll: true });
+    if (moved) hooks.selectDay(fields.day, { keepScroll: true });
     hooks.refreshScene();
-    toast("Saved " + name);
+    /* A move is worth naming — and worth an undo, because it is the one edit
+       that makes a card vanish from the day you were looking at. */
+    if (moved) {
+      toast(name + " → " + dayName(dayByKey(store.trip, fields.day)), () => {
+        restorePatch(id, prior);
+        hooks.selectDay(from, { keepScroll: true });
+        hooks.refreshScene();
+        toast("Moved " + name + " back");
+      });
+    } else {
+      toast("Saved " + name);
+    }
   }
+}
+
+/* One tap out of the day: "Send to XTRA" in the edit sheet. Same patch shape as
+   every other edit — day (+ cluster) into the overlay — so M2 turns it into the
+   same Contents-API PUT (DESIGN §4). The full mover is the day <select> above
+   it, which lists every day including XTRA. */
+export function moveTo(dayKey) {
+  const trip = store.trip;
+  const p = form.id ? placeById(trip, form.id) : null;
+  const d = dayByKey(trip, dayKey);
+  if (!p || !d || p.day === dayKey) return;
+  const from = p.day;
+  const prior = snapshotPatch(p.id);
+  const cluster = clusterOnMove(trip, dayKey, parseClock(p.time), p.cluster);
+
+  patchPlace(p.id, { day: dayKey, cluster, updatedAt: localISO() });
+  closeSheet();
+  hooks.selectDay(dayKey, { keepScroll: true });
+  hooks.refreshScene();
+
+  toast(p.name + " → " + dayName(d), () => {
+    restorePatch(p.id, prior);
+    hooks.selectDay(from, { keepScroll: true });
+    hooks.refreshScene();
+    toast("Moved " + p.name + " back");
+  });
+}
+
+export function moveToExtras() {
+  const d = extrasDay();
+  if (d) moveTo(d.key);
 }
 
 /* ── find me something ────────────────────────────────────────────────────── */

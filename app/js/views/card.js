@@ -48,8 +48,9 @@ export function chipHTML(p) {
   return '<span class="chip chip-' + CHIP[p.priority][0] + '">' + esc(CHIP[p.priority][1]) + "</span>";
 }
 
-/* Done / Skipped are one row: a state label plus an explicit Undo control, so
-   undo is a labelled button rather than "tap the status again". */
+/* Landed / Flew past are one row: a state label plus an explicit Undo control,
+   so undo is a labelled button rather than "tap the status again".
+   (DESIGN §5, avian voice: Did it! → Landed!, Skip it → Flew past.) */
 export function actsHTML(p, ctx) {
   const st = stateOf(p), id = attr(p.id), nm = attr(p.name || "this stopover");
   if (st.visited) {
@@ -57,29 +58,29 @@ export function actsHTML(p, ctx) {
     return '<div class="state-row">' +
       '<span class="state-lead">' +
         '<span class="state-check" aria-hidden="true">✓</span>' +
-        '<span class="state-text">Done' +
+        '<span class="state-text">Landed' +
           (w ? '<span aria-hidden="true"> · </span><span class="when">' + esc(w) + "</span>" : "") +
         "</span>" +
       "</span>" +
       '<button type="button" class="undo" data-act="clear" data-id="' + id + '" ' +
-        'aria-label="Undo — mark ' + nm + ' as not done">Undo</button>' +
+        'aria-label="Undo — mark ' + nm + ' as not visited">Undo</button>' +
     "</div>";
   }
   if (st.skipped) {
     return '<div class="state-row is-skip">' +
       '<span class="state-lead">' +
         '<span class="state-check" aria-hidden="true">–</span>' +
-        '<span class="state-text">Skipped</span>' +
+        '<span class="state-text">Flew past</span>' +
       "</span>" +
       '<button type="button" class="undo" data-act="clear" data-id="' + id + '" ' +
-        'aria-label="Undo — un-skip ' + nm + '">Undo</button>' +
+        'aria-label="Undo — put ' + nm + ' back on the list">Undo</button>' +
     "</div>";
   }
   return '<div class="acts">' +
     '<button type="button" class="act act-do" data-act="visit" data-id="' + id + '" ' +
-      'aria-label="Did it — mark ' + nm + ' as visited">Did it!</button>' +
+      'aria-label="Landed — mark ' + nm + ' as visited">Landed!</button>' +
     '<button type="button" class="act act-no" data-act="skip" data-id="' + id + '" ' +
-      'aria-label="Skip ' + nm + '">Skip it</button>' +
+      'aria-label="Flew past — skip ' + nm + '">Flew past</button>' +
   "</div>";
 }
 

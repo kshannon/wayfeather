@@ -9,7 +9,7 @@
 import { $, esc, attr } from "../dom.js";
 import { todayIn } from "../time.js";
 import { store } from "../state.js";
-import { CHEV_SVG } from "../icons.js";
+import { FLY_SVG } from "../icons.js";
 
 function groupHTML(title, list) {
   if (!list.length) return "";
@@ -19,13 +19,15 @@ function groupHTML(title, list) {
       const on = e.id === store.activeTrip;
       const sub = esc(e.dates || "") +
         (s ? '<span aria-hidden="true"> · </span>' + esc(s.dayCount) + " days" : "");
-      return '<button class="rowcard' + (on ? " is-active" : "") + '" type="button" ' +
+      /* is-trip = one spacing step more air than a settings row; u-serif because
+         a trip NAME is a name, while the rows in Settings are labels. */
+      return '<button class="rowcard is-trip' + (on ? " is-active" : "") + '" type="button" ' +
         'data-trip="' + attr(e.id) + '"' + (on ? ' aria-current="true"' : "") + ">" +
         '<span class="rowcard-main">' +
-          '<span class="rowcard-name">' + esc(e.name) + "</span>" +
+          '<span class="rowcard-name u-serif">' + esc(e.name) + "</span>" +
           '<span class="rowcard-sub">' + sub + "</span>" +
         "</span>" +
-        (on ? '<span class="pin">Active</span>' : CHEV_SVG) +
+        (on ? '<span class="pin">Active</span>' : FLY_SVG) +
       "</button>";
     }).join("") + "</div></div>";
 }

@@ -22,6 +22,28 @@ export const CHIP = {
   optional:    ["maybe", "Maybe"]
 };
 
+/* ── the XTRA guarantee (DESIGN §5) ───────────────────────────────────────── */
+/* A trip file need not ship a bonus day — river-road-test doesn't — but the UI
+   promises one: "Move to… XTRA" and "Find me something" both need somewhere for
+   an unscheduled idea to live. So the day list is normalised on the way in: if
+   nothing in it is date-null, one is synthesized. It is a plain day object, so
+   nothing downstream has to know it was invented, and it is NOT written back to
+   the trip file — a synthesized day with no stopovers in it simply disappears
+   again the moment real data grows one.
+
+   Pure: days in, days out. The caller (state.assemble) owns when it happens. */
+export function withExtras(days) {
+  const list = Array.isArray(days) ? days.slice() : [];
+  if (list.some((d) => d && d.date == null)) return list;
+  const taken = Object.create(null);
+  list.forEach((d) => { if (d && d.key) taken[d.key] = 1; });
+  let key = "bonus";
+  for (let n = 2; taken[key]; n++) key = "bonus-" + n;
+  list.push({ key, label: "XTRA", title: "Extras", bullet: "+", date: null,
+              subtitle: "Unscheduled — slot into any open block" });
+  return list;
+}
+
 export function tripToday(trip) { return todayIn(trip && trip.tz); }
 
 export function placeById(trip, id) {
@@ -93,12 +115,14 @@ export function findPool(trip) {
   });
 }
 
+/* A place is a "stopover" everywhere the UI counts them (DESIGN §5); the XTRA
+   day counts "ideas", because nothing in it is a stop on any route yet. */
 export function countText(trip, day) {
   const stops = placesOfDay(trip, day.key);
   const acts = actionableOfDay(trip, day.key);
   const done = acts.filter(isHandled).length;
   const base = day.date
-    ? stops.length + (stops.length === 1 ? " stop" : " stops")
+    ? stops.length + (stops.length === 1 ? " stopover" : " stopovers")
     : stops.length + (stops.length === 1 ? " idea" : " ideas") + " · unscheduled";
   if (acts.length && done === acts.length) return base + " · all handled";
   if (done) return base + " · " + done + " handled";
@@ -117,9 +141,9 @@ export function initialDayKey(trip) {
   return first;
 }
 
-/* cluster = the cluster of the chronologically previous stopover in the day,
-   else the next one's, else whatever the stopover already carried. */
-export function clusterForSlot(trip, dayKey, mins, fallback) {
+/* The cluster of the chronologically previous stopover in the day, else the
+   next one's — or null when the day has nothing timed to sit beside. */
+export function neighbourCluster(trip, dayKey, mins) {
   const list = placesOfDay(trip, dayKey);
   let prev = null, next = null;
   for (let i = 0; i < list.length; i++) {
@@ -128,7 +152,30 @@ export function clusterForSlot(trip, dayKey, mins, fallback) {
     if (m <= mins) prev = list[i];
     else if (next === null) next = list[i];
   }
-  return (prev && prev.cluster) || (next && next.cluster) || fallback || "Inbox";
+  return (prev && prev.cluster) || (next && next.cluster) || null;
+}
+
+/* cluster = the neighbour's, else whatever the stopover already carried. */
+export function clusterForSlot(trip, dayKey, mins, fallback) {
+  return neighbourCluster(trip, dayKey, mins) || fallback || "Inbox";
+}
+
+/* Cluster to adopt when a stopover MOVES to another day. Never the daypart it
+   carried out of the day it left — "Afternoon — canyons" means nothing on
+   Sunday. In order: the neighbour at its time, then the day's last cluster (it
+   lands at the tail of the day), then a plain name.
+   XTRA is deliberately handled before the inherit step: the pool is not an
+   itinerary, and a stopover moved into it must not silently pick up an opinion
+   like "Probably skip" from whatever happens to be sitting there. */
+export function clusterOnMove(trip, dayKey, mins, current) {
+  const near = (mins === null || mins === undefined)
+    ? null : neighbourCluster(trip, dayKey, mins);
+  if (near) return near;
+  const day = dayByKey(trip, dayKey);
+  if (day && day.date == null) return "Ideas";
+  const existing = clustersOf(placesOfDay(trip, dayKey)).filter(Boolean);
+  if (existing.length) return existing[existing.length - 1];
+  return current || "Inbox";
 }
 
 /* ── ids ──────────────────────────────────────────────────────────────────── */

@@ -1,7 +1,7 @@
 /* state.js — device state and the local overlay.
 
    Two layers of localStorage:
-     wayfeather:app            → { accent, activeTrip }          (device-wide)
+     wayfeather:app            → { activeTrip }                   (device-wide)
      wayfeather:app:<tripId>   → { placePatches, addedStopovers } (per trip)
 
    Rendering is ALWAYS fetched data + overlay patch. Every mutation in the app —
@@ -10,18 +10,13 @@
    Only the transport changes; the patch objects do not. */
 
 import { copy } from "./dom.js";
+import { withExtras } from "./trip.js";
 
 const NS = "wayfeather:";
 const GKEY = NS + "app";
 const ovKey = (id) => GKEY + ":" + id;
 
-export const ACCENTS = [
-  { id: "cerulean", name: "Cerulean", hex: "#0B6C8C" },
-  { id: "matcha",   name: "Matcha",   hex: "#4B6630" }
-];
-
 export const store = {
-  accent: ACCENTS[0].id,
   activeTrip: "",
   index: null,                 // index.json payload
   indexMeta: { fetchedAt: 0, stale: false, sha: null },
@@ -62,25 +57,16 @@ export function wipeAll() {
 }
 
 /* ── globals ──────────────────────────────────────────────────────────────── */
+/* v4 dropped the accent picker: there is one theme now (DESIGN §5). A device
+   that still has `accent` in this record simply keeps an ignored key — nothing
+   reads it, and the next saveGlobal() drops it. */
 export function loadGlobal() {
   const g = readJSON(GKEY) || {};
-  if (g.accent && ACCENTS.some((a) => a.id === g.accent)) store.accent = g.accent;
   if (g.activeTrip) store.activeTrip = g.activeTrip;
 }
 
 export function saveGlobal() {
-  writeJSON(GKEY, { accent: store.accent, activeTrip: store.activeTrip });
-}
-
-export function applyAccent() {
-  document.documentElement.setAttribute("data-accent", store.accent);
-}
-
-export function setAccent(id) {
-  if (!ACCENTS.some((a) => a.id === id)) return;
-  store.accent = id;
-  saveGlobal();
-  applyAccent();
+  writeJSON(GKEY, { activeTrip: store.activeTrip });
 }
 
 /* ── overlay ──────────────────────────────────────────────────────────────── */
@@ -115,7 +101,10 @@ export function assemble() {
   store.trip = {
     schema: raw.schema, id: raw.id, name: raw.name, tz: raw.tz,
     start: raw.start, end: raw.end, base: raw.base, notes: raw.notes,
-    days: raw.days || [], places
+    /* XTRA is guaranteed here, once, on the way in: every view downstream can
+       assume a home for "not today" exists — Move to… and Find me something
+       both depend on it (DESIGN §5). */
+    days: withExtras(raw.days), places
   };
   return store.trip;
 }

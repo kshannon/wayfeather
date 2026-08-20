@@ -8,7 +8,7 @@
    Bumping: change VERSION. The cache name carries it, install precaches the new
    shell, and activate deletes every other wayfeather-shell-* cache. */
 
-const VERSION = "v1";
+const VERSION = "v2";
 const CACHE = "wayfeather-shell-" + VERSION;
 const PREFIX = "wayfeather-shell-";
 

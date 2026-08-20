@@ -37,7 +37,7 @@ export function renderMap() {
   $("mapTitle").textContent = title;
   setTitle("map", title);
   $("mapSub").textContent = (session.scope.cluster ? session.scope.cluster : "Whole day") +
-    " · " + stops.length + (stops.length === 1 ? " stop" : " stops") + " in order";
+    " · " + stops.length + (stops.length === 1 ? " stopover" : " stopovers") + " in order";
   $("mapEscape").innerHTML = session.scope.cluster
     ? '<button class="btn btn-quiet" type="button" id="btnWholeDay">Whole day</button>'
     : "";
@@ -47,11 +47,11 @@ export function renderMap() {
     const cls = "node" + (vis ? " is-visited" : "") + (skp ? " is-skipped" : "") +
                 (cur ? " is-cur" : "");
     const glyph = vis ? "✓" : (skp ? "–" : String(i + 1));
-    const st = vis ? "Done" : (skp ? "Skipped" : (cur ? "Showing below" : ""));
+    const st = vis ? "Landed" : (skp ? "Flew past" : (cur ? "Showing below" : ""));
     return '<li class="' + cls + '">' +
       '<button class="node-btn" type="button" data-node="' + i + '"' +
         (cur ? ' aria-current="true"' : "") +
-        ' aria-label="Stop ' + (i + 1) + " of " + stops.length + ": " +
+        ' aria-label="Stopover ' + (i + 1) + " of " + stops.length + ": " +
           attr(p.name || "") + (st ? " — " + st : "") + '">' +
         '<span class="node-rail" aria-hidden="true"><span class="node-dot">' + glyph + "</span></span>" +
         '<span class="node-body">' +
@@ -69,8 +69,8 @@ export function renderMap() {
     : "";
 
   const p2 = stops[session.route.idx];
-  if (!p2) { $("dockBody").innerHTML = ""; $("dockCount").textContent = "No stops"; return; }
-  $("dockCount").textContent = "Stop " + (session.route.idx + 1) + " of " + stops.length;
+  if (!p2) { $("dockBody").innerHTML = ""; $("dockCount").textContent = "No stopovers"; return; }
+  $("dockCount").textContent = "Stopover " + (session.route.idx + 1) + " of " + stops.length;
   $("dockBody").innerHTML =
     '<div class="dock-pad">' +
       '<div class="dock-top">' + timeHTML(p2) + chipHTML(p2) + "</div>" +

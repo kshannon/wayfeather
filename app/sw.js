@@ -8,7 +8,7 @@
    Bumping: change VERSION. The cache name carries it, install precaches the new
    shell, and activate deletes every other wayfeather-shell-* cache. */
 
-const VERSION = "v2";
+const VERSION = "v3";
 const CACHE = "wayfeather-shell-" + VERSION;
 const PREFIX = "wayfeather-shell-";
 
@@ -40,8 +40,26 @@ const SHELL = [
   "./js/views/daystrip.js",
   "./js/views/itinerary.js",
   "./js/views/map.js",
+  "./js/views/geomap.js",
   "./js/views/trips.js",
   "./js/views/settings.js",
+
+  /* MapLibre GL 6.4.1 (BSD-3-Clause), vendored — see the header of
+     js/views/geomap.js for provenance. The LIBRARY is precached so that the
+     choice between the geographic map and the schematic is about TILES, not
+     about whether the code is reachable: offline, the module still imports,
+     and map.js falls back deliberately rather than by accident.
+
+     v6 ships an ESM-only, code-split dist, so all three files are needed:
+     the entry imports the shared chunk, and the library itself loads the
+     worker as a module Worker resolved against its own import.meta.url. */
+  "./vendor/maplibre/maplibre-gl.mjs",
+  "./vendor/maplibre/maplibre-gl-shared.mjs",
+  "./vendor/maplibre/maplibre-gl-worker.mjs",
+  "./vendor/maplibre/maplibre-gl.css",
+
+  /* our cartography — small, and it must be there for the map to draw at all */
+  "./map-style.json",
 
   "./icons/icon.svg",
   "./icons/icon-square.svg",
@@ -75,6 +93,12 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
 
   const url = new URL(req.url);
+  /* Cross-origin means map tiles, the TileJSON and glyph ranges from
+     tiles.openfreemap.org. They are passed straight through and NEVER written
+     to a cache: a shell cache is not a tile store, and a half-filled one would
+     make the map look available offline while showing whatever squares of the
+     world happened to be in it. Offline is the schematic's job (DESIGN §5);
+     a real offline map is the Protomaps PMTiles extract, later. */
   if (url.origin !== self.location.origin) return;
   if (url.pathname.indexOf("/data/") !== -1) return;    // network-only, always
 

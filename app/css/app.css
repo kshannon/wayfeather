@@ -606,7 +606,15 @@ svg{display:block}
 .maphead-row{display:flex;align-items:flex-start;gap:var(--s3)}
 .maphead .sub{margin-top:var(--s1);font-size:var(--t-footnote);color:var(--ink-2)}
 .mapdays{padding-bottom:var(--s2)}
-.mapbody{flex:1 1 auto;padding-bottom:var(--s4)}
+/* A flex column so the geographic map can claim the leftover height, while the
+   schematic node line below keeps its natural, content-sized height.
+   width:100% is load-bearing, not belt-and-braces: .mapbody is a flex ITEM of
+   the column that is .view-map, and .wrap gives it `margin:0 auto`. An auto
+   cross-axis margin beats align-items:stretch, so the item is sized to its
+   content — and the map container has no intrinsic width, which collapsed the
+   whole panel to its 32px of padding. With border-box, 100% still respects
+   .wrap's max-width:640px and stays centred on a wide screen. */
+.mapbody{flex:1 1 auto;width:100%;padding-bottom:var(--s4);display:flex;flex-direction:column}
 .nodes{list-style:none;margin:0;padding:var(--s4) 0 0}
 .node{position:relative;margin:0 0 14px}
 .node-btn{
@@ -709,6 +717,97 @@ svg{display:block}
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
 .map-pad{height:var(--tab-total)}
+
+/* ─── 21b. GEOGRAPHIC MAP (MapLibre) ──────────────────────────────────────── */
+/* The canvas sits in a rounded card like everything else in the app, and it is
+   painted the app's cream BEFORE MapLibre ever draws — so a slow style load
+   looks like the map fading in rather than a hole in the page. */
+.geo{
+  flex:1 1 auto;display:flex;flex-direction:column;
+  min-height:min(56dvh, 520px);
+  padding-top:var(--s4);
+}
+.geo-canvas{
+  flex:1 1 auto;min-height:280px;
+  border-radius:var(--r-lg);overflow:hidden;
+  background:var(--ground);
+  box-shadow:var(--card-ring),var(--e1);
+  position:relative;
+}
+.geo-note{
+  margin:var(--s2) 2px 0;
+  font-size:var(--t-footnote);color:var(--ink-3);
+}
+
+/* ── pins ─────────────────────────────────────────────────────────────────── */
+/* 30px of visible pin inside a 44px transparent button: the touch target meets
+   the minimum without a 44px blob sitting on the map. The anchor is "bottom",
+   so the padding is trimmed at the bottom to keep the point on the coordinate. */
+.gpin{
+  display:flex;align-items:center;justify-content:center;
+  width:44px;height:44px;padding:0 0 7px;
+  background:none;border:0;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.gpin-dot{
+  display:flex;align-items:center;justify-content:center;
+  width:30px;height:30px;border-radius:11px;
+  font-family:var(--f-sans);
+  font-size:var(--t-caption);font-weight:700;line-height:1;
+  font-variant-numeric:tabular-nums;
+  background:var(--accent);color:var(--on-accent);
+  box-shadow:0 0 0 2px var(--surface), 0 1px 3px rgba(31,27,21,.34);
+}
+.gpin.is-fixed .gpin-dot{
+  /* the map's form of the reservation glyph: booked things wear a ring */
+  box-shadow:0 0 0 2px var(--surface), 0 0 0 4.5px var(--accent),
+             0 1px 3px rgba(31,27,21,.34);
+}
+.gpin.is-visited .gpin-dot{background:var(--done);color:var(--on-done);font-size:14px}
+.gpin.is-skipped .gpin-dot{
+  background:var(--hair-2);color:var(--ink-2);
+  box-shadow:0 0 0 2px var(--surface), 0 1px 2px rgba(31,27,21,.22);
+}
+/* the stopover the dock is showing, matching .node.is-cur on the schematic */
+.gpin.is-cur .gpin-dot{
+  box-shadow:0 0 0 3px var(--surface), 0 0 0 6px var(--soft),
+             0 2px 6px rgba(31,27,21,.34);
+}
+.gpin:focus-visible{outline:none}
+.gpin:focus-visible .gpin-dot{box-shadow:0 0 0 2px var(--surface), 0 0 0 5px var(--focus)}
+
+/* the Nest — the base. Not a numbered stop, so it gets the birdhouse instead. */
+.gnest{
+  display:flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:10px;
+  background:var(--brown);color:#FFFFFF;
+  box-shadow:0 0 0 2px var(--surface), 0 1px 3px rgba(31,27,21,.34);
+}
+
+/* ── MapLibre's own chrome, restyled ──────────────────────────────────────── */
+/* The library's controls are 29px and cornflower blue out of the box. Ours are
+   44px and wear the app's tokens; the attribution stays legible because ODbL
+   requires it to be readable, not because it is decorative. */
+.geo-canvas .maplibregl-ctrl-group{
+  background:var(--surface);
+  border-radius:var(--r-btn);
+  box-shadow:var(--card-ring),var(--e1);
+}
+.geo-canvas .maplibregl-ctrl-group button{
+  width:44px;height:44px;
+  border-radius:var(--r-btn);
+  color:var(--ink-2);
+}
+.geo-canvas .maplibregl-ctrl-group button+button{border-top:1px solid var(--hair)}
+.geo-canvas .maplibregl-ctrl-group button:not(:disabled):hover{background:var(--surface-2)}
+.geo-canvas .maplibregl-ctrl-icon{transform:scale(1.15)}
+.geo-canvas .maplibregl-ctrl-attrib{
+  background:rgba(255,252,245,.86);
+  border-radius:var(--r-sm) 0 0 0;
+  font-family:var(--f-sans);font-size:var(--t-caption2);
+}
+.geo-canvas .maplibregl-ctrl-attrib a{color:var(--ink-2)}
+.geo-canvas .maplibregl-ctrl-attrib-button{background-color:transparent}
 
 /* ─── 22. PAGES + INSET-GROUPED LISTS (Trips / Settings) ──────────────────── */
 .page{padding-bottom:calc(var(--s7) + var(--tab-total))}

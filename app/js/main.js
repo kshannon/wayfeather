@@ -24,7 +24,9 @@ import {
   renderHero, renderPanels, paintPanels, repaintCard, refreshTails, refreshCounts,
   renderStamp, renderStaleBanner
 } from "./views/itinerary.js";
-import { renderMap, routeStops, firstUnhandled, jumpTo, clearClusterScope } from "./views/map.js";
+import {
+  renderMap, routeStops, firstUnhandled, jumpTo, clearClusterScope, wireConnectivity
+} from "./views/map.js";
 import { renderTrips } from "./views/trips.js";
 import { renderSettings, renderCacheRow } from "./views/settings.js";
 import { paintFly } from "./icons.js";
@@ -292,6 +294,7 @@ function wireEvents() {
   });
 
   wireTabKeys();
+  wireConnectivity();          // offline drops the Map tab to the schematic
   wireScrim();
   wireGrabber($("formGrab"), $("formSheet"));
   wireGrabber($("findGrab"), $("findSheet"));

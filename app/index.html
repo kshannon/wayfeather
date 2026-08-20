@@ -88,6 +88,14 @@
       <div class="daystrip" role="group" aria-label="Pick a day to route" id="mapDays"></div>
     </div>
     <div class="mapbody wrap">
+      <!-- The geographic map (MapLibre, lazy-loaded) and the schematic node
+           line are the same scope drawn two ways; views/map.js shows exactly
+           one of them and hides the other. The node line stays the fallback
+           for stopovers with no coordinates and for offline. -->
+      <div class="geo" id="geoWrap" hidden>
+        <div class="geo-canvas" id="geoCanvas"></div>
+        <p class="geo-note" id="geoNote" hidden>Loading the map…</p>
+      </div>
       <ol class="nodes" id="routeNodes"></ol>
       <div id="routeOut"></div>
     </div>

@@ -1,0 +1,2124 @@
+<!doctype html>
+<!--
+================================================================================
+DESIGN NOTES — Candidate A v2: Soft Cards
+================================================================================
+
+Warm consumer-app skin for Wayfeather (Apple Journal / Airbnb reference points):
+quiet off-white ground, generously rounded surfaces on soft layered shadows, a
+big greeting header, a scrollable day-pill strip. Nothing thematic — no signage
+band, no route bullets. Type is the native -apple-system stack so an installed
+PWA reads as part of iOS.
+
+--------------------------------------------------------------------------------
+0. WHAT CHANGED FROM v1 (2026-08-20 review)
+--------------------------------------------------------------------------------
+  1. LIGHT ONLY.        Every prefers-color-scheme:dark block and every -dk token
+                        variant is gone (--d-ink-dk/--d-tint-dk/--d-soft-dk/
+                        --d-on-dk, the dark elevation swap, the dark theme-color).
+                        One intentional light design; meta color-scheme = light.
+  2. PULL-TO-REFRESH.   Touch + mouse-drag; the whole .shell translates down over
+                        a fixed indicator, elastic-eased, release past threshold
+                        to spin, re-render, and stamp "updated just now · <sha>".
+                        A ↻ button in the hero does the same thing. sha is FAKE
+                        (random 7 hex per refresh) until the Contents API lands.
+  3. DID IT! / SKIP IT. Real interaction, not the v1 static "visited preview"
+                        comment (removed). Writes ISO timestamps into a
+                        localStorage overlay keyed wayfeather:v2:<tripId> →
+                        { <placeId>: {visited, skipped} }, simulating the future
+                        git write path. One-tap reversible via an undo affordance.
+  4. DAY STRIP.         Same scrollable pill row; pills now grey out (neutral
+                        --done accent replaces the day hex) when the day is
+                        complete — every actionable place handled, or the date is
+                        past in the trip's tz. Greyed pills stay tappable.
+                        Recomputed live on every state change.
+  5. BADGES → 3 CHIPS.  Booked (fixed) · Must (must) · Maybe (maybe, maybe-not,
+                        if-close, optional). `yes` unmarked. `check` renders a
+                        "Call ahead" warn line merged with any `warn` text rather
+                        than a chip. `skip` and `note` stay row states.
+  6. ICON LINK ROW.     Text pills → 5 icon buttons (Site/Yelp/Google/Apple/
+                        Search), inline SVG only, 56px targets, 10px learnable
+                        labels, full name in aria-label. URLs identical to v1.
+  7. ROUTE VIEW.        "Walk it" (cluster) and "Route" (day summary) open one
+                        full-screen sheet: schematic numbered node line with
+                        direction-of-travel chevrons, docked next-unhandled-stop
+                        card with ◀ ▶ cycling. No coordinates, no tiles.
+  8. ADD FAB.           Floating ＋ above the safe-area inset → placeholder toast.
+
+--------------------------------------------------------------------------------
+1. COLOR TOKENS (neutral ground — light only)
+--------------------------------------------------------------------------------
+  --ground / --surface / --surface-2   page ground, card, recessed card
+  --hair / --hair-2                    hairline borders
+  --rail                               schematic route line + arrows (>=3:1)
+  --ink / --ink-2 / --ink-3            primary / secondary / tertiary text
+  --done / --on-done                   neutral accent for a completed day pill
+  --focus                              focus ring
+  --nav-bg                             translucent sticky-bar fill
+
+  Semantic pairs (bg + ink, each pair verified >= 4.5:1):
+  --ok-*      hours look fine          --bad-*     hours warning / closures
+  --warn-*    call-ahead, warn line    --info-*    "Maybe" chip
+  --gold-*    "Must" chip (the one saturated chip)
+  --neutral-bg  skipped / dimmed fills
+
+--------------------------------------------------------------------------------
+2. DATA-DRIVEN DAY COLOR (the part that matters)
+--------------------------------------------------------------------------------
+Day colors come from trip.days[].color and are NEVER hardcoded. A raw brand hex
+(e.g. #00A1DE) only reaches 2.9:1 against white, so it cannot legally carry text.
+Each day's hex is projected at runtime into four derived values written onto the
+day's panel, tab, FAB and route sheet as inline custom properties:
+
+  --d-ink    hue+saturation preserved, lightness walked DOWN until the color
+             clears 4.6:1 against the HARDEST surface it will sit on (the ground,
+             the tint, or the soft wash — whichever is darkest). Used for small
+             accents, cluster dots, booked times, the selected-tab fill, the
+             primary "Did it!" button, route nodes. Because it clears 4.6:1 on
+             light, white text on it is automatically >= 5:1 — the filled pill,
+             button and node are safe too.
+  --d-tint   same hue, saturation damped, L 0.945 — day-header + sheet-header wash
+  --d-soft   same hue, L 0.90 — walk pill, node rings
+  --d-on     text color to sit on a filled accent; days[].darkText is honored
+             when it still clears 4.5:1, else the higher-contrast option wins.
+
+CSS binds --accent/--tint/--soft/--on-accent from that set. The saturated end of
+the scale stays reserved for small key moments; the tints do the broad quiet work.
+
+--------------------------------------------------------------------------------
+3. TYPE SCALE (system stack, tabular numerals on all times)
+--------------------------------------------------------------------------------
+  10 / 11 / 12 / 13 / 15 / 17 / 20 px  (--t-3xs … --t-xl)
+  hero title: clamp(28px, 8.5vw, 40px), weight 700, tracking -0.03em
+  Weights: 400 body, 500 meta, 600 names/labels, 700 hero + chips + actions.
+
+--------------------------------------------------------------------------------
+4. SPACING / RADII / ELEVATION / TARGETS
+--------------------------------------------------------------------------------
+  space  4 / 8 / 12 / 16 / 20 / 24 / 32 / 44 px   (--s1 … --s8)
+  radii  8 sm · 12 md · 16 lg · 20 xl · 999 pill  — cards sit at 18px
+  elev   --e1 resting hairline lift · --e2 two-layer card shadow (1px contact +
+         wide diffuse) · --e-nav sticky bar · --e-float FAB/dock
+  targets  day pills / actions / arrows 44-46px · icon links 56px · FAB 58px
+
+--------------------------------------------------------------------------------
+5. INTERACTION INVENTORY (state lives in ONE place: OVER + localStorage)
+--------------------------------------------------------------------------------
+  pull-to-refresh   touchstart/move/end (non-passive move, preventDefault only
+                    once a vertical-dominant downward pull is active, so the
+                    horizontal day strip is never hijacked) + mousedown/move/up
+                    fallback with click suppression. Only arms at scrollY <= 0
+                    and never while the sheet is open. Elastic ease
+                    d = MAX * (1 - e^(-raw/180)); trigger at 64px.
+  did it / skip it  delegated [data-act] → visit | skip | clear. Surgical card
+                    re-render (no full repaint, scroll position preserved),
+                    then syncChrome() for pill grey-out + day counts, then the
+                    route sheet if it is open.
+  day strip         role=tablist, roving tabindex, ←/→/Home/End, aria-selected.
+  route sheet       role=dialog aria-modal, focus moved to Close and restored to
+                    the opener, Tab trapped, Esc closes, ←/→ cycle stops,
+                    background .shell set inert + aria-hidden.
+  reduced motion    every transition/animation sits inside
+                    @media (prefers-reduced-motion: no-preference); the refresh
+                    dwell shortens and the pull snaps back instantly.
+  dev              ?reset clears the localStorage overlay and strips itself from
+                    the URL (candidate-only convenience, not shipping behavior).
+
+--------------------------------------------------------------------------------
+6. JUDGMENT CALLS
+--------------------------------------------------------------------------------
+  · BOTH route entry points: cluster "Walk it" opens the sheet scoped to that
+    cluster, the day summary's "Route" opens it scoped to the whole day. Same
+    component, different stop list; each appears only at >= 2 stops.
+  · v1's "Walk it" was an external Google Maps directions link. That function is
+    preserved as a link at the bottom of the node list rather than dropped.
+  · priority:"note" rows are not stops — excluded from the route line, from the
+    day-complete calculation, and they get no Did it!/Skip it.
+  · ◀ ▶ wrap around instead of disabling at the ends: a disabled arrow cannot be
+    dimmed far enough to read as disabled while staying >= 3:1.
+  · The ＋ retreats while you scroll down and returns on any upward scroll. Parked
+    permanently bottom-right it overlaps the full-width actions row, putting the
+    Add target on top of a card's "Skip it" — a bad miss for a one-thumb app.
+  · The fake sha is re-rolled per refresh so the mechanic is visibly doing
+    something; the real one comes from the Contents API blob sha.
+
+NOTE: this file is a design candidate. Data is embedded verbatim as window.TRIP;
+the shipped app will fetch it through the Contents API instead.
+================================================================================
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F6F5F2">
+<title>Wayfeather — Soft Cards v2</title>
+<style>
+/* ─── 1. TOKENS (light only) ───────────────────────────────────────────────── */
+:root{
+  /* neutrals */
+  --ground:#F6F5F2;
+  --surface:#FFFFFF;
+  --surface-2:#F1EFEA;
+  --hair:#E7E4DD;
+  --hair-2:#D6D2C9;
+  --rail:#8F8A7F;
+  --ink:#17171A;
+  --ink-2:#56565C;
+  --ink-3:#64646B;
+  --done:#5E5E66;
+  --on-done:#FFFFFF;
+  --focus:#1D4ED8;
+  --nav-bg:rgba(246,245,242,.86);
+  --dot-on:rgba(255,255,255,.30);
+
+  /* semantic pairs */
+  --ok-bg:#E4F2E8;      --ok-ink:#166A38;
+  --bad-bg:#FBE9E7;     --bad-ink:#A3261A;
+  --warn-bg:#FBEEDD;    --warn-ink:#8A4F06;
+  --info-bg:#E9EFFA;    --info-ink:#2C4E8A;
+  --gold-bg:#F2C14E;    --gold-ink:#3A2A02;
+  --neutral-bg:#EDEBE6;
+
+  /* type scale */
+  --t-3xs:10px; --t-2xs:11px; --t-xs:12px; --t-sm:13px; --t-md:15px;
+  --t-lg:17px;  --t-xl:20px;
+
+  /* space scale */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px;
+  --s5:20px; --s6:24px; --s7:32px; --s8:44px;
+
+  /* radii */
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:20px; --r-pill:999px;
+
+  /* elevation */
+  --e1:0 1px 2px rgba(23,23,26,.05), 0 1px 1px rgba(23,23,26,.04);
+  --e2:0 1px 2px rgba(23,23,26,.05), 0 4px 12px rgba(23,23,26,.055),
+       0 14px 30px rgba(23,23,26,.045);
+  --e-nav:0 1px 0 rgba(23,23,26,.07), 0 8px 20px rgba(23,23,26,.05);
+  --e-float:0 2px 4px rgba(23,23,26,.10), 0 8px 22px rgba(23,23,26,.16);
+  --card-ring:0 0 0 1px rgba(23,23,26,.035);
+}
+
+/* ─── 2. BASE ──────────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none !important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,system-ui,"Segoe UI",Roboto,
+              "Helvetica Neue",Arial,sans-serif;
+  font-size:var(--t-md);
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+body.is-locked{overflow:hidden}
+h1,h2,h3,h4,p{margin:0}
+a{color:inherit}
+button{font:inherit;color:inherit;background:none;border:0;margin:0;padding:0}
+button,a{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:var(--r-sm)}
+svg{display:block}
+.wrap{
+  max-width:640px;margin:0 auto;
+  padding-left:max(16px, env(safe-area-inset-left));
+  padding-right:max(16px, env(safe-area-inset-right));
+}
+.u-tab-num{font-variant-numeric:tabular-nums}
+.u-sr{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0;
+}
+
+/* ─── 3. SHELL + PULL-TO-REFRESH ───────────────────────────────────────────── */
+/* .shell paints the ground so the fixed indicator behind it is only visible in
+   the gap opened by the pull. Nothing position:fixed may live inside it — a
+   transformed ancestor would become its containing block. */
+.shell{position:relative;z-index:1;background:var(--ground);min-height:100vh}
+.shell.is-pulling{transform:translate3d(0,var(--pull,0px),0)}
+@media (prefers-reduced-motion: no-preference){
+  .shell.is-settling{transition:transform .34s cubic-bezier(.22,1,.36,1)}
+}
+.ptr{
+  position:fixed;z-index:0;left:0;right:0;top:env(safe-area-inset-top);
+  height:104px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:7px;pointer-events:none;
+  opacity:var(--ptr-o,0);
+}
+.ptr-ring{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--surface);box-shadow:var(--card-ring),var(--e1);
+  display:flex;align-items:center;justify-content:center;color:var(--ink-2);
+  transform:scale(var(--ptr-s,.65));
+}
+.ptr-arrow{transform:rotate(var(--ptr-r,0deg));transform-origin:50% 50%}
+.ptr-spin{display:none}
+.ptr.is-busy .ptr-arrow{display:none}
+.ptr.is-busy .ptr-spin{display:block}
+.ptr.is-busy .ptr-ring{transform:scale(1)}
+@media (prefers-reduced-motion: no-preference){
+  .ptr-ring{transition:transform .16s ease}
+  .ptr-arrow{transition:transform .18s ease}
+  .ptr.is-busy .ptr-spin{animation:wf-spin .85s linear infinite;transform-origin:50% 50%}
+}
+@keyframes wf-spin{to{transform:rotate(360deg)}}
+.ptr-label{
+  font-size:var(--t-2xs);font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--ink-3);
+}
+
+/* ─── 4. HERO ──────────────────────────────────────────────────────────────── */
+.hero{padding-top:calc(env(safe-area-inset-top) + var(--s5));padding-bottom:var(--s5)}
+.hero-row{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
+  min-height:var(--s8);margin-bottom:var(--s1)}
+.hero-eyebrow{
+  font-size:var(--t-xs);font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-3);
+}
+.iconbtn{
+  flex:0 0 auto;width:var(--s8);height:var(--s8);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface);color:var(--ink-2);
+  box-shadow:var(--card-ring),var(--e1);cursor:pointer;
+}
+.iconbtn:active{background:var(--surface-2)}
+.hero-title{
+  font-size:clamp(28px,8.5vw,40px);font-weight:700;letter-spacing:-.03em;
+  line-height:1.06;
+}
+.hero-sub{margin-top:var(--s3);font-size:var(--t-md);color:var(--ink-2);line-height:1.4}
+.hero-base{display:block;margin-top:2px;font-size:var(--t-sm);color:var(--ink-3)}
+@media (min-width:640px){
+  .hero{padding-top:calc(env(safe-area-inset-top) + var(--s6));padding-bottom:var(--s6)}
+}
+
+/* ─── 5. DAY STRIP (sticky, horizontally scrollable pills) ─────────────────── */
+.daybar{
+  position:sticky;top:0;z-index:30;
+  background:var(--nav-bg);
+  -webkit-backdrop-filter:saturate(180%) blur(18px);
+  backdrop-filter:saturate(180%) blur(18px);
+  padding-top:env(safe-area-inset-top);
+  box-shadow:var(--e-nav);
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .daybar{background:var(--ground)}
+}
+.tabs{
+  display:flex;gap:var(--s2);
+  overflow-x:auto;overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  scroll-snap-type:x proximity;
+  padding:10px max(16px, env(safe-area-inset-left)) 10px max(16px, env(safe-area-inset-right));
+  /* The snapport must be inset by the same amount as the padding. Without this,
+     snapping aligns the first pill's edge with the container's edge — pulling
+     scrollLeft to 16 and clipping the strip's own left inset at rest. */
+  scroll-padding-left:max(16px, env(safe-area-inset-left));
+  scroll-padding-right:max(16px, env(safe-area-inset-right));
+  max-width:640px;margin:0 auto;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  --accent:var(--d-ink); --on-accent:var(--d-on);
+  flex:0 0 auto;scroll-snap-align:start;
+  display:flex;align-items:center;gap:var(--s2);
+  min-height:var(--s8);padding:0 14px 0 10px;   /* --s8 is the 44px tap target */
+  border-radius:var(--r-pill);
+  background:var(--surface);
+  box-shadow:var(--card-ring),var(--e1);
+  cursor:pointer;
+}
+.tab-dot{
+  width:24px;height:24px;flex:0 0 auto;border-radius:50%;
+  background:var(--accent);color:var(--on-accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:var(--t-xs);font-weight:700;line-height:1;
+}
+.tab-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1.1}
+.tab-label{font-size:var(--t-xs);font-weight:700;letter-spacing:.05em;color:var(--ink)}
+.tab-date{font-size:var(--t-2xs);font-weight:500;color:var(--ink-3);margin-top:1px}
+.tab[aria-selected="true"]{background:var(--accent);box-shadow:var(--e1)}
+.tab[aria-selected="true"] .tab-label,
+.tab[aria-selected="true"] .tab-date{color:var(--on-accent)}
+.tab[aria-selected="true"] .tab-dot{background:var(--dot-on);color:var(--on-accent)}
+/* complete day: the neutral --done accent replaces the day hex. Still tappable,
+   still >= 4.5:1 in both the resting and the selected state. */
+/* Selected and complete are independent states, so every combination is spelled
+   out at (0,3,0) rather than left to equal-specificity source order. */
+.tab.is-done{--accent:var(--done); --on-accent:var(--on-done)}
+.tab.is-done:not([aria-selected="true"]){background:var(--surface-2)}
+.tab.is-done:not([aria-selected="true"]) .tab-label{color:var(--ink-2)}
+.tab.is-done:not([aria-selected="true"]) .tab-date{color:var(--ink-3)}
+.tab.is-done:not([aria-selected="true"]) .tab-dot{background:var(--done);color:var(--on-done)}
+.tab.is-done[aria-selected="true"]{background:var(--done)}
+.tab.is-done[aria-selected="true"] .tab-label,
+.tab.is-done[aria-selected="true"] .tab-date{color:var(--on-done)}
+@media (prefers-reduced-motion: no-preference){
+  /* fill and label ease together — if only the fill animated, the label would
+     flip instantly and sit at low contrast for the length of the transition */
+  .tab{transition:background-color .18s ease, box-shadow .18s ease}
+  .tab-dot,.tab-label,.tab-date{transition:background-color .18s ease, color .18s ease}
+}
+
+/* ─── 6. REFRESH STAMP ─────────────────────────────────────────────────────── */
+.stamp{
+  display:flex;justify-content:flex-end;align-items:center;gap:6px;
+  padding:10px 2px 0;
+  font-size:var(--t-2xs);font-weight:500;color:var(--ink-3);
+}
+.stamp b{font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+
+/* ─── 7. DAY PANEL ─────────────────────────────────────────────────────────── */
+.day{
+  --accent:var(--d-ink); --tint:var(--d-tint);
+  --soft:var(--d-soft);  --on-accent:var(--d-on);
+  display:none;padding-bottom:var(--s7);
+}
+.day.is-on{display:block}
+.dayhead{
+  background:var(--tint);
+  border-radius:var(--r-xl);
+  padding:var(--s4);
+  margin:var(--s3) 0 var(--s6);
+}
+.dayhead-main{display:flex;gap:var(--s3);align-items:flex-start}
+.dayhead-mark{
+  flex:0 0 auto;width:34px;height:34px;border-radius:var(--r-md);
+  background:var(--accent);color:var(--on-accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:var(--t-lg);font-weight:700;line-height:1;
+}
+.dayhead h2{font-size:var(--t-xl);font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.dayhead p{margin-top:var(--s1);font-size:var(--t-sm);color:var(--ink-2);line-height:1.4}
+.dayhead-foot{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:var(--s3);margin-top:var(--s3);
+}
+.dayhead-count{
+  font-size:var(--t-2xs);font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--accent);
+}
+.routebtn{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;
+  min-height:var(--s8);padding:0 var(--s4);
+  border-radius:var(--r-pill);
+  background:var(--surface);color:var(--accent);
+  box-shadow:var(--card-ring),var(--e1);
+  font-size:var(--t-sm);font-weight:700;cursor:pointer;white-space:nowrap;
+}
+.routebtn:active{background:var(--accent);color:var(--on-accent)}
+
+/* ─── 8. CLUSTER ───────────────────────────────────────────────────────────── */
+.cluster{margin-bottom:var(--s6)}
+.cluster-head{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
+  margin:0 var(--s1) var(--s3);
+}
+.cluster-name{
+  display:flex;align-items:center;gap:var(--s2);min-width:0;
+  font-size:var(--t-sm);font-weight:600;letter-spacing:.01em;color:var(--ink-2);
+}
+.cluster-dot{width:8px;height:8px;flex:0 0 auto;border-radius:50%;background:var(--accent)}
+.walk{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;
+  min-height:var(--s8);padding:0 var(--s3);
+  border-radius:var(--r-pill);
+  background:var(--soft);color:var(--accent);
+  font-size:var(--t-xs);font-weight:700;white-space:nowrap;cursor:pointer;
+}
+.walk:active{background:var(--accent);color:var(--on-accent)}
+.stops{display:flex;flex-direction:column;gap:var(--s3)}
+
+/* ─── 9. PLACE CARD ────────────────────────────────────────────────────────── */
+.card{
+  background:var(--surface);
+  border-radius:18px;
+  padding:var(--s4);
+  box-shadow:var(--card-ring),var(--e2);
+}
+@media (min-width:640px){ .card{padding:var(--s5)} }
+.card-top{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:var(--s3);min-height:22px;margin-bottom:var(--s2);
+}
+.time{
+  font-size:var(--t-xs);font-weight:600;letter-spacing:.02em;color:var(--ink-3);
+  white-space:nowrap;
+}
+.card.p-fixed .time{color:var(--accent);font-weight:700}
+.card h3{font-size:var(--t-lg);font-weight:600;letter-spacing:-.015em;line-height:1.25}
+.meta{margin-top:var(--s1);font-size:var(--t-sm);color:var(--ink-3);line-height:1.4}
+/* separators inherit the meta color: a dimmer middot would be a visible glyph
+   below 4.5:1, and spacing already does the de-emphasis */
+.meta .dot{padding:0 5px}
+.hours{
+  display:inline-flex;align-items:center;gap:5px;margin-top:var(--s3);
+  padding:5px 10px;border-radius:var(--r-pill);
+  background:var(--ok-bg);color:var(--ok-ink);
+  font-size:var(--t-xs);font-weight:600;
+}
+.hours.is-bad{background:var(--bad-bg);color:var(--bad-ink)}
+.warnline{
+  display:flex;gap:7px;margin-top:var(--s3);
+  padding:9px 11px;border-radius:var(--r-md);
+  background:var(--warn-bg);color:var(--warn-ink);
+  font-size:var(--t-sm);font-weight:600;line-height:1.35;
+}
+.warnline b{font-weight:800}
+.notes{margin-top:var(--s3);font-size:var(--t-sm);color:var(--ink-2);line-height:1.5}
+
+/* ─── 10. THREE CHIPS (was ten badges) ─────────────────────────────────────── */
+.chip{
+  flex:0 0 auto;display:inline-flex;align-items:center;
+  padding:4px 9px;border-radius:var(--r-pill);
+  font-size:var(--t-2xs);font-weight:700;letter-spacing:.03em;white-space:nowrap;
+}
+.chip-booked{background:var(--ink);   color:var(--surface)}
+.chip-must  {background:var(--gold-bg);color:var(--gold-ink)}
+.chip-maybe {background:var(--info-bg);color:var(--info-ink)}
+.card.p-must{box-shadow:0 0 0 1.5px var(--gold-bg),var(--e2)}
+/* priority:"skip" — a dimmed row state, no chip */
+.card.p-skip{
+  background:var(--surface-2);
+  box-shadow:none;
+  border:1px dashed var(--hair-2);
+  padding:calc(var(--s4) - 1px);
+}
+.card.p-skip h3{color:var(--ink-2);font-weight:500}
+.card.p-skip .hours{background:var(--neutral-bg);color:var(--ink-2)}
+
+/* ─── 11. ACTIONS (Did it! / Skip it) ──────────────────────────────────────── */
+.acts{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s4)}
+.act{
+  min-height:46px;border-radius:var(--r-pill);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:0 var(--s3);
+  font-size:var(--t-sm);font-weight:700;letter-spacing:.01em;
+}
+.act-do{flex:2 1 55%;background:var(--accent);color:var(--on-accent)}
+.act-no{flex:1 1 32%;background:var(--surface-2);color:var(--ink-2);
+        box-shadow:inset 0 0 0 1px var(--hair-2)}
+.act-do:active{filter:brightness(.9)}
+.act-no:active{background:var(--neutral-bg)}
+.act-undo{flex:1 1 100%;background:var(--tint);color:var(--accent);
+          box-shadow:inset 0 0 0 1px var(--soft)}
+.act-undo.is-skip{background:var(--surface-2);color:var(--ink-2);
+                  box-shadow:inset 0 0 0 1px var(--hair-2)}
+.act-undo .u{font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.act-check{
+  width:20px;height:20px;flex:0 0 auto;border-radius:50%;
+  background:var(--accent);color:var(--on-accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;line-height:1;
+}
+.act-undo.is-skip .act-check{background:var(--done);color:var(--on-done)}
+
+/* handled card states */
+.card.is-visited{background:var(--surface-2);box-shadow:var(--card-ring)}
+.card.is-visited h3{color:var(--ink-2)}
+.card.is-skipped{background:var(--surface-2);box-shadow:var(--card-ring)}
+.card.is-skipped h3{color:var(--ink-2);font-weight:500}
+.card.is-skipped .meta,.card.is-skipped .notes{color:var(--ink-3)}
+.card.is-skipped .hours{background:var(--neutral-bg);color:var(--ink-2)}
+.card.is-skipped .chip-booked{background:var(--done);color:var(--on-done)}
+.card.is-skipped .chip-must{background:var(--neutral-bg);color:var(--ink-2)}
+.card.is-skipped .ilink{background:var(--neutral-bg)}
+.state-tag{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;
+  font-size:var(--t-2xs);font-weight:700;letter-spacing:.03em;color:var(--accent);
+}
+.state-tag.is-skip{color:var(--ink-2)}
+.state-check{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--accent);color:var(--on-accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;line-height:1;
+}
+.state-tag.is-skip .state-check{background:var(--done);color:var(--on-done)}
+
+/* ─── 12. ICON LINK ROW ────────────────────────────────────────────────────── */
+.iconlinks{display:flex;gap:var(--s1);margin-top:var(--s4);justify-content:flex-start}
+.ilink{
+  flex:1 1 0;min-width:0;max-width:96px;min-height:56px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  padding:6px 2px;border-radius:var(--r-md);
+  background:var(--surface-2);color:var(--ink);text-decoration:none;
+}
+.ilink b{font-size:var(--t-3xs);font-weight:700;letter-spacing:.02em;line-height:1;
+         color:var(--ink-2)}
+.ilink:active{background:var(--accent);color:var(--on-accent)}
+.ilink:active b{color:var(--on-accent)}
+@media (prefers-reduced-motion: no-preference){
+  .ilink,.walk,.routebtn,.act{transition:background-color .14s ease,color .14s ease}
+}
+
+/* ─── 13. NOTE ROW (priority: note — quiet text, no chrome) ────────────────── */
+.noterow{
+  padding:var(--s3) var(--s4);
+  border-radius:var(--r-lg);
+  border:1px dashed var(--hair-2);
+  background:transparent;
+}
+.noterow-top{display:flex;align-items:baseline;gap:var(--s2);flex-wrap:wrap}
+.noterow-time{font-size:var(--t-xs);font-weight:600;color:var(--ink-3)}
+.noterow-name{font-size:var(--t-md);font-weight:600;color:var(--ink-2)}
+.noterow-text{margin-top:var(--s1);font-size:var(--t-sm);color:var(--ink-3);line-height:1.5}
+
+/* ─── 14. EMPTY + FOOTER ───────────────────────────────────────────────────── */
+.empty{
+  padding:var(--s6);border-radius:var(--r-lg);border:1px dashed var(--hair-2);
+  font-size:var(--t-sm);color:var(--ink-3);text-align:center;
+}
+.foot{
+  padding-top:var(--s6);
+  padding-bottom:calc(var(--s7) + 76px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--hair);margin-top:var(--s5);
+}
+.foot p{font-size:var(--t-sm);color:var(--ink-3);line-height:1.55;text-align:center}
+
+/* ─── 15. FAB + TOAST ──────────────────────────────────────────────────────── */
+.fab{
+  --accent:var(--d-ink,#17171A); --on-accent:var(--d-on,#FFFFFF);
+  position:fixed;z-index:50;
+  right:max(16px, env(safe-area-inset-right));
+  bottom:calc(16px + env(safe-area-inset-bottom));
+  width:58px;height:58px;border-radius:50%;
+  background:var(--accent);color:var(--on-accent);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:var(--e-float);cursor:pointer;
+}
+.fab:active{filter:brightness(.92)}
+/* The ＋ floats over a full-width actions row, so parked bottom-right it would
+   sit on a card's "Skip it" target. It retreats while you scroll down and comes
+   back on any upward scroll or at the top. */
+.fab.is-away{transform:translateY(calc(100% + 26px));pointer-events:none}
+@media (prefers-reduced-motion: no-preference){
+  .fab{transition:transform .22s cubic-bezier(.32,.72,0,1)}
+}
+.toast{
+  position:fixed;z-index:90;left:50%;
+  bottom:calc(90px + env(safe-area-inset-bottom));
+  transform:translateX(-50%);
+  max-width:min(88vw,420px);
+  background:var(--ink);color:var(--surface);
+  padding:12px 18px;border-radius:var(--r-pill);
+  font-size:var(--t-sm);font-weight:600;text-align:center;
+  box-shadow:var(--e-float);
+}
+@media (prefers-reduced-motion: no-preference){
+  .toast{transition:opacity .18s ease, transform .18s ease}
+  .toast.is-out{opacity:0;transform:translateX(-50%) translateY(8px)}
+}
+
+/* ─── 16. ROUTE SHEET ──────────────────────────────────────────────────────── */
+.sheet{
+  position:fixed;inset:0;z-index:70;
+  --accent:var(--d-ink); --tint:var(--d-tint);
+  --soft:var(--d-soft);  --on-accent:var(--d-on);
+  background:var(--ground);
+  display:flex;flex-direction:column;
+}
+@media (prefers-reduced-motion: no-preference){
+  .sheet{transform:translateY(100%);transition:transform .26s cubic-bezier(.32,.72,0,1)}
+  .sheet.is-in{transform:none}
+}
+.sheet-top{
+  flex:0 0 auto;display:flex;align-items:flex-start;gap:var(--s3);
+  background:var(--tint);
+  padding:calc(env(safe-area-inset-top) + var(--s4))
+          max(16px, env(safe-area-inset-right)) var(--s4)
+          max(16px, env(safe-area-inset-left));
+}
+.sheet-title{font-size:var(--t-lg);font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.sheet-sub{margin-top:2px;font-size:var(--t-sm);color:var(--ink-2)}
+.sheet-x{
+  flex:0 0 auto;margin-left:auto;width:var(--s8);height:var(--s8);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface);color:var(--ink-2);
+  box-shadow:var(--card-ring),var(--e1);cursor:pointer;
+}
+.sheet-x:active{background:var(--surface-2)}
+.sheet-scroll{
+  flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:0 max(16px, env(safe-area-inset-right)) var(--s5) max(16px, env(safe-area-inset-left));
+}
+.nodes{list-style:none;margin:0;padding:var(--s5) 0 0}
+.node{position:relative;margin:0 0 14px}
+.node-btn{
+  display:flex;gap:var(--s3);align-items:stretch;width:100%;text-align:left;
+  cursor:pointer;border-radius:var(--r-md);padding:2px 4px;
+}
+.node-rail{flex:0 0 34px;position:relative;align-self:stretch}
+.node-rail::before{
+  content:"";position:absolute;left:50%;top:8px;bottom:-24px;
+  width:2px;margin-left:-1px;background:var(--rail);
+}
+.node:last-child .node-rail::before{display:none}
+.node:not(:last-child) .node-rail::after{
+  content:"";position:absolute;left:50%;bottom:-20px;margin-left:-5px;
+  width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;
+  border-top:7px solid var(--rail);
+}
+.node-dot{
+  position:absolute;left:50%;top:8px;margin-left:-15px;
+  width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:var(--t-xs);font-weight:700;line-height:1;
+  background:var(--surface);color:var(--ink-2);
+  box-shadow:inset 0 0 0 2px var(--rail);
+}
+.node.is-cur .node-dot{box-shadow:0 0 0 4px var(--soft), inset 0 0 0 2px var(--accent)}
+.node.is-visited .node-dot{
+  background:var(--accent);color:var(--on-accent);box-shadow:none;
+}
+.node.is-cur.is-visited .node-dot{box-shadow:0 0 0 4px var(--soft)}
+.node.is-skipped .node-dot{
+  background:var(--neutral-bg);color:var(--ink-2);box-shadow:inset 0 0 0 2px var(--hair-2);
+}
+.node.is-cur.is-skipped .node-dot{box-shadow:0 0 0 4px var(--surface-2), inset 0 0 0 2px var(--done)}
+.node-body{
+  flex:1 1 auto;min-width:0;padding:6px 0 8px;
+  display:flex;flex-direction:column;gap:2px;
+}
+.node.is-cur .node-body{
+  background:var(--surface);border-radius:var(--r-md);
+  box-shadow:var(--card-ring),var(--e1);padding:8px 12px 10px;margin-left:-4px;
+}
+.node-time{font-size:var(--t-2xs);font-weight:600;color:var(--ink-3)}
+.node-name{
+  font-size:var(--t-md);font-weight:600;color:var(--ink);line-height:1.25;
+  overflow-wrap:anywhere;
+}
+.node.is-skipped .node-name{color:var(--ink-2);font-weight:500}
+.node-state{font-size:var(--t-2xs);font-weight:700;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink-3)}
+.node.is-visited .node-state{color:var(--accent)}
+.mapsout{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  min-height:var(--s8);margin:var(--s4) 0 0;
+  border-radius:var(--r-pill);background:var(--surface);color:var(--ink-2);
+  box-shadow:var(--card-ring),var(--e1);
+  font-size:var(--t-sm);font-weight:600;text-decoration:none;
+}
+.sheet-dock{
+  /* "bottom quarter": a literal 25% cannot hold name + hours + note + 5 icon
+     links + 2 actions, so the dock is content-sized from a 25vh floor and hard
+     capped so the node line always keeps the larger share; it scrolls inside. */
+  flex:0 0 auto;min-height:25vh;max-height:min(48vh, 340px);
+  display:flex;flex-direction:column;
+  background:var(--surface);
+  border-radius:var(--r-xl) var(--r-xl) 0 0;
+  box-shadow:0 -1px 0 var(--hair), 0 -10px 30px rgba(23,23,26,.08);
+}
+.dock-nav{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+  gap:var(--s2);padding:var(--s2) var(--s3) 0;
+}
+.navbtn{
+  flex:0 0 auto;width:46px;height:46px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface-2);color:var(--ink-2);cursor:pointer;
+}
+.navbtn:active{background:var(--accent);color:var(--on-accent)}
+.dock-count{
+  font-size:var(--t-2xs);font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-3);text-align:center;
+}
+.dock-body{
+  flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:var(--s2) var(--s4) 0;
+}
+.dock-pad{padding-bottom:max(14px, env(safe-area-inset-bottom))}
+.dock-top{display:flex;align-items:center;justify-content:space-between;gap:var(--s3)}
+.dock-name{font-size:var(--t-lg);font-weight:600;letter-spacing:-.015em;line-height:1.25;
+  margin-top:2px}
+.dock-note{
+  margin-top:var(--s2);font-size:var(--t-sm);color:var(--ink-2);line-height:1.45;
+  display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;
+}
+</style>
+</head>
+<body>
+
+<div class="ptr" id="ptr" aria-hidden="true">
+  <span class="ptr-ring">
+    <svg class="ptr-arrow" viewBox="0 0 24 24" width="19" height="19" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 5v14"/><path d="M6 13l6 6 6-6"/>
+    </svg>
+    <svg class="ptr-spin" viewBox="0 0 24 24" width="19" height="19" fill="none"
+         stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+      <circle cx="12" cy="12" r="8.5" stroke-opacity=".22"/>
+      <path d="M12 3.5a8.5 8.5 0 0 1 8.5 8.5"/>
+    </svg>
+  </span>
+  <span class="ptr-label" id="ptrLabel">Pull to refresh</span>
+</div>
+
+<div class="shell" id="shell">
+
+  <header class="hero wrap">
+    <div class="hero-row">
+      <p class="hero-eyebrow" id="heroEyebrow"></p>
+      <button class="iconbtn" id="btnRefresh" type="button" aria-label="Refresh trip data">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.5 12a8.5 8.5 0 1 1-2.8-6.3"/><path d="M20.6 4.2v4.6h-4.6"/>
+        </svg>
+      </button>
+    </div>
+    <h1 class="hero-title" id="heroTitle"></h1>
+    <p class="hero-sub" id="heroSub"></p>
+  </header>
+
+  <div class="daybar">
+    <div class="tabs" role="tablist" aria-label="Trip days" id="tabs"></div>
+  </div>
+
+  <main class="wrap">
+    <p class="stamp" id="stamp"></p>
+    <div id="panels"></div>
+  </main>
+
+  <footer class="foot wrap">
+    <p id="tripNotes"></p>
+  </footer>
+
+</div>
+
+<button class="fab" id="fab" type="button" aria-label="Add a place">
+  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor"
+       stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+    <path d="M12 5v14"/><path d="M5 12h14"/>
+  </svg>
+</button>
+
+<section class="sheet" id="routeSheet" role="dialog" aria-modal="true"
+         aria-labelledby="routeTitle" hidden>
+  <div class="sheet-top">
+    <div>
+      <h2 class="sheet-title" id="routeTitle"></h2>
+      <p class="sheet-sub" id="routeSub"></p>
+    </div>
+    <button class="sheet-x" id="routeClose" type="button" aria-label="Close route view">
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <path d="M6 6l12 12"/><path d="M18 6L6 18"/>
+      </svg>
+    </button>
+  </div>
+  <div class="sheet-scroll" id="routeScroll">
+    <ol class="nodes" id="routeNodes"></ol>
+    <div id="routeOut"></div>
+  </div>
+  <div class="sheet-dock">
+    <div class="dock-nav">
+      <button class="navbtn" type="button" data-cyc="-1" aria-label="Previous stop">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14.5 5.5L8 12l6.5 6.5"/>
+        </svg>
+      </button>
+      <span class="dock-count" id="dockCount"></span>
+      <button class="navbtn" type="button" data-cyc="1" aria-label="Next stop">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9.5 5.5L16 12l-6.5 6.5"/>
+        </svg>
+      </button>
+    </div>
+    <div class="dock-body" id="dockBody" aria-live="polite"></div>
+  </div>
+</section>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+/* TRIP:BEGIN — embedded verbatim from data/trips/chicago-test.json */
+window.TRIP =
+{
+ "schema": 1,
+ "id": "chicago-test",
+ "name": "Chicago Test Trip",
+ "tz": "America/Chicago",
+ "start": "2027-06-04",
+ "end": "2027-06-06",
+ "base": {
+  "name": "Palmer House (test base)",
+  "address": "17 E Monroe St, Chicago, IL 60603"
+ },
+ "notes": "Fictional test trip — real public places, invented schedule. Safe to commit.",
+ "days": [
+  {
+   "key": "fri",
+   "date": "2027-06-04",
+   "bullet": "F",
+   "label": "FRI",
+   "color": "#00A1DE",
+   "title": "Friday · Jun 4",
+   "subtitle": "Arrive → Loop: Art Institute → deep dish"
+  },
+  {
+   "key": "sat",
+   "date": "2027-06-05",
+   "bullet": "S",
+   "label": "SAT",
+   "color": "#C60C30",
+   "title": "Saturday · Jun 5",
+   "subtitle": "Wicker Park: books → records → tacos"
+  },
+  {
+   "key": "sun",
+   "date": "2027-06-06",
+   "bullet": "S",
+   "label": "SUN",
+   "color": "#009B3A",
+   "title": "Sunday · Jun 6",
+   "subtitle": "Conservatory morning → Green Mill nightcap"
+  },
+  {
+   "key": "bonus",
+   "date": null,
+   "bullet": "+",
+   "label": "XTRA",
+   "color": "#565A5C",
+   "title": "Extras",
+   "subtitle": "Unscheduled — slot into any open block"
+  }
+ ],
+ "places": [
+  {
+   "id": "palmer-house-check-in",
+   "day": "fri",
+   "cluster": "Arrival — Loop",
+   "time": "3:00 PM",
+   "name": "Palmer House — check-in",
+   "type": "Stay",
+   "address": "17 E Monroe St, Chicago, IL 60603",
+   "lat": null,
+   "lng": null,
+   "hours": "Check-in 3:00 PM",
+   "cost": "",
+   "priority": "fixed",
+   "notes": "Test base. Drop bags and walk one block to the museum.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "art-institute-of-chicago",
+   "day": "fri",
+   "cluster": "Arrival — Loop",
+   "time": "3:45 PM",
+   "name": "Art Institute of Chicago",
+   "type": "Art",
+   "address": "111 S Michigan Ave, Chicago, IL 60603",
+   "lat": null,
+   "lng": null,
+   "hours": "Thu–Mon 11–5; CLOSED Tue/Wed",
+   "cost": "$32",
+   "priority": "must",
+   "notes": "The lions. Last entry an hour before close — test must row.",
+   "website": "https://www.artic.edu/",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "chicago-cultural-center",
+   "day": "fri",
+   "cluster": "Arrival — Loop",
+   "time": "5:15 PM",
+   "name": "Chicago Cultural Center",
+   "type": "Sight",
+   "address": "78 E Washington St, Chicago, IL 60602",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 10–5",
+   "cost": "Free",
+   "priority": "yes",
+   "notes": "Tiffany dome — free, quick, on the walk.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "lou-malnatis-state-st",
+   "day": "fri",
+   "cluster": "Evening — Loop",
+   "time": "7:00 PM",
+   "name": "Lou Malnati's (State St)",
+   "type": "Food",
+   "address": "805 S State St, Chicago, IL 60605",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 11–11",
+   "cost": "$$",
+   "priority": "fixed",
+   "notes": "Test reservation row — booked, immovable.",
+   "website": "https://www.loumalnatis.com/",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "myopic-books",
+   "day": "sat",
+   "cluster": "Wicker Park loop",
+   "time": "11:00 AM",
+   "name": "Myopic Books",
+   "type": "Books",
+   "address": "1564 N Milwaukee Ave, Chicago, IL 60622",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 11–10",
+   "cost": "",
+   "priority": "yes",
+   "notes": "Three floors of used books.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "reckless-records",
+   "day": "sat",
+   "cluster": "Wicker Park loop",
+   "time": "12:00 PM",
+   "name": "Reckless Records",
+   "type": "Music",
+   "address": "1379 N Milwaukee Ave, Chicago, IL 60622",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 10–8",
+   "cost": "",
+   "priority": "yes",
+   "notes": "Flagship location — listening stations.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "quimbys-bookstore",
+   "day": "sat",
+   "cluster": "Wicker Park loop",
+   "time": "12:45 PM",
+   "name": "Quimby's Bookstore",
+   "type": "Books",
+   "address": "1854 W North Ave, Chicago, IL 60622",
+   "lat": null,
+   "lng": null,
+   "hours": "Mon–Sat 12–7; Sun 12–6",
+   "cost": "",
+   "priority": "if-close",
+   "notes": "Zines and small press — test if-close row.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "big-star-tacos",
+   "day": "sat",
+   "cluster": "Lunch — Wicker Park",
+   "time": "1:30 PM",
+   "name": "Big Star",
+   "type": "Food",
+   "address": "1531 N Damen Ave, Chicago, IL 60622",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 11–12",
+   "cost": "$",
+   "priority": "maybe",
+   "notes": "Patio tacos — test maybe row; long waits on weekends.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "sat-evening-open",
+   "day": "sat",
+   "cluster": "Evening",
+   "time": "open",
+   "name": "Evening open",
+   "type": "",
+   "address": "",
+   "lat": null,
+   "lng": null,
+   "hours": "",
+   "cost": "",
+   "priority": "note",
+   "notes": "Nothing booked — test note row, renders as text with no links.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "garfield-park-conservatory",
+   "day": "sun",
+   "cluster": "Morning — Garfield Park",
+   "time": "10:00 AM",
+   "name": "Garfield Park Conservatory",
+   "type": "Park",
+   "address": "300 N Central Park Ave, Chicago, IL 60624",
+   "lat": null,
+   "lng": null,
+   "hours": "Wed–Sun 10–5; CLOSED Mon/Tue",
+   "cost": "Free (reserve)",
+   "priority": "check",
+   "notes": "Test call-ahead row — timed entry on busy weekends.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "Reserve a slot — walk-ins limited",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "green-mill",
+   "day": "sun",
+   "cluster": "Evening — Uptown",
+   "time": "8:00 PM",
+   "name": "Green Mill Cocktail Lounge",
+   "type": "Music",
+   "address": "4802 N Broadway, Chicago, IL 60640",
+   "lat": null,
+   "lng": null,
+   "hours": "Nightly from 8",
+   "cost": "cover varies",
+   "priority": "optional",
+   "notes": "Jazz since 1907 — test optional row.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "navy-pier",
+   "day": "bonus",
+   "cluster": "Only if desperate",
+   "time": "",
+   "name": "Navy Pier",
+   "type": "Sight",
+   "address": "600 E Grand Ave, Chicago, IL 60611",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 10–9",
+   "cost": "",
+   "priority": "maybe-not",
+   "notes": "Tourist gauntlet — test maybe-not row.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  },
+  {
+   "id": "intl-museum-surgical-science",
+   "day": "bonus",
+   "cluster": "Probably skip",
+   "time": "",
+   "name": "International Museum of Surgical Science",
+   "type": "Museum",
+   "address": "1524 N Lake Shore Dr, Chicago, IL 60610",
+   "lat": null,
+   "lng": null,
+   "hours": "Daily 10–5",
+   "cost": "$20",
+   "priority": "skip",
+   "notes": "Test skip row — renders dimmed.",
+   "website": "",
+   "yelp": "",
+   "gmaps": "",
+   "warn": "",
+   "updatedAt": "2026-08-19"
+  }
+ ]
+}
+;
+/* TRIP:END */
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  var TRIP = window.TRIP;
+
+  /* ── tiny helpers ─────────────────────────────────────────────────────── */
+  var enc = encodeURIComponent;
+  var ENT = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+  function esc(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return ENT[c]; }); }
+  function attr(v) { return esc(v); }
+  function $(id) { return document.getElementById(id); }
+  var REDUCE = window.matchMedia
+    ? window.matchMedia("(prefers-reduced-motion: reduce)")
+    : { matches: false };
+  function reduced() { return !!REDUCE.matches; }
+
+  /* ── color science: project a data hex into accessible tokens ─────────── */
+  function hexToRgb(hex) {
+    var h = String(hex || "#888888").replace("#", "").trim();
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    if (!/^[0-9a-f]{6}$/i.test(h)) h = "888888";
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+  function toHex(rgb) {
+    return "#" + rgb.map(function (n) {
+      var s = Math.max(0, Math.min(255, Math.round(n))).toString(16);
+      return s.length === 1 ? "0" + s : s;
+    }).join("");
+  }
+  function lin(c) { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+  function lum(rgb) { return 0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2]); }
+  function ratio(a, b) { var hi = Math.max(a, b), lo = Math.min(a, b); return (hi + 0.05) / (lo + 0.05); }
+
+  function rgbToHsl(rgb) {
+    var r = rgb[0] / 255, g = rgb[1] / 255, b = rgb[2] / 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var h = 0, s = 0, l = (max + min) / 2, d = max - min;
+    if (d !== 0) {
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = ((g - b) / d + (g < b ? 6 : 0));
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h /= 6;
+    }
+    return [h, s, l];
+  }
+  function hslToRgb(h, s, l) {
+    if (s === 0) { var v = l * 255; return [v, v, v]; }
+    function hue(p, q, t) {
+      if (t < 0) t += 1; if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    }
+    var q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+    return [hue(p, q, h + 1 / 3) * 255, hue(p, q, h) * 255, hue(p, q, h - 1 / 3) * 255];
+  }
+
+  // Walk lightness until the color clears `target` contrast against `bgLum`.
+  function tone(hex, bgLum, target, dir) {
+    var hsl = rgbToHsl(hexToRgb(hex)), h = hsl[0], s = hsl[1], l = hsl[2];
+    for (var i = 0; i <= 110; i++) {
+      var rgb = hslToRgb(h, s, l);
+      if (ratio(lum(rgb), bgLum) >= target) return toHex(rgb);
+      l += dir * 0.01;
+      if (l < 0 || l > 1) break;
+    }
+    return dir < 0 ? "#141417" : "#F0EFEC";
+  }
+  // Same hue, damped saturation, pinned lightness — the soft wash.
+  function wash(hex, satScale, l) {
+    var hsl = rgbToHsl(hexToRgb(hex));
+    return toHex(hslToRgb(hsl[0], Math.min(hsl[1] * satScale, 0.78), l));
+  }
+  // Text color to sit ON a filled accent. days[].darkText is honored when it
+  // still clears 4.5:1; otherwise the higher-contrast option wins.
+  function onFill(inkHex, preferDark) {
+    var L = lum(hexToRgb(inkHex));
+    var dark = "#0E0E10", light = "#FFFFFF";
+    var cDark = ratio(L, lum(hexToRgb(dark)));
+    var cLight = ratio(L, lum(hexToRgb(light)));
+    if (preferDark === true && cDark >= 4.5) return dark;
+    return cLight >= cDark ? light : dark;
+  }
+
+  var LIGHT_REF = 0.85;   // the #F6F5F2 ground, rounded down
+
+  var VAR_CACHE = {};
+  function dayVars(day) {
+    if (VAR_CACHE[day.key]) return VAR_CACHE[day.key];
+    var tint = wash(day.color, 0.85, 0.945);
+    var soft = wash(day.color, 0.90, 0.900);
+    // The accent is set on the ground AND on both washes, so derive it against
+    // whichever of those surfaces is hardest (the darkest). This keeps 4.5:1
+    // for any hue a trip file supplies.
+    var ref = Math.min(LIGHT_REF, lum(hexToRgb(tint)), lum(hexToRgb(soft)));
+    var ink = tone(day.color, ref, 4.6, -1);
+    var out = [
+      "--d-ink:" + ink,
+      "--d-tint:" + tint,
+      "--d-soft:" + soft,
+      "--d-on:" + onFill(ink, day.darkText === true)
+    ].join(";");
+    VAR_CACHE[day.key] = out;
+    return out;
+  }
+
+  /* ── dates ────────────────────────────────────────────────────────────── */
+  var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var WD  = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  function parseISO(s) {
+    if (!s) return null;
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s));
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+  }
+  function localISO(d) {
+    d = d || new Date();
+    var p = function (n) { return (n < 10 ? "0" : "") + n; };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+  // "Today" in the trip's own timezone — day completeness compares against this.
+  function tripToday() {
+    try {
+      if (TRIP.tz && window.Intl && Intl.DateTimeFormat) {
+        var s = new Intl.DateTimeFormat("en-CA", {
+          timeZone: TRIP.tz, year: "numeric", month: "2-digit", day: "2-digit"
+        }).format(new Date());
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+      }
+    } catch (e) { /* unknown tz — fall through */ }
+    return localISO();
+  }
+  function shortDate(iso) { var d = parseISO(iso); return d ? MON[d.getMonth()] + " " + d.getDate() : ""; }
+  function dayGap(a, b) { return Math.round((parseISO(b) - parseISO(a)) / 86400000); }
+  function rangeLabel(a, b) {
+    var A = parseISO(a), B = parseISO(b);
+    if (!A || !B) return "";
+    var sameMonth = A.getFullYear() === B.getFullYear() && A.getMonth() === B.getMonth();
+    var left  = WD[A.getDay()] + " " + MON[A.getMonth()] + " " + A.getDate();
+    var right = sameMonth ? WD[B.getDay()] + " " + B.getDate()
+                          : WD[B.getDay()] + " " + MON[B.getMonth()] + " " + B.getDate();
+    return left + " – " + right + ", " + B.getFullYear();
+  }
+
+  /* ── location hint (v0 hardcoded "NYC"; derived from trip.base here) ──── */
+  var LOC = (function () {
+    var addr = (TRIP.base && TRIP.base.address) || "";
+    var parts = addr.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+    if (parts.length >= 3) {
+      var city = parts[parts.length - 2];
+      var st = parts[parts.length - 1].split(/\s+/)[0];
+      if (city && st) return city + ", " + st;
+    }
+    return TRIP.name || "";
+  })();
+
+  /* ══ STATE OVERLAY ═════════════════════════════════════════════════════
+     visited / skipped live in localStorage keyed by trip id + place id. This
+     stands in for the future GitHub write path: same shape (ISO timestamps on
+     the place), different transport. */
+  var STORE = "wayfeather:v2:" + (TRIP.id || "trip");
+  var OVER = {};
+
+  function storeGet() {
+    try {
+      var raw = window.localStorage.getItem(STORE);
+      var o = raw ? JSON.parse(raw) : null;
+      return (o && typeof o === "object") ? o : {};
+    } catch (e) { return {}; }
+  }
+  function storeSet() {
+    try { window.localStorage.setItem(STORE, JSON.stringify(OVER)); } catch (e) { /* private mode */ }
+  }
+  function storeClear() {
+    OVER = {};
+    try { window.localStorage.removeItem(STORE); } catch (e) { /* ignore */ }
+  }
+
+  // Dev convenience for this candidate only: ?reset wipes the overlay, then
+  // removes itself from the URL so a reload doesn't keep wiping.
+  var DID_RESET = /(^|[?&])reset(=|&|$)/.test(window.location.search);
+  if (DID_RESET) {
+    storeClear();
+    if (window.history && history.replaceState) {
+      history.replaceState(null, "", window.location.pathname + window.location.hash);
+    }
+  } else {
+    OVER = storeGet();
+  }
+
+  function stateOf(p) {
+    var o = OVER[p.id];
+    if (o) return { visited: o.visited || null, skipped: o.skipped || null };
+    return { visited: p.visited || null, skipped: p.skipped || null };
+  }
+  function isVisited(p) { return !!stateOf(p).visited; }
+  function isSkipped(p) { var s = stateOf(p); return !s.visited && !!s.skipped; }
+  function isHandled(p) { var s = stateOf(p); return !!(s.visited || s.skipped); }
+  function nowISO() { return new Date().toISOString(); }
+
+  function setPlaceState(id, act) {
+    var p = placeById(id);
+    if (!p) return;
+    if (act === "visit") OVER[id] = { visited: nowISO(), skipped: null };
+    else if (act === "skip") OVER[id] = { visited: null, skipped: nowISO() };
+    else if (p.visited || p.skipped) OVER[id] = { visited: null, skipped: null };
+    else delete OVER[id];
+    storeSet();
+  }
+
+  /* ── trip lookups ─────────────────────────────────────────────────────── */
+  function placeById(id) {
+    for (var i = 0; i < TRIP.places.length; i++) if (TRIP.places[i].id === id) return TRIP.places[i];
+    return null;
+  }
+  function dayByKey(k) {
+    for (var i = 0; i < TRIP.days.length; i++) if (TRIP.days[i].key === k) return TRIP.days[i];
+    return null;
+  }
+  function placesOfDay(k) {
+    return TRIP.places.filter(function (p) { return p.day === k; });
+  }
+  function isNote(p) { return p.priority === "note"; }
+  function actionableOfDay(k) { return placesOfDay(k).filter(function (p) { return !isNote(p); }); }
+
+  // A day is complete when every actionable place is handled, or its date has
+  // passed in the trip's timezone. Notes never count.
+  function dayComplete(day) {
+    var acts = actionableOfDay(day.key);
+    if (acts.length && acts.every(isHandled)) return true;
+    if (day.date && String(day.date) < tripToday()) return true;
+    return false;
+  }
+
+  /* ── v0 parity: badHours, links, walking directions ───────────────────── */
+  function badHours(h) {
+    return /closed mon|closed tue|closed sun|closed wed|unverified|closed weekends|closed$/i.test(h || "")
+        || /^CLOSED/i.test(h || "");
+  }
+  function query(p) { return enc((p.name || "") + (p.address ? ", " + p.address : " " + LOC)); }
+  function linkList(p) {
+    if (!p.name || isNote(p)) return [];
+    var L = [];
+    if (p.website) L.push({ k: "site", t: "Site", u: p.website, a: "Open the website for " + p.name });
+    L.push({ k: "yelp", t: "Yelp",
+      u: p.yelp || "https://www.yelp.com/search?find_desc=" + enc(p.name) + "&find_loc=" + enc(p.address || LOC),
+      a: "Look up " + p.name + " on Yelp" });
+    L.push({ k: "gmaps", t: "Google",
+      u: p.gmaps || "https://www.google.com/maps/search/?api=1&query=" + query(p),
+      a: "Open " + p.name + " in Google Maps" });
+    if (p.address) L.push({ k: "amaps", t: "Apple",
+      u: "https://maps.apple.com/?q=" + enc(p.name) + "&address=" + enc(p.address),
+      a: "Open " + p.name + " in Apple Maps" });
+    L.push({ k: "search", t: "Search",
+      u: "https://www.google.com/search?q=" + enc(p.name + " " + LOC),
+      a: "Search the web for " + p.name });
+    return L;
+  }
+
+  /* Inline SVG only — generic glyphs, no external assets, no trademarked marks.
+     globe · star · map pin · folded map · magnifier */
+  var SVG_OPEN = '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" ' +
+    'stroke="currentColor" stroke-width="1.7" stroke-linecap="round" ' +
+    'stroke-linejoin="round" aria-hidden="true" focusable="false">';
+  var GLYPH = {
+    site:   '<circle cx="12" cy="12" r="8.6"/><path d="M3.4 12h17.2"/>' +
+            '<path d="M12 3.4c2.5 2.6 3.8 5.5 3.8 8.6S14.5 18 12 20.6C9.5 18 8.2 15.1 8.2 12S9.5 6 12 3.4Z"/>',
+    yelp:   '<path d="M12 3.9l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.6-4.8 2.6.9-5.4L4.2 9.6l5.4-.8z"/>',
+    gmaps:  '<path d="M12 20.8s6.6-5.4 6.6-10.4a6.6 6.6 0 1 0-13.2 0c0 5 6.6 10.4 6.6 10.4Z"/>' +
+            '<circle cx="12" cy="10.1" r="2.5"/>',
+    amaps:  '<path d="M9 4.1 3.6 6.2v13.7L9 17.8l6 2.1 5.4-2.1V4.1L15 6.2 9 4.1Z"/>' +
+            '<path d="M9 4.1v13.7"/><path d="M15 6.2v13.7"/>',
+    search: '<circle cx="10.8" cy="10.8" r="6.4"/><path d="M15.6 15.6 20.4 20.4"/>'
+  };
+  function icon(k) { return SVG_OPEN + (GLYPH[k] || "") + "</svg>"; }
+
+  function linksHTML(p) {
+    var L = linkList(p);
+    if (!L.length) return "";
+    return '<div class="iconlinks">' + L.map(function (x) {
+      return '<a class="ilink" href="' + attr(x.u) + '" target="_blank" rel="noopener noreferrer"' +
+             ' aria-label="' + attr(x.a) + '">' + icon(x.k) + "<b>" + esc(x.t) + "</b></a>";
+    }).join("") + "</div>";
+  }
+  function walkDirUrl(stops) {
+    var a = stops.filter(function (s) { return s.address; })
+                 .map(function (s) { return enc(s.address); });
+    if (a.length < 2) return "";
+    var wp = a.slice(1, -1).join("|");
+    return "https://www.google.com/maps/dir/?api=1&origin=" + a[0] +
+           "&destination=" + a[a.length - 1] + (wp ? "&waypoints=" + wp : "") +
+           "&travelmode=walking";
+  }
+
+  /* ── three chips (the ten-value enum is unchanged in the data) ─────────── */
+  var CHIP = {
+    fixed:       ["booked", "Booked"],
+    must:        ["must",   "★ Must"],
+    maybe:       ["maybe",  "Maybe"],
+    "maybe-not": ["maybe",  "Maybe"],
+    "if-close":  ["maybe",  "Maybe"],
+    optional:    ["maybe",  "Maybe"]
+    // yes → unmarked default · check → "Call ahead" warn line
+    // skip → dimmed row state · note → quiet text row
+  };
+
+  /* ── card rendering ───────────────────────────────────────────────────── */
+  function hoursHTML(p) {
+    if (!p.hours) return "";
+    var bad = badHours(p.hours);
+    return '<p class="hours' + (bad ? " is-bad" : "") + '">' +
+      '<span aria-hidden="true">' + (bad ? "⚠" : "◷") + "</span>" +
+      "<span>" + esc(p.hours) + "</span></p>";
+  }
+  // priority:"check" and a `warn` string merge into ONE line, never two.
+  function warnHTML(p) {
+    var callAhead = p.priority === "check";
+    if (!callAhead && !p.warn) return "";
+    var body = callAhead
+      ? "<b>Call ahead</b>" + (p.warn ? '<span aria-hidden="true"> · </span>' + esc(p.warn) : "")
+      : esc(p.warn);
+    return '<p class="warnline"><span aria-hidden="true">⚠</span><span>' + body + "</span></p>";
+  }
+
+  function actsHTML(p) {
+    var st = stateOf(p);
+    var id = attr(p.id);
+    var nm = attr(p.name || "this place");
+    if (st.visited) {
+      return '<div class="acts"><button type="button" class="act act-undo" data-act="clear" ' +
+        'data-id="' + id + '" aria-label="Undo — mark ' + nm + ' as not done">' +
+        '<span class="act-check" aria-hidden="true">✓</span>Done ' +
+        '<span class="u">— undo</span></button></div>';
+    }
+    if (st.skipped) {
+      return '<div class="acts"><button type="button" class="act act-undo is-skip" data-act="clear" ' +
+        'data-id="' + id + '" aria-label="Undo — un-skip ' + nm + '">' +
+        '<span class="act-check" aria-hidden="true">–</span>Skipped ' +
+        '<span class="u">— undo</span></button></div>';
+    }
+    return '<div class="acts">' +
+      '<button type="button" class="act act-do" data-act="visit" data-id="' + id + '" ' +
+        'aria-label="Did it — mark ' + nm + ' as visited">Did it!</button>' +
+      '<button type="button" class="act act-no" data-act="skip" data-id="' + id + '" ' +
+        'aria-label="Skip ' + nm + '">Skip it</button>' +
+    "</div>";
+  }
+
+  function noteHTML(p) {
+    return '<div class="noterow" data-card="' + attr(p.id) + '">' +
+      '<div class="noterow-top">' +
+        (p.time ? '<span class="noterow-time u-tab-num">' + esc(p.time) + "</span>" : "") +
+        (p.name ? '<span class="noterow-name">' + esc(p.name) + "</span>" : "") +
+      "</div>" +
+      (p.notes ? '<p class="noterow-text">' + esc(p.notes) + "</p>" : "") +
+    "</div>";
+  }
+
+  function cardHTML(p) {
+    if (isNote(p)) return noteHTML(p);
+
+    var vis = isVisited(p), skp = isSkipped(p);
+    var cls = "card p-" + esc(p.priority || "none") +
+              (vis ? " is-visited" : "") + (skp ? " is-skipped" : "");
+
+    var right = "";
+    if (vis) {
+      right = '<span class="state-tag"><span class="state-check" aria-hidden="true">✓</span>Done</span>';
+    } else if (skp) {
+      right = '<span class="state-tag is-skip"><span class="state-check" aria-hidden="true">–</span>Skipped</span>';
+    } else if (CHIP[p.priority]) {
+      right = '<span class="chip chip-' + CHIP[p.priority][0] + '">' + esc(CHIP[p.priority][1]) + "</span>";
+    }
+
+    var metaBits = [];
+    if (p.type) metaBits.push(esc(p.type));
+    if (p.address) metaBits.push(esc(p.address));
+    if (p.cost) metaBits.push(esc(p.cost));
+    var meta = metaBits.length
+      ? '<p class="meta">' + metaBits.join('<span class="dot" aria-hidden="true">·</span>') + "</p>"
+      : "";
+
+    return '<article class="' + cls + '" data-card="' + attr(p.id) + '">' +
+        '<div class="card-top">' +
+          '<span class="time u-tab-num">' + esc(p.time || "") + "</span>" + right +
+        "</div>" +
+        "<h3>" + esc(p.name || "") + "</h3>" +
+        meta + hoursHTML(p) + warnHTML(p) +
+        (p.notes ? '<p class="notes">' + esc(p.notes) + "</p>" : "") +
+        linksHTML(p) +
+        actsHTML(p) +
+      "</article>";
+  }
+
+  function clusterHTML(dayKey, name, stops) {
+    var routable = stops.filter(function (s) { return !isNote(s); });
+    return '<section class="cluster">' +
+      '<div class="cluster-head">' +
+        '<h3 class="cluster-name">' +
+          '<span class="cluster-dot" aria-hidden="true"></span>' +
+          "<span>" + esc(name) + "</span>" +
+        "</h3>" +
+        (routable.length >= 2
+          ? '<button class="walk" type="button" data-route="' + attr(dayKey) + '" ' +
+            'data-cluster="' + attr(name) + '" ' +
+            'aria-label="Walk it — route view for ' + attr(name) + '">Walk it' +
+            '<span aria-hidden="true">▸</span></button>'
+          : "") +
+      "</div>" +
+      '<div class="stops">' + stops.map(cardHTML).join("") + "</div>" +
+    "</section>";
+  }
+
+  function countText(day) {
+    var stops = placesOfDay(day.key);
+    var acts = actionableOfDay(day.key);
+    var done = acts.filter(isHandled).length;
+    var base = day.date
+      ? stops.length + (stops.length === 1 ? " stop" : " stops")
+      : stops.length + (stops.length === 1 ? " idea" : " ideas") + " · unscheduled";
+    if (acts.length && done === acts.length) return base + " · all handled";
+    if (done) return base + " · " + done + " handled";
+    return base;
+  }
+
+  function panelHTML(day) {
+    var stops = placesOfDay(day.key);
+    var clusters = [];
+    stops.forEach(function (s) {
+      if (clusters.indexOf(s.cluster) === -1) clusters.push(s.cluster);
+    });
+
+    var body = clusters.length
+      ? clusters.map(function (c) {
+          return clusterHTML(day.key, c, stops.filter(function (s) { return s.cluster === c; }));
+        }).join("")
+      : '<p class="empty">Nothing on the plan for this day yet.</p>';
+
+    var routable = stops.filter(function (s) { return !isNote(s); });
+
+    return '<section class="day" id="panel-' + attr(day.key) + '" role="tabpanel" ' +
+             'aria-labelledby="tab-' + attr(day.key) + '" style="' + attr(dayVars(day)) + '">' +
+        '<div class="dayhead">' +
+          '<div class="dayhead-main">' +
+            '<span class="dayhead-mark" aria-hidden="true">' + esc(day.bullet || "") + "</span>" +
+            "<div><h2>" + esc(day.title || day.label || day.key) + "</h2>" +
+            (day.subtitle ? "<p>" + esc(day.subtitle) + "</p>" : "") + "</div>" +
+          "</div>" +
+          '<div class="dayhead-foot">' +
+            '<span class="dayhead-count" data-count="' + attr(day.key) + '">' +
+              esc(countText(day)) + "</span>" +
+            (routable.length >= 2
+              ? '<button class="routebtn" type="button" data-route="' + attr(day.key) + '" ' +
+                'aria-label="Route view for ' + attr(day.title || day.label || day.key) + '">Route' +
+                '<span aria-hidden="true">▸</span></button>'
+              : "") +
+          "</div>" +
+        "</div>" +
+        body +
+      "</section>";
+  }
+
+  function tabHTML(day) {
+    var done = dayComplete(day);
+    var label = (day.label || day.key) + (day.date ? ", " + shortDate(day.date) : "") +
+                (done ? ", complete" : "");
+    return '<button class="tab' + (done ? " is-done" : "") + '" type="button" role="tab" ' +
+      'id="tab-' + attr(day.key) + '" aria-controls="panel-' + attr(day.key) + '" ' +
+      'aria-selected="false" tabindex="-1" aria-label="' + attr(label) + '" ' +
+      'data-key="' + attr(day.key) + '" style="' + attr(dayVars(day)) + '">' +
+      '<span class="tab-dot" aria-hidden="true">' + (done ? "✓" : esc(day.bullet || "")) + "</span>" +
+      '<span class="tab-text">' +
+        '<span class="tab-label">' + esc(day.label || day.key) + "</span>" +
+        (day.date ? '<span class="tab-date u-tab-num">' + esc(shortDate(day.date)) + "</span>" : "") +
+      "</span></button>";
+  }
+
+  /* ── hero + stamp ─────────────────────────────────────────────────────── */
+  function renderHero() {
+    var today = tripToday();
+    var dated = TRIP.days.filter(function (d) { return d.date; });
+    var eyebrow;
+
+    if (TRIP.start && TRIP.end && today >= TRIP.start && today <= TRIP.end) {
+      var idx = dated.map(function (d) { return d.date; }).indexOf(today);
+      eyebrow = idx >= 0 ? "Day " + (idx + 1) + " of " + dated.length : "On the trip";
+    } else if (TRIP.start && today > TRIP.end) {
+      eyebrow = "Past trip";
+    } else if (TRIP.start) {
+      var n = dayGap(today, TRIP.start);
+      var s = parseISO(TRIP.start);
+      eyebrow = n <= 1 ? "Tomorrow"
+              : n <= 60 ? "In " + n + " days"
+              : "Upcoming · " + MON[s.getMonth()] + " " + s.getFullYear();
+    } else {
+      eyebrow = "Field guide";
+    }
+
+    $("heroEyebrow").textContent = eyebrow;
+    $("heroTitle").textContent = TRIP.name || "Trip";
+
+    var sub = $("heroSub");
+    sub.innerHTML = esc(rangeLabel(TRIP.start, TRIP.end)) +
+      (TRIP.base && TRIP.base.name
+        ? '<span class="hero-base">Base · ' + esc(TRIP.base.name) + "</span>"
+        : "");
+
+    $("tripNotes").textContent = TRIP.notes || "";
+    document.title = (TRIP.name || "Wayfeather") + " — Wayfeather";
+  }
+
+  /* Fake short sha — the real one is the Contents API blob sha (DESIGN §4). */
+  var lastSha = "", lastAt = 0;
+  function randSha() {
+    var s = "";
+    for (var i = 0; i < 7; i++) s += "0123456789abcdef"[Math.floor(Math.random() * 16)];
+    return s;
+  }
+  function relTime(ms) {
+    var s = Math.max(0, (Date.now() - ms) / 1000);
+    if (s < 45) return "just now";
+    var m = Math.round(s / 60);
+    if (m < 60) return m + "m ago";
+    return Math.round(m / 60) + "h ago";
+  }
+  function stampNow(fresh) {
+    if (fresh) { lastSha = randSha(); lastAt = Date.now(); }
+    $("stamp").innerHTML = "updated " + esc(relTime(lastAt)) +
+      '<span aria-hidden="true">·</span><b>' + esc(lastSha) + "</b>";
+  }
+
+  /* ── tabs behaviour ───────────────────────────────────────────────────── */
+  var tabsEl = $("tabs");
+  var panelsEl = $("panels");
+  var shell = $("shell");
+  var fab = $("fab");
+  var current = null;
+
+  // Keep 16px of breathing room at the strip edge. scrollIntoView() is not used:
+  // it happily scrolls a pill that is already visible so that its edge meets the
+  // container edge, which eats the strip's own padding and clips the first pill.
+  function ensureTabVisible(el) {
+    var cr = tabsEl.getBoundingClientRect(), tr = el.getBoundingClientRect(), pad = 16;
+    if (tr.left < cr.left + pad) tabsEl.scrollLeft -= (cr.left + pad - tr.left);
+    else if (tr.right > cr.right - pad) tabsEl.scrollLeft += (tr.right - (cr.right - pad));
+  }
+
+  function select(key, moveFocus, keepScroll) {
+    current = key;
+    var tabs = tabsEl.querySelectorAll(".tab");
+    for (var i = 0; i < tabs.length; i++) {
+      var on = tabs[i].getAttribute("data-key") === key;
+      tabs[i].setAttribute("aria-selected", on ? "true" : "false");
+      tabs[i].tabIndex = on ? 0 : -1;
+      if (on) {
+        if (moveFocus) tabs[i].focus();
+        ensureTabVisible(tabs[i]);
+      }
+    }
+    var panels = panelsEl.querySelectorAll(".day");
+    for (var j = 0; j < panels.length; j++) {
+      panels[j].classList.toggle("is-on", panels[j].id === "panel-" + key);
+    }
+    var day = dayByKey(key);
+    if (day) fab.setAttribute("style", dayVars(day));   /* .fab maps --d-* itself */
+    if (!keepScroll) window.scrollTo(0, 0);
+  }
+
+  /* ── surgical updates after a state change ────────────────────────────── */
+  function syncChrome() {
+    TRIP.days.forEach(function (d) {
+      var done = dayComplete(d);
+      var tab = document.getElementById("tab-" + d.key);
+      if (tab) {
+        tab.classList.toggle("is-done", done);
+        var dot = tab.querySelector(".tab-dot");
+        if (dot) dot.textContent = done ? "✓" : (d.bullet || "");
+        tab.setAttribute("aria-label",
+          (d.label || d.key) + (d.date ? ", " + shortDate(d.date) : "") + (done ? ", complete" : ""));
+      }
+      var c = panelsEl.querySelector('[data-count="' + d.key + '"]');
+      if (c) c.textContent = countText(d);
+    });
+  }
+
+  function repaintCard(id) {
+    var node = panelsEl.querySelector('[data-card="' + id.replace(/"/g, '\\"') + '"]');
+    var p = placeById(id);
+    if (!node || !p) return;
+    var box = document.createElement("div");
+    box.innerHTML = cardHTML(p);
+    var fresh = box.firstElementChild;
+    if (fresh) node.parentNode.replaceChild(fresh, node);
+  }
+
+  function applyAct(act, id) {
+    setPlaceState(id, act);
+    repaintCard(id);
+    syncChrome();
+    if (route.open) { renderNodes(); renderDock(); }
+  }
+
+  /* ══ ROUTE SHEET ═══════════════════════════════════════════════════════ */
+  var sheet = $("routeSheet");
+  var route = { open: false, stops: [], idx: 0, opener: null, dayKey: null };
+
+  function firstUnhandled(stops) {
+    for (var i = 0; i < stops.length; i++) if (!isHandled(stops[i])) return i;
+    return 0;
+  }
+
+  function renderNodes() {
+    var html = route.stops.map(function (p, i) {
+      var vis = isVisited(p), skp = isSkipped(p), cur = i === route.idx;
+      var cls = "node" + (vis ? " is-visited" : "") + (skp ? " is-skipped" : "") +
+                (cur ? " is-cur" : "");
+      var glyph = vis ? "✓" : (skp ? "–" : String(i + 1));
+      var state = vis ? "Done" : (skp ? "Skipped" : (cur ? "Showing below" : ""));
+      return '<li class="' + cls + '">' +
+        '<button class="node-btn" type="button" data-node="' + i + '"' +
+          (cur ? ' aria-current="true"' : "") +
+          ' aria-label="Stop ' + (i + 1) + " of " + route.stops.length + ": " +
+            attr(p.name || "") + (state ? " — " + state : "") + '">' +
+          '<span class="node-rail" aria-hidden="true"><span class="node-dot">' + glyph + "</span></span>" +
+          '<span class="node-body">' +
+            (p.time ? '<span class="node-time u-tab-num">' + esc(p.time) + "</span>" : "") +
+            '<span class="node-name">' + esc(p.name || "") + "</span>" +
+            (state ? '<span class="node-state">' + esc(state) + "</span>" : "") +
+          "</span>" +
+        "</button></li>";
+    }).join("");
+    $("routeNodes").innerHTML = html;
+
+    var u = walkDirUrl(route.stops);
+    $("routeOut").innerHTML = u
+      ? '<a class="mapsout" href="' + attr(u) + '" target="_blank" rel="noopener noreferrer">' +
+        "Open walking directions in Google Maps<span aria-hidden=\"true\">↗</span></a>"
+      : "";
+  }
+
+  function renderDock() {
+    var p = route.stops[route.idx];
+    if (!p) { $("dockBody").innerHTML = ""; $("dockCount").textContent = ""; return; }
+    $("dockCount").textContent = "Stop " + (route.idx + 1) + " of " + route.stops.length;
+
+    var vis = isVisited(p), skp = isSkipped(p);
+    var tag = vis
+      ? '<span class="state-tag"><span class="state-check" aria-hidden="true">✓</span>Done</span>'
+      : (skp
+        ? '<span class="state-tag is-skip"><span class="state-check" aria-hidden="true">–</span>Skipped</span>'
+        : (CHIP[p.priority]
+          ? '<span class="chip chip-' + CHIP[p.priority][0] + '">' + esc(CHIP[p.priority][1]) + "</span>"
+          : ""));
+
+    $("dockBody").innerHTML =
+      '<div class="dock-pad">' +
+        '<div class="dock-top">' +
+          '<span class="time u-tab-num">' + esc(p.time || "") + "</span>" + tag +
+        "</div>" +
+        '<h3 class="dock-name">' + esc(p.name || "") + "</h3>" +
+        hoursHTML(p) + warnHTML(p) +
+        (p.notes ? '<p class="dock-note">' + esc(p.notes) + "</p>" : "") +
+        linksHTML(p) +
+        actsHTML(p) +
+      "</div>";
+  }
+
+  function jumpTo(i) {
+    var n = route.stops.length;
+    if (!n) return;
+    route.idx = ((i % n) + n) % n;
+    renderNodes();
+    renderDock();
+    var el = $("routeNodes").querySelector('[data-node="' + route.idx + '"]');
+    if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest" });
+  }
+
+  function openRoute(dayKey, cluster, opener) {
+    var day = dayByKey(dayKey);
+    if (!day) return;
+    route.dayKey = dayKey;
+    route.opener = opener || null;
+    route.stops = placesOfDay(dayKey).filter(function (p) {
+      return !isNote(p) && (!cluster || p.cluster === cluster);
+    });
+    if (!route.stops.length) return;
+    route.idx = firstUnhandled(route.stops);
+
+    sheet.setAttribute("style", dayVars(day));
+    $("routeTitle").textContent = day.title || day.label || day.key;
+    $("routeSub").textContent = (cluster ? cluster : "Whole day") + " · " +
+      route.stops.length + (route.stops.length === 1 ? " stop" : " stops") + " in order";
+
+    renderNodes();
+    renderDock();
+
+    route.open = true;
+    sheet.hidden = false;
+    document.body.classList.add("is-locked");
+    shell.setAttribute("aria-hidden", "true");
+    if ("inert" in HTMLElement.prototype) shell.inert = true;
+    fab.hidden = true;
+    $("routeScroll").scrollTop = 0;
+
+    if (!reduced()) {
+      void sheet.offsetHeight;          /* force reflow so the transition runs */
+      sheet.classList.add("is-in");
+    } else {
+      sheet.classList.add("is-in");
+    }
+    $("routeClose").focus();
+  }
+
+  function closeRoute() {
+    if (!route.open) return;
+    route.open = false;
+    var done = function () {
+      sheet.hidden = true;
+      document.body.classList.remove("is-locked");
+      shell.removeAttribute("aria-hidden");
+      if ("inert" in HTMLElement.prototype) shell.inert = false;
+      fab.hidden = false;
+      if (route.opener && route.opener.focus) route.opener.focus();
+      route.opener = null;
+    };
+    if (reduced()) { sheet.classList.remove("is-in"); done(); }
+    else { sheet.classList.remove("is-in"); window.setTimeout(done, 260); }
+  }
+
+  /* ── toast ────────────────────────────────────────────────────────────── */
+  var toastEl = $("toast"), toastT = null;
+  function toast(msg) {
+    window.clearTimeout(toastT);
+    toastEl.textContent = msg;
+    toastEl.hidden = false;
+    toastEl.classList.remove("is-out");
+    toastT = window.setTimeout(function () {
+      toastEl.classList.add("is-out");
+      window.setTimeout(function () { toastEl.hidden = true; }, reduced() ? 0 : 200);
+    }, 2400);
+  }
+
+  /* ══ PULL TO REFRESH ═══════════════════════════════════════════════════
+     A standalone PWA has no browser reload gesture, so we own it. The whole
+     shell slides down over a fixed indicator; release past 64px to refresh. */
+  var ptr = $("ptr"), ptrLabel = $("ptrLabel");
+  var PULL_MAX = 118, PULL_TRIG = 64, PULL_REST = 66;
+  var pull = { armed: false, active: false, y0: 0, x0: 0, d: 0 };
+  // A drag must swallow the click that follows it — but only the one that
+  // follows it. A latching boolean would sit armed forever and eat an unrelated
+  // tap minutes later (a drag that ends outside the page emits no click at all).
+  var busy = false, settleT = null, suppressUntil = 0;
+
+  function atTop() {
+    return (window.pageYOffset || document.documentElement.scrollTop || 0) <= 0;
+  }
+  function canPull() { return !busy && !route.open && atTop(); }
+  function easePull(raw) { return PULL_MAX * (1 - Math.exp(-raw / 180)); }
+
+  function paintPull(d) {
+    window.clearTimeout(settleT);
+    shell.classList.remove("is-settling");
+    if (d <= 0) {
+      shell.classList.remove("is-pulling");
+      shell.style.removeProperty("--pull");
+      ptr.style.setProperty("--ptr-o", "0");
+      return;
+    }
+    shell.classList.add("is-pulling");
+    shell.style.setProperty("--pull", d.toFixed(1) + "px");
+    var t = Math.min(1, d / PULL_TRIG);
+    ptr.style.setProperty("--ptr-o", String(Math.min(1, t * 1.15)));
+    ptr.style.setProperty("--ptr-s", String(0.65 + 0.35 * t));
+    ptr.style.setProperty("--ptr-r", (t >= 1 ? 180 : 0) + "deg");
+    if (!busy) ptrLabel.textContent = t >= 1 ? "Release to refresh" : "Pull to refresh";
+  }
+
+  function settle() {
+    pull.armed = false; pull.active = false; pull.d = 0;
+    if (reduced()) { paintPull(0); return; }
+    shell.classList.add("is-pulling", "is-settling");
+    shell.style.setProperty("--pull", "0px");
+    ptr.style.setProperty("--ptr-o", "0");
+    settleT = window.setTimeout(function () {
+      shell.classList.remove("is-pulling", "is-settling");
+      shell.style.removeProperty("--pull");
+    }, 360);
+  }
+
+  function doRefresh() {
+    if (busy) return;
+    busy = true;
+    pull.armed = false; pull.active = false;
+    ptr.classList.add("is-busy");
+    ptrLabel.textContent = "Refreshing…";
+    window.clearTimeout(settleT);
+    shell.classList.add("is-pulling");
+    if (!reduced()) shell.classList.add("is-settling");
+    shell.style.setProperty("--pull", PULL_REST + "px");
+    ptr.style.setProperty("--ptr-o", "1");
+    ptr.style.setProperty("--ptr-s", "1");
+
+    window.setTimeout(function () {
+      // Stands in for the Contents API GET: re-render from data + overlay.
+      renderPanels();
+      select(current || (TRIP.days[0] && TRIP.days[0].key), false, true);
+      stampNow(true);
+      ptr.classList.remove("is-busy");
+      ptrLabel.textContent = "Pull to refresh";
+      busy = false;
+      settle();
+    }, reduced() ? 320 : 780);
+  }
+
+  /* touch */
+  document.addEventListener("touchstart", function (e) {
+    if (e.touches.length !== 1 || !canPull()) { pull.armed = false; return; }
+    pull.armed = true; pull.active = false; pull.d = 0;
+    pull.y0 = e.touches[0].clientY; pull.x0 = e.touches[0].clientX;
+  }, { passive: true });
+
+  document.addEventListener("touchmove", function (e) {
+    if (!pull.armed || e.touches.length !== 1) return;
+    var dy = e.touches[0].clientY - pull.y0;
+    var dx = e.touches[0].clientX - pull.x0;
+    if (!pull.active) {
+      // Never hijack the horizontal day strip, and never fight an upward flick.
+      if (Math.abs(dx) > Math.abs(dy)) { pull.armed = false; return; }
+      if (dy < -4) { pull.armed = false; return; }
+      if (dy > 8 && atTop()) pull.active = true; else return;
+    }
+    if (dy <= 0) { paintPull(0); pull.d = 0; return; }
+    if (e.cancelable) e.preventDefault();
+    pull.d = easePull(dy);
+    paintPull(pull.d);
+  }, { passive: false });
+
+  function endPull() {
+    if (!pull.active) { pull.armed = false; return; }
+    var fire = pull.d >= PULL_TRIG;
+    pull.active = false; pull.armed = false;
+    if (fire) doRefresh(); else settle();
+  }
+  document.addEventListener("touchend", endPull, { passive: true });
+  document.addEventListener("touchcancel", endPull, { passive: true });
+
+  /* mouse fallback so the gesture is testable on desktop */
+  document.addEventListener("mousedown", function (e) {
+    if (e.button !== 0 || !canPull()) { pull.armed = false; return; }
+    if (e.target && e.target.closest && e.target.closest("input,textarea,select")) return;
+    pull.armed = true; pull.active = false; pull.d = 0;
+    pull.y0 = e.clientY; pull.x0 = e.clientX;
+  });
+  document.addEventListener("mousemove", function (e) {
+    if (!pull.armed) return;
+    var dy = e.clientY - pull.y0, dx = e.clientX - pull.x0;
+    if (!pull.active) {
+      if (Math.abs(dx) > Math.abs(dy)) { pull.armed = false; return; }
+      if (dy < -4) { pull.armed = false; return; }
+      if (dy > 8 && atTop()) pull.active = true; else return;
+    }
+    e.preventDefault();                 /* stop text selection while dragging */
+    if (dy <= 0) { pull.d = 0; paintPull(0); return; }
+    pull.d = easePull(dy);
+    paintPull(pull.d);
+  });
+  document.addEventListener("mouseup", function () {
+    if (pull.active && pull.d > 4) suppressUntil = Date.now() + 350;
+    endPull();
+  });
+  document.addEventListener("click", function (e) {
+    if (Date.now() < suppressUntil) { suppressUntil = 0; e.stopPropagation(); e.preventDefault(); }
+  }, true);
+
+  /* ── FAB retreats on scroll-down so it never covers a "Skip it" ───────── */
+  var lastScrollY = 0;
+  window.addEventListener("scroll", function () {
+    if (route.open) return;
+    var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+    if (y <= 8 || y < lastScrollY - 6) fab.classList.remove("is-away");
+    else if (y > lastScrollY + 6) fab.classList.add("is-away");
+    lastScrollY = y;
+  }, { passive: true });
+
+  /* ── one delegated click handler ──────────────────────────────────────── */
+  document.addEventListener("click", function (e) {
+    var t = e.target;
+    if (!t || !t.closest) return;
+
+    var act = t.closest("[data-act]");
+    if (act) { e.preventDefault(); applyAct(act.getAttribute("data-act"), act.getAttribute("data-id")); return; }
+
+    var r = t.closest("[data-route]");
+    if (r) { e.preventDefault(); openRoute(r.getAttribute("data-route"), r.getAttribute("data-cluster"), r); return; }
+
+    var n = t.closest("[data-node]");
+    if (n) { e.preventDefault(); jumpTo(parseInt(n.getAttribute("data-node"), 10)); return; }
+
+    var c = t.closest("[data-cyc]");
+    if (c) { e.preventDefault(); jumpTo(route.idx + parseInt(c.getAttribute("data-cyc"), 10)); return; }
+
+    var tab = t.closest(".tab");
+    if (tab) { select(tab.getAttribute("data-key"), false); return; }
+
+    if (t.closest("#routeClose")) { e.preventDefault(); closeRoute(); return; }
+    if (t.closest("#btnRefresh")) { e.preventDefault(); doRefresh(); return; }
+    if (t.closest("#fab")) { e.preventDefault(); toast("Add place — coming in M2"); return; }
+  });
+
+  /* ── keyboard ─────────────────────────────────────────────────────────── */
+  tabsEl.addEventListener("keydown", function (e) {
+    var keys = TRIP.days.map(function (d) { return d.key; });
+    var i = keys.indexOf(current);
+    var next = null;
+    if (e.key === "ArrowRight") next = keys[(i + 1) % keys.length];
+    else if (e.key === "ArrowLeft") next = keys[(i - 1 + keys.length) % keys.length];
+    else if (e.key === "Home") next = keys[0];
+    else if (e.key === "End") next = keys[keys.length - 1];
+    if (next) { e.preventDefault(); select(next, true); }
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (!route.open) return;
+    if (e.key === "Escape") { e.preventDefault(); closeRoute(); return; }
+    if (e.key === "ArrowRight") { e.preventDefault(); jumpTo(route.idx + 1); return; }
+    if (e.key === "ArrowLeft") { e.preventDefault(); jumpTo(route.idx - 1); return; }
+    if (e.key === "Tab") {
+      var f = sheet.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])');
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+
+  /* ── boot ─────────────────────────────────────────────────────────────── */
+  function renderPanels() {
+    panelsEl.innerHTML = TRIP.days.map(panelHTML).join("");
+    tabsEl.innerHTML = TRIP.days.map(tabHTML).join("");
+  }
+
+  function render() {
+    renderHero();
+    renderPanels();
+
+    // Auto-open today's day when today falls inside [start, end]; else day one.
+    var today = tripToday();
+    var initial = TRIP.days[0] && TRIP.days[0].key;
+    if (TRIP.start && TRIP.end && today >= TRIP.start && today <= TRIP.end) {
+      var hit = TRIP.days.filter(function (d) { return d.date === today; })[0];
+      if (hit) initial = hit.key;
+    }
+    if (initial) select(initial, false);
+
+    stampNow(true);
+    window.setInterval(function () { if (!busy) stampNow(false); }, 30000);
+    if (DID_RESET) toast("Local visited/skipped state cleared");
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

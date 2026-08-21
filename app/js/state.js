@@ -7,6 +7,8 @@
      wayfeather:token          → the PAT, alone, as a bare string (M2 Settings)
      wayfeather:pending        → the sync buffer, so a change survives an
                                  iOS app kill before it reaches git
+     wayfeather:probe          → written and removed again by storageProbe();
+                                 never present between calls
 
    Rendering is ALWAYS fetched data + overlay patch. Every mutation in the app —
    visited, skipped, an edit, an add, "find me something" — is one of these two
@@ -51,6 +53,14 @@ export const store = {
 };
 
 /* ── localStorage plumbing (private mode must never throw) ────────────────── */
+/* Every writer below RETURNS WHETHER IT WORKED, and proves it by reading the
+   value back rather than by surviving the call. The try/catch stays — a storage
+   failure must never break an edit mid-flight — but "caught it" is not the same
+   as "stored it", and until v9 the difference was invisible: Settings said
+   "Sync settings saved" whether or not a single byte had landed. Safari in
+   Private Browsing and a full quota BOTH throw on setItem, and some embedded
+   webviews accept the write and hand back nothing on the next read, which is
+   why this verifies instead of trusting. */
 function readJSON(key) {
   try {
     const raw = window.localStorage.getItem(key);
@@ -59,16 +69,43 @@ function readJSON(key) {
   } catch (e) { return null; }
 }
 
-function writeJSON(key, val) {
-  try { window.localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* private mode */ }
+/* True only when the exact text is in storage afterwards. */
+function writeRaw(key, text) {
+  try {
+    window.localStorage.setItem(key, text);
+    return window.localStorage.getItem(key) === text;
+  } catch (e) { return false; }                 // private mode, or over quota
 }
 
+function writeJSON(key, val) {
+  let text;
+  try { text = JSON.stringify(val); } catch (e) { return false; }
+  return writeRaw(key, text);
+}
+
+/* True when the key is gone afterwards — including when it was never there. */
 function drop(key) {
-  try { window.localStorage.removeItem(key); } catch (e) { /* private mode */ }
+  try {
+    window.localStorage.removeItem(key);
+    return window.localStorage.getItem(key) == null;
+  } catch (e) { return false; }
 }
 
 function readRaw(key) {
   try { return window.localStorage.getItem(key) || ""; } catch (e) { return ""; }
+}
+
+/* Settings › About asks this: can this device keep anything at all? A write, a
+   read-back and a remove, under the app's own namespace so nothing else can
+   collide with it, and cleaned up on the way out. This is the honest answer to
+   "why do my settings keep disappearing?" when the answer is Safari's privacy
+   settings rather than the app. */
+export function storageProbe() {
+  const key = NS + "probe";
+  const text = "probe-" + Date.now();
+  const wrote = writeRaw(key, text);
+  drop(key);
+  return wrote;
 }
 
 /* ?reset and the Settings row clear every Wayfeather key on this device — the
@@ -96,19 +133,27 @@ export function loadSyncSettings() {
   return store.sync;
 }
 
+/* Returns the saved pair plus `ok` — whether this device actually kept it.
+   Still an object with .owner and .repo, so existing readers are unaffected;
+   the settings view reads .ok to decide between "saved" and telling the truth.
+   Clearing counts as a success when the key really is gone. */
 export function saveSyncSettings(owner, repo) {
   store.sync = { owner: String(owner || "").trim(), repo: String(repo || "").trim() };
-  if (!store.sync.owner && !store.sync.repo) drop(SYNC_KEY);
-  else writeJSON(SYNC_KEY, store.sync);
-  return store.sync;
+  const ok = (!store.sync.owner && !store.sync.repo)
+    ? drop(SYNC_KEY)
+    : writeJSON(SYNC_KEY, store.sync);
+  return { owner: store.sync.owner, repo: store.sync.repo, ok };
 }
 
-/* The only writer of the token key. */
+/* The only writer of the token key. Returns whether a token is stored on this
+   device when the call returns — false for an empty token (nothing to store),
+   false when the write threw, and false when the value did not read back. A
+   PAT that silently failed to save is the difference between "sync is set up"
+   and a phone that quietly stops writing, so this one must not guess. */
 export function saveToken(token) {
   const t = String(token || "").trim();
   if (!t) { drop(TOKEN_KEY); return false; }
-  try { window.localStorage.setItem(TOKEN_KEY, t); } catch (e) { /* private mode */ }
-  return true;
+  return writeRaw(TOKEN_KEY, t);
 }
 
 /* Deliberately returns a boolean, not the value: Settings renders from this, so

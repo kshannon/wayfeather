@@ -34,8 +34,11 @@ import {
 import { cardHTML, setSkipAsk, skipAsk } from "./views/card.js";
 import { renderTrips } from "./views/trips.js";
 import {
-  renderSettings, renderCacheRow, saveSyncForm, clearTokenField, signOut, runConnectionTest
+  renderSettings, renderCacheRow, saveSyncForm, clearTokenField, signOut, runConnectionTest,
+  renderDiagnostics, invalidateDiagnostics
 } from "./views/settings.js";
+import { registerSW, workerVersion, mixedVersionHint } from "./shell.js";
+import { BUILD } from "./version.js";
 import { paintFly } from "./icons.js";
 import {
   initForms, openEdit, openAdd, openFind, saveForm, takeExtra, markSkipped, moveToExtras,
@@ -459,25 +462,116 @@ function wireEvents() {
   wireGrabber($("findGrab"), $("findSheet"));
   wireGrabber($("cardGrab"), $("cardSheet"));
   onHashChange((v) => setView(v));
-  onViewChange((v) => { if (v === "map") renderMap(); });
+  onViewChange((v) => {
+    if (v === "map") renderMap();
+    /* Diagnostics are re-probed on the way IN, not on every scene repaint:
+       opening this tab is the one moment anybody is reading them, and what they
+       report — storage, the controlling worker — can change while the app is
+       open. renderSettings() alone would repaint a snapshot from launch. */
+    if (v === "settings") { invalidateDiagnostics(); renderDiagnostics(); }
+  });
 }
 
-/* ══ SERVICE WORKER ════════════════════════════════════════════════════════ */
-function registerSW() {
-  if (!("serviceWorker" in navigator)) return;
-  // resolved from this module, so it works at any host path; the default scope
-  // is the script's own directory (app/), which deliberately excludes /data/
-  const url = new URL("../sw.js", import.meta.url);
-  const go = () => navigator.serviceWorker.register(url)
-    .catch(() => { /* http:// on a non-localhost origin, private mode, etc. */ });
-  // boot() awaits the network before it gets here, so "load" has usually fired
-  // already — attaching a listener unconditionally would silently never run.
-  if (document.readyState === "complete") go();
-  else window.addEventListener("load", go, { once: true });
+/* ══ THE SHELL SENTINEL (v9) ═══════════════════════════════════════════════ */
+/* Registration and the once-per-launch update nudge live in shell.js; this is
+   just the part that has an opinion about the answer.
+
+   The page asks the worker controlling it what VERSION it is and holds that
+   against its own BUILD. Agreement is the normal case and says nothing. A
+   disagreement means this page's code and the worker serving its requests came
+   from different builds, which a cold start fixes and nothing else does — so it
+   says exactly that, once, in a line you can ignore. No auto-reload: it can
+   loop, and it would throw away whatever was half-typed into a sheet. */
+function paintUpdateHint(version) {
+  const el = $("updateHint");
+  if (!el) return;
+  const hint = mixedVersionHint(BUILD, version);
+  el.textContent = hint || "";
+  el.hidden = !hint;
+}
+
+async function checkShellVersion() {
+  paintUpdateHint(await workerVersion(1500));
+  /* A worker that activates mid-session claims this page, and THAT is the
+     moment a mismatch appears — the update landed under a page already built
+     from the previous shell. Re-ask rather than leave the line stale. */
+  if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+    navigator.serviceWorker.addEventListener("controllerchange", async () => {
+      paintUpdateHint(await workerVersion(1500));
+    });
+  }
 }
 
 /* ══ BOOT ══════════════════════════════════════════════════════════════════ */
+/* `wired` is the honest line between the two failure shapes below: before it,
+   nothing on screen does anything when tapped; after it, the app can speak for
+   itself. index.html's boot guard holds the same distinction from outside. */
+let wired = false;
+
+function markWired() {
+  wired = true;
+  document.documentElement.setAttribute("data-boot", "ready");
+  const panel = $("bootFail");
+  if (panel) panel.hidden = true;      // undo a boot-guard timeout on a slow line
+}
+
+/* Boot died before anything was wired: every tab, field and button below is
+   painted markup with nothing behind it. Cover it and say so — this is the
+   state that used to be mistaken for "the app lost my settings", because the
+   static Settings form underneath is empty markup that has never been filled
+   in from storage. */
+function showBootPanel(err) {
+  document.documentElement.setAttribute("data-boot", "failed");
+  const panel = $("bootFail");
+  if (panel) panel.hidden = false;
+  const line = $("bootFailWhy");
+  if (line) line.textContent = (err && err.message) ? String(err.message) : "";
+  /* The panel has TWO owners — the boot guard reveals it when this module never
+     evaluated, and this reveals it when the module ran and boot() threw. Only
+     the guard's path wires the button, so the second owner must wire it too or
+     the one control on the screen does nothing. `__wired` is the shared flag,
+     so whichever gets there first wins and neither double-binds. */
+  const btn = $("bootFailReload");
+  if (btn && !btn.__wired) {
+    btn.__wired = 1;
+    btn.addEventListener("click", () => { window.location.reload(); });
+  }
+}
+
+function reportBootFailure(err) {
+  try { window.console && window.console.error("Wayfeather boot failed:", err); }
+  catch (e) { /* no console */ }
+
+  if (!wired) { showBootPanel(err); return; }
+
+  /* Wired: the click delegate, the tabs and pull-to-refresh are all live and
+     the sync settings are loaded, so the app shows ITS OWN error — the same
+     empty state a failed read produces, carrying the same "Try again" the
+     retry delegate already handles. A half-render with no explanation is the
+     one outcome not allowed here. */
+  try {
+    renderHero();
+    renderPanels();
+    renderStamp();
+    toast("Wayfeather had trouble starting — try again");
+  } catch (e) { showBootPanel(err); }
+}
+
 async function boot() {
+  try {
+    await bootUp();
+  } catch (err) {
+    reportBootFailure(err);
+  } finally {
+    /* ALWAYS, even when boot failed — especially then. A phone that cannot
+       start is exactly the phone that needs to receive the build that fixes
+       it, and registration.update() is what makes the browser go look. */
+    registerSW();
+    checkShellVersion().catch(() => { /* a diagnostic must not become the fault */ });
+  }
+}
+
+async function bootUp() {
   const intent = parseBoot();
 
   if (intent.reset) { wipeAll(); await clearDataCache(); }
@@ -508,6 +602,16 @@ async function boot() {
     canPull: () => getView() === "itinerary" && !isOpen(),
     onRefresh: refreshData
   });
+
+  /* Settings is painted HERE, before the first network wait, because this is
+     the first line at which the tab can be reached at all — wireEvents() just
+     made the tab bar and the #settings hash live. loadSyncSettings() ran at the
+     top of this function, so the form is filled from storage the first time
+     anyone can possibly look at it. Leaving this to the render pass after
+     fetchIndex() left a window, however narrow, where a reachable Settings tab
+     showed empty owner, repo and token fields on a device that had all three. */
+  renderSettings();
+  markWired();
 
   await fetchIndex();
 
@@ -543,7 +647,6 @@ async function boot() {
     toast(why ? why + " — showing saved trip data" : "Offline — showing saved trip data");
   }
 
-  registerSW();
   window.setInterval(() => { if (!isBusy()) { renderStamp(); renderStaleBanner(); } }, 30000);
   warmSummaries();
 }

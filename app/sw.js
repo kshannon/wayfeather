@@ -8,7 +8,14 @@
    Bumping: change VERSION. The cache name carries it, install precaches the new
    shell, and activate deletes every other wayfeather-shell-* cache. */
 
-/* v7 (2026-08-20, the v4.3 cosmetic pass): no new modules — index.html, app.css
+/* v9 (2026-08-20, the mixed-shell fix): the fetch handler no longer writes to
+   any cache. See "WHY THERE IS NO REVALIDATION" above shellFirst() — this is
+   the bug that took an installed phone down in the field, and the reason the
+   staleness problem it was solving now lives in js/shell.js instead.
+
+   v8 (2026-08-20, schema 2 status axes).
+
+   v7 (2026-08-20, the v4.3 cosmetic pass): no new modules — index.html, app.css
    and js/views/map.js only. Every byte of it is a file the shell already
    precaches under an unchanged name, which is exactly the shape of deploy that
    goes invisible without a bump (see v5 below).
@@ -24,7 +31,7 @@
    v5 (the v4.2 wiring pass) shipped new icon BYTES under unchanged names, which
    is the standing reminder that a deploy without a VERSION bump leaves every
    installed copy serving the old shell forever. */
-const VERSION = "v8";
+const VERSION = "v9";
 const CACHE = "wayfeather-shell-" + VERSION;
 const PREFIX = "wayfeather-shell-";
 
@@ -46,6 +53,7 @@ const SHELL = [
   "./js/api.js",
   "./js/sync.js",
   "./js/version.js",
+  "./js/shell.js",
   "./js/state.js",
   "./js/session.js",
   "./js/router.js",
@@ -87,16 +95,27 @@ const SHELL = [
   "./icons/icon-512.png"
 ];
 
+/* The ONLY writer of the shell cache, and the reason a version swap is
+   all-or-nothing: this cache name is brand new, nothing serves out of it until
+   the browser fires `activate`, and the browser only fires `activate` after
+   this handler's waitUntil() has settled. So every byte in wayfeather-shell-vN
+   was fetched during one install of vN — a cache can never hold two builds. */
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     // added one at a time: cache.addAll() rejects the whole install if a single
-    // entry 404s, which would leave the app with no worker at all
+    // entry 404s, which would leave the app with no worker at all. A miss here
+    // costs a network round-trip later (cache-first falls through), NOT a
+    // mixed shell — the misses are absences, never another version's bytes.
     await Promise.all(SHELL.map((url) => cache.add(url).catch(() => {})));
     await self.skipWaiting();
   })());
 });
 
+/* Self-heal: every wayfeather-shell-* cache that is not this exact version is
+   deleted here, including one an older build left half-rewritten. A phone
+   carrying a poisoned v7 cache therefore loses it the moment v9 activates —
+   there is no migration and nothing to repair, only the new cache. */
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
@@ -105,6 +124,21 @@ self.addEventListener("activate", (event) => {
     );
     await self.clients.claim();
   })());
+});
+
+/* "Which shell is actually answering?" — asked by js/shell.js at boot and by
+   Settings › About. The page compares this against its own BUILD constant: a
+   disagreement means the page was loaded from one version and is now controlled
+   by another, which is a "close and reopen", not a crash. Answering over the
+   caller's MessagePort keeps it a request/response, with no broadcast to other
+   clients and no state kept on either side. */
+self.addEventListener("message", (event) => {
+  const data = event.data;
+  if (!data || data.type !== "version?") return;
+  const reply = { type: "version", version: VERSION, cache: CACHE };
+  const port = event.ports && event.ports[0];
+  if (port) port.postMessage(reply);
+  else if (event.source && event.source.postMessage) event.source.postMessage(reply);
 });
 
 self.addEventListener("fetch", (event) => {
@@ -130,32 +164,46 @@ self.addEventListener("fetch", (event) => {
 
   // A navigation to any URL in scope (?trip=…, #map) is the same shell.
   if (req.mode === "navigate") {
-    event.respondWith(shellFirst(event, "./index.html", req, { ignoreSearch: true }));
+    event.respondWith(shellFirst("./index.html", req, { ignoreSearch: true }));
     return;
   }
 
   // Cache-first for shell assets; anything unknown goes to the network and is
   // NOT written to the cache — the precache list is the whole shell, on purpose.
-  event.respondWith(shellFirst(event, req, req, { ignoreSearch: false }));
+  event.respondWith(shellFirst(req, req, { ignoreSearch: false }));
 });
 
-/* Cache-first, with a quiet background re-fetch of the cached copy.
+/* Cache-first. That is the whole strategy, and this function writes NOTHING.
 
-   The response ALWAYS comes from the cache when there is one, so offline and
-   cold-start behaviour are exactly cache-first. The background revalidation
-   exists so that forgetting to bump VERSION on a deploy costs one extra launch
-   instead of pinning both phones to a stale app forever. */
-async function shellFirst(event, cacheKey, req, opts) {
+   ══ WHY THERE IS NO REVALIDATION ══════════════════════════════════════════
+   v7 and v8 answered from the cache and then quietly re-fetched each asset and
+   put() the fresh bytes back — into the CURRENT cache, one entry at a time,
+   with no check that the bytes still belonged to this version. It was there so
+   that forgetting to bump VERSION cost one extra launch instead of pinning a
+   phone forever.
+
+   On a real phone, during a deploy, it did this instead: the worker was v7, the
+   server had started serving v8, and a launch on a slow connection revalidated
+   SOME of the shell before the app was backgrounded. The v7 cache came out
+   holding a handful of v8 files — an index.html from one build, modules from
+   another. Every launch afterwards booted that mixture, and an ES module graph
+   that disagrees with itself does not degrade, it fails to evaluate: main.js
+   never ran, so nothing was wired and nothing loaded the stored sync settings,
+   and the static Settings markup underneath sat there with empty owner, repo
+   and token fields. It read as "the app broke and lost my token". Neither was
+   true; the token was in localStorage the whole time.
+
+   Per-entry writes cannot be made safe by ordering or by a guard, because the
+   unit of correctness is the WHOLE shell, not the file. The browser already has
+   an atomic swap for exactly this: a changed sw.js installs into a NEW cache
+   name and activates all of it or none of it. So staleness is now handled at
+   that layer instead — js/shell.js nudges registration.update() once per launch
+   — and this handler never mixes versions because it never writes.
+
+   Do not reintroduce a cache.put() here. tests/shell.test.js fails if you do. */
+async function shellFirst(cacheKey, req, opts) {
   const cached = await caches.match(cacheKey, opts);
-  if (cached) {
-    event.waitUntil((async () => {
-      try {
-        const fresh = await fetch(req, { cache: "no-cache" });
-        if (fresh && fresh.ok) (await caches.open(CACHE)).put(cacheKey, fresh.clone());
-      } catch (e) { /* offline: keep what we have */ }
-    })());
-    return cached;
-  }
+  if (cached) return cached;
   try { return await fetch(req); }
   catch (e) { return Response.error(); }
 }

@@ -134,6 +134,16 @@ export async function clearDataCache() {
   });
 }
 
+/* Settings › About: can this device open its offline store at all? openDB()
+   resolves null in private mode, when IDB is blocked, and when another tab is
+   holding an upgrade — and it caches its own promise, so this costs one open
+   per launch at most. Offline reads are impossible when this is false, which
+   makes it worth printing next to the storage probe rather than inferring it
+   from an empty cache row. */
+export async function idbProbe() {
+  return !!(await openDB());
+}
+
 /* { count, newest } for the Settings row. */
 export async function cacheInfo() {
   const all = await idbAll();

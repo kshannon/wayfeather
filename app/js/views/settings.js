@@ -18,6 +18,7 @@ import {
 } from "../state.js";
 import { cacheInfo, testConnection } from "../data.js";
 import { BUILD } from "../version.js";
+import { collectDiagnostics, diagRows } from "../shell.js";
 import { toast } from "../toast.js";
 
 export function renderResetRow() {
@@ -86,12 +87,59 @@ export function renderAbout() {
     " · updated <b>" + esc(rel) + "</b>";
 }
 
+/* ── diagnostics (About) ──────────────────────────────────────────────────── */
+/* A field report is a screenshot. This block is what makes that screenshot
+   worth something: build, whether this is the installed app or a browser tab,
+   which worker is answering, whether the device can store anything, and where
+   the trips are being read from. It is the difference between "the app broke
+   and lost my token" and a row that says Storage: failing.
+
+   The token is not here and cannot be — sourceLabel() is built from owner and
+   repo, and nothing in this file can read the secret back (see the header).
+
+   The snapshot is taken once and repainted from memory, because renderSettings()
+   runs after every edit and probing storage and the worker on each repaint would
+   be noise. main.js re-takes it whenever the Settings tab is opened, which is
+   the only moment anybody is looking. */
+let diagFacts = null;        // the snapshot everything repaints from
+let diagPending = null;      // one in-flight probe, shared by concurrent renders
+
+export function invalidateDiagnostics() { diagFacts = null; diagPending = null; }
+
+function paintDiag(facts) {
+  const box = $("diagList");
+  if (!box) return;
+  /* sourceLabel() is spliced fresh rather than cached with the rest: owner and
+     repo can change between snapshots, and a stale source here would be exactly
+     the kind of quiet lie this block exists to replace. */
+  const rows = diagRows(Object.assign({}, facts, { source: sourceLabel() }));
+  box.innerHTML = rows.map((r) =>
+    '<div class="diag-row"><dt>' + esc(r[0]) + "</dt><dd>" + esc(r[1]) + "</dd></div>"
+  ).join("");
+}
+
+export async function renderDiagnostics() {
+  if (!diagFacts) {
+    /* refreshScene() repaints Settings after every edit; without this, two
+       repaints in the same tick would each start their own probe. */
+    if (!diagPending) diagPending = collectDiagnostics().then(null, () => null);
+    diagFacts = await diagPending;
+    diagPending = null;
+  }
+  /* A probe that could not run leaves the block exactly as it was rather than
+     painting a row of failures it has not established. */
+  if (!diagFacts) return null;
+  paintDiag(diagFacts);
+  return diagFacts;
+}
+
 export function renderSettings() {
   renderResetRow();
   renderSyncForm();
   renderAbout();
   renderBuildRow();
   renderCacheRow();
+  renderDiagnostics();
 }
 
 /* ── actions (wired by main.js's click delegate) ──────────────────────────── */
@@ -100,18 +148,34 @@ export function renderSettings() {
    the trips on screen came from somewhere else a moment ago. */
 export function saveSyncForm() {
   const before = (store.sync.owner || "") + "/" + (store.sync.repo || "");
-  saveSyncSettings($("s-owner").value, $("s-repo").value);
+  const saved = saveSyncSettings($("s-owner").value, $("s-repo").value);
   const after = (store.sync.owner || "") + "/" + (store.sync.repo || "");
 
   const field = $("s-token");
   const typed = field ? field.value : "";
+  let tokenKept = true;
   if (typed.trim()) {
-    saveToken(typed);
-    field.value = "";                 // out of the DOM the moment it is stored
+    tokenKept = saveToken(typed);
+    /* Cleared only once the value is PROVED to be in storage. Wiping the field
+       after a failed write would destroy the only copy of a 40-character secret
+       that was never saved — and the field is a type=password the person just
+       typed into, so leaving it is not a new exposure, it is the retry. */
+    if (tokenKept) field.value = "";
   }
 
   renderSyncForm();
   const moved = before !== after;
+
+  /* Honesty over reassurance (v9). state.js now reports whether the bytes
+     actually landed, so a device that cannot keep them — Private Browsing, a
+     full quota, a locked-down webview — is told so instead of being told
+     "saved". Everything still works for THIS session: store.sync is set in
+     memory either way, which is why the caller is told the source moved. */
+  if (!saved.ok || !tokenKept) {
+    toast("Couldn't store settings on this device — check Safari privacy settings");
+    return moved;
+  }
+
   toast(isConfigured()
     ? (moved ? "Now reading " + sourceLabel() : "Sync settings saved")
     : "Sync settings cleared — reading from this site");

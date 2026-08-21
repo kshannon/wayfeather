@@ -26,6 +26,70 @@
 <link rel="stylesheet" href="css/app.css">
 
 <title>Wayfeather</title>
+
+<!-- ════ BOOT GUARD (v9) ═══════════════════════════════════════════════════
+     A CLASSIC script, on purpose, and the only one in the app.
+
+     Everything else here is an ES module, and a module graph that fails to
+     resolve runs none of its own error handling: if js/main.js cannot import
+     what it asks for, main.js never evaluates at all. Nothing is wired, nothing
+     loads the stored sync settings — and the static markup further down just
+     sits there, an app-shaped screen whose Settings fields are empty because
+     they have never been filled in. That is what a mixed-version shell looked
+     like from the outside, and why it was reported as "the app lost my token".
+
+     This runs before any of that and survives all of it. It only ever reveals
+     an element that is already in the document; it fetches nothing, parses
+     nothing and repairs nothing. js/main.js sets data-boot="ready" the moment
+     the app is wired, which also puts the panel away if this fired early on a
+     slow connection. -->
+<script>
+(function () {
+  var root = document.documentElement;
+  var reason = "";
+  root.setAttribute("data-boot", "pending");
+
+  /* Idempotent, and safe to call before <body> exists: a stylesheet that 404s
+     fires its error while the head is still parsing, at which point there is
+     no panel to reveal yet. Whatever it cannot find now, it finds on
+     DOMContentLoaded. */
+  function reveal() {
+    var panel = document.getElementById("bootFail");
+    if (panel) panel.hidden = false;
+    var line = document.getElementById("bootFailWhy");
+    if (line && reason) line.textContent = reason;
+    var btn = document.getElementById("bootFailReload");
+    if (btn && !btn.__wired) {
+      btn.__wired = 1;
+      btn.addEventListener("click", function () { window.location.reload(); });
+    }
+  }
+
+  function fail(why) {
+    if (root.getAttribute("data-boot") !== "pending") return;
+    root.setAttribute("data-boot", "failed");
+    reason = why || "";
+    reveal();
+    document.addEventListener("DOMContentLoaded", reveal);
+  }
+
+  /* Capture phase catches both shapes: a <script> or <link> that 404s fires a
+     non-bubbling error at the element itself, while a module that throws while
+     evaluating — "does not provide an export named …", the exact mixed-shell
+     symptom — fires at the window. One listener sees both. */
+  window.addEventListener("error", function (e) {
+    var t = e && e.target;
+    var tag = t && t.nodeName;
+    if (tag === "SCRIPT" || tag === "LINK") fail("A file the app needs did not load.");
+    else fail(e && e.message ? String(e.message) : "");
+  }, true);
+
+  /* Backstop for a stall that throws nothing. Generous, because module fetches
+     on a bad connection are slow — and harmless when wrong, since a boot that
+     finishes afterwards clears it. */
+  window.setTimeout(function () { fail("The app did not finish starting."); }, 15000);
+})();
+</script>
 </head>
 <body>
 
@@ -69,6 +133,12 @@
            change. Hidden entirely when there is nothing to say. -->
       <p class="syncline" id="syncLine" hidden></p>
       <div id="staleBanner"></div>
+      <!-- v9: shown when the worker answering this page reports a different
+           VERSION than the code running here — a half-swapped shell, which a
+           cold start fixes and nothing else does. Deliberately a line you can
+           ignore: no modal, no auto-reload (that can loop, and it would fight
+           an edit in progress). js/main.js is the only writer. -->
+      <p class="stale" id="updateHint" hidden></p>
       <div id="panels"></div>
     </main>
 
@@ -246,6 +316,15 @@
           <p><strong>Wayfeather</strong> — a light little guide for finding your way.</p>
           <p id="aboutLine"></p>
         </div>
+
+        <!-- DIAGNOSTICS (v9). Six plain rows, filled by views/settings.js from
+             shell.js's snapshot, so a field report can be one screenshot: which
+             build is running, whether this is the installed app or a tab,
+             whether the worker answering agrees with the page, whether this
+             device can store anything at all, and where trips are read from.
+             The token is not here — the data source row is owner/repo only. -->
+        <dl class="diag" id="diagList"></dl>
+        <p class="sect-note">Handy when something looks wrong — screenshot this.</p>
       </div>
     </div>
   </section>
@@ -478,6 +557,26 @@
 </section>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<!-- Shown ONLY by the boot guard in <head>, and put away again by js/main.js
+     once the app is wired. It covers the shell deliberately: when boot has not
+     run, every tab, button and field below is painted markup with nothing
+     behind it, and letting someone tap through that is how an unstarted app
+     gets read as a broken account. Reloading is the real first move — a
+     navigation is what makes the browser re-check sw.js, which is what installs
+     a clean shell (LLMS.md "App stuck on a phone"). -->
+<div class="bootfail" id="bootFail" role="alert" hidden>
+  <div class="bootfail-card">
+    <h2>Wayfeather could not start</h2>
+    <p>Part of the app did not load on this device. Reloading usually fixes it;
+      if it does not, close the app completely and open it again — the next
+      launch installs a clean copy.</p>
+    <p class="bootfail-why" id="bootFailWhy"></p>
+    <button class="btn btn-primary" type="button" id="bootFailReload">Reload</button>
+    <p class="bootfail-foot">Nothing on this device has been lost. Trips, local
+      changes and your GitHub settings are all still stored here.</p>
+  </div>
+</div>
 
 <script type="module" src="js/main.js"></script>
 </body>

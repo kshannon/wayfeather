@@ -75,22 +75,64 @@ Required top level: `schema`, `id`, `name`, `tz`, `start`, `end`, `days`,
 the UI synthesizes one if missing, but data is better explicit. Register the
 trip in `index.json`. Real trips go in `private/trips/`, never committed here.
 
+## First: get the evidence (Settings › About)
+
+Every field report should start with a screenshot of the diagnostics block at
+the bottom of Settings. Six rows, and they answer most questions before anyone
+starts guessing:
+
+- **Build** — which shell is running (`BUILD` in `app/js/version.js`).
+- **Display mode** — `standalone (installed)` vs `browser tab`. The installed
+  app has its OWN storage silo: a token entered in the Safari tab is genuinely
+  absent from the installed app, which is not the same bug as a token that
+  failed to save.
+- **Service worker** — the version the controlling worker reports. `does not
+  match this page` means a half-swapped shell; a cold start fixes it.
+- **Storage** — `failing` means localStorage is refusing writes (Private
+  Browsing, full quota). Settings genuinely cannot be saved on that device.
+- **Offline store** — IndexedDB; `unavailable` means no offline trip data.
+- **Data source** — the configured `owner/repo`, or `this site`. Never the token.
+
 ## App stuck on a phone / won't update
 
 The installed PWA's shell is served by a service worker from a versioned cache.
-Escalate in order:
+The swap between versions is **atomic** — a new `sw.js` installs into a whole
+new cache and activates all of it or none of it — so a phone is either fully on
+the old build or fully on the new one. Escalate in order:
 
 1. **Pull-to-refresh** — refreshes *data* only, not the app shell.
 2. **Fully close the app and reopen, twice.** A deployed update installs in the
-   background on the first launch and activates on the next cold start.
+   background on the first launch and activates on the next cold start. If the
+   app shows "Update ready — close Wayfeather and reopen it", this is exactly
+   the step it is asking for.
 3. Still stale → the deploy probably didn't bump the cache version: any change
-   to app files must bump the version string in `app/sw.js`, or clients keep
-   the old shell forever. Fix, redeploy, then step 2.
+   to app files must bump `VERSION` in `app/sw.js` **and** `BUILD` in
+   `app/js/version.js`, in lockstep, or clients keep the old shell forever.
+   `tests/build.test.js` fails if the two disagree. There is no background
+   revalidation to paper over a missed bump — see the next section for why.
 4. Truly wedged → iOS Settings → Safari → Advanced → Website Data → delete the
    site's data, then relaunch (last resort: remove the icon and re-add to Home
    Screen from Safari). Note: an installed app has its own storage silo —
    clearing/reinstalling wipes its localStorage/IndexedDB, so local overlay
    state and (post-M2) the PAT must be re-entered.
+
+## App won't load at all / "it lost my token"
+
+If the app shows **"Wayfeather could not start"**, the module graph failed to
+load and `js/main.js` never ran. Reload first (a navigation is what makes the
+browser re-check `sw.js`), then close and reopen. Nothing on the device has
+been lost — the panel exists precisely because the alternative was worse:
+without it, a failed boot left the *static* Settings markup on screen with
+empty owner, repo and token fields, and that reads as "the app deleted my
+credentials" when localStorage still holds all three.
+
+**Never reintroduce cache revalidation in `app/sw.js`.** v7/v8 re-fetched shell
+assets in the background and wrote them into the *live* cache one file at a
+time. During a deploy that produced a cache holding two builds at once, and a
+mixed ES module graph does not degrade — it fails to evaluate, on every launch,
+forever. `tests/shell.test.js` fails on any `cache.put()` in that file. Shell
+staleness is handled instead by `js/shell.js`, which calls
+`registration.update()` once per launch and lets the browser do the atomic swap.
 
 ## Edit trip data through the API (M2+)
 
